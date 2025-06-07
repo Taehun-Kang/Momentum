@@ -17,11 +17,7 @@
     "dev": "nodemon server.js",
     "test": "jest",
     "test:watch": "jest --watch",
-    "prod": "NODE_ENV=production node server.js",
-    "build": "npm run install-mcp",
-    "install-mcp": "cd mcp && npm install",
-    "setup-mcp": "npm run install-mcp",
-    "postinstall": "npm run install-mcp"
+    "prod": "NODE_ENV=production node server.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.3",

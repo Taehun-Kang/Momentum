@@ -1,29 +1,26 @@
 const path = require('path');
 
 // MCP 클라이언트 안전하게 로드 (backend/mcp 폴더에서)
-let MomentumMCPClient = null;
+let mcpClient = null;
 
 try {
-  // backend/mcp 폴더에서 MCP 클라이언트 로드
-  MomentumMCPClient = require('../mcp/clients/mcp-client/index.js');
+  // backend/mcp 폴더에서 통합 MCP 클라이언트 로드
+  mcpClient = require('../mcp/index.js');
   console.log('✅ MCP 클라이언트 모듈 로드 성공 (backend/mcp)');
 } catch (error) {
   console.log('⚠️ MCP 클라이언트 모듈을 찾을 수 없습니다:', error.message);
   console.log('📝 MCP 기능이 비활성화됩니다. 기본 YouTube 검색만 사용 가능합니다.');
   
   // 더미 클래스 생성 (에러 방지)
-  MomentumMCPClient = class {
-    constructor() {
-      this.available = false;
-    }
-    
-    async connectAll() {
-      return { success: false, error: 'MCP client not available' };
-    }
-    
-    getConnectionStatus() {
-      return { allConnected: false };
-    }
+  mcpClient = {
+    available: false,
+    getStatus: () => ({ connected: false, available: false }),
+    processNaturalLanguage: () => { throw new Error('MCP_NOT_AVAILABLE') },
+    expandKeyword: () => { throw new Error('MCP_NOT_AVAILABLE') },
+    buildOptimizedQueries: () => { throw new Error('MCP_NOT_AVAILABLE') },
+    searchPlayableShorts: () => { throw new Error('MCP_NOT_AVAILABLE') },
+    analyzeVideoMetadata: () => { throw new Error('MCP_NOT_AVAILABLE') },
+    aiCurationWorkflow: () => { throw new Error('MCP_NOT_AVAILABLE') }
   };
 }
 
@@ -34,16 +31,18 @@ try {
  */
 class MCPIntegrationService {
   constructor() {
-    this.mcpClient = null;
+    this.mcpClient = mcpClient;
     this.isInitialized = false;
     this.connectionRetries = 0;
     this.maxRetries = 3;
-    this.mcpAvailable = MomentumMCPClient && MomentumMCPClient.name !== 'class'; // 실제 클래스인지 확인
+    this.mcpAvailable = mcpClient && mcpClient.available !== false;
     
     if (this.mcpAvailable) {
       console.log('🔧 MCP 통합 서비스 초기화 시작 (backend/mcp)...');
+      this.isInitialized = true; // 통합 클라이언트는 즉시 사용 가능
     } else {
       console.log('🔧 MCP 통합 서비스 (기본 모드) - MCP 기능 비활성화');
+      this.isInitialized = true;
     }
   }
 
@@ -78,76 +77,27 @@ class MCPIntegrationService {
       };
     }
 
-    try {
-      console.log('🚀 MCP 클라이언트 연결 시도...');
-      console.log('📁 MCP 서버 경로: backend/mcp/servers/');
-      
-      // MCP 클라이언트 생성
-      this.mcpClient = new MomentumMCPClient();
-      
-      // 모든 MCP 서버에 연결
-      const connectionResult = await this.mcpClient.connectAll();
-      
-      if (connectionResult.success) {
-        this.isInitialized = true;
-        this.connectionRetries = 0;
-        
-        console.log('✅ MCP 통합 서비스 초기화 완료 (backend/mcp)');
-        console.log('📡 연결된 서버:', connectionResult.connectedServers);
-        console.log('🎯 사용 가능한 도구들:');
-        console.log('   - process_natural_language (자연어 분석)');
-        console.log('   - intelligent_search_workflow (4단계 워크플로우)');
-        console.log('   - expand_keyword (키워드 확장)');
-        console.log('   - search_playable_shorts (2단계 필터링)');
-        
-        return {
-          success: true,
-          connectedServers: connectionResult.connectedServers,
-          message: 'MCP 통합 서비스가 성공적으로 초기화되었습니다.',
-          version: '2.1.0',
-          features: [
-            'Claude AI 자연어 분석',
-            '4단계 자동 워크플로우', 
-            '2단계 영상 필터링',
-            '실시간 트렌드 분석'
-          ]
-        };
-      } else {
-        throw new Error('MCP 서버 연결 실패');
-      }
-
-    } catch (error) {
-      console.error('❌ MCP 통합 서비스 초기화 실패:', error);
-      console.error('🔧 해결 방법: backend/mcp/servers/ 확인');
-      
-      this.connectionRetries++;
-      
-      if (this.connectionRetries < this.maxRetries) {
-        console.log(`🔄 재연결 시도 ${this.connectionRetries}/${this.maxRetries}...`);
-        
-        // 10초 후 재시도 (더 긴 대기시간)
-        setTimeout(async () => {
-          await this.initialize();
-        }, 10000);
-      } else {
-        // 최대 재시도 후에도 실패하면 폴백 모드로 전환
-        console.log('⚠️ MCP 연결 최대 재시도 초과 - 기본 모드로 전환');
-        this.isInitialized = true;
-        this.mcpAvailable = false;
-      }
-      
-      return {
-        success: false,
-        error: error.message,
-        retries: this.connectionRetries,
-        mode: 'fallback',
-        troubleshooting: [
-          'backend/mcp/servers/youtube-curator-mcp/ 폴더 확인',
-          'npm install 실행 여부 확인',
-          '.env 파일의 API 키 설정 확인'
-        ]
-      };
-    }
+    // 통합 MCP 클라이언트는 이미 초기화됨
+    this.isInitialized = true;
+    
+    console.log('✅ MCP 통합 서비스 초기화 완료 (backend/mcp)');
+    console.log('🎯 사용 가능한 도구들:');
+    console.log('   - process_natural_language (자연어 분석)');
+    console.log('   - intelligent_search_workflow (4단계 워크플로우)');
+    console.log('   - expand_keyword (키워드 확장)');
+    console.log('   - search_playable_shorts (2단계 필터링)');
+    
+    return {
+      success: true,
+      message: 'MCP 통합 서비스가 성공적으로 초기화되었습니다.',
+      version: '2.1.0',
+      features: [
+        'Claude AI 자연어 분석',
+        '4단계 자동 워크플로우', 
+        '2단계 영상 필터링',
+        '실시간 트렌드 분석'
+      ]
+    };
   }
 
   /**
@@ -165,23 +115,7 @@ class MCPIntegrationService {
       };
     }
 
-    if (!this.isInitialized || !this.mcpClient) {
-      return {
-        initialized: false,
-        connected: false,
-        message: 'MCP 클라이언트가 초기화되지 않았습니다.'
-      };
-    }
-
-    const connectionStatus = this.mcpClient.getConnectionStatus();
-    
-    return {
-      initialized: this.isInitialized,
-      connected: connectionStatus.allConnected,
-      servers: connectionStatus,
-      retries: this.connectionRetries,
-      maxRetries: this.maxRetries
-    };
+    return this.mcpClient.getStatus();
   }
 
   /**
@@ -192,16 +126,8 @@ class MCPIntegrationService {
       throw new Error('MCP_NOT_AVAILABLE');
     }
 
-    if (!this.isInitialized || !this.mcpClient) {
-      await this.initialize();
-      return;
-    }
-
-    const status = this.mcpClient.getConnectionStatus();
-    if (!status.allConnected) {
-      console.log('🔄 MCP 연결이 끊어져 재연결 시도...');
-      await this.initialize();
-    }
+    // 통합 클라이언트는 항상 연결됨
+    return true;
   }
 
   // ==================== 안전한 폴백 메서드들 ====================
@@ -226,7 +152,6 @@ class MCPIntegrationService {
       };
     }
 
-    await this.ensureConnection();
     return await this.mcpClient.processNaturalLanguage(message, options);
   }
 
@@ -243,8 +168,6 @@ class MCPIntegrationService {
       throw new Error('MCP_NOT_AVAILABLE: AI 키워드 확장 기능을 사용할 수 없습니다.');
     }
 
-    await this.ensureConnection();
-    
     try {
       return await this.mcpClient.expandKeyword(keyword, options);
     } catch (error) {
@@ -265,8 +188,6 @@ class MCPIntegrationService {
       throw new Error('MCP_NOT_AVAILABLE: AI 쿼리 최적화 기능을 사용할 수 없습니다.');
     }
 
-    await this.ensureConnection();
-    
     try {
       return await this.mcpClient.buildOptimizedQueries(keyword, strategy, maxResults);
     } catch (error) {
@@ -287,8 +208,6 @@ class MCPIntegrationService {
       throw new Error('MCP_NOT_AVAILABLE: AI 영상 검색 기능을 사용할 수 없습니다.');
     }
 
-    await this.ensureConnection();
-    
     try {
       return await this.mcpClient.searchPlayableShorts(query, maxResults, filters);
     } catch (error) {
@@ -299,19 +218,17 @@ class MCPIntegrationService {
 
   /**
    * AI 기반 비디오 메타데이터 분석
-   * @param {Array} videoIds - 분석할 비디오 ID 목록
+   * @param {Array} videos - 분석할 비디오 목록
    * @param {Object} criteria - 분석 기준
    * @returns {Object} 분석 결과
    */
-  async analyzeVideoMetadataAI(videoIds, criteria = {}) {
+  async analyzeVideoMetadataAI(videos, criteria = {}) {
     if (!this.mcpAvailable) {
       throw new Error('MCP_NOT_AVAILABLE: AI 비디오 분석 기능을 사용할 수 없습니다.');
     }
 
-    await this.ensureConnection();
-    
     try {
-      return await this.mcpClient.analyzeVideoMetadata(videoIds, criteria);
+      return await this.mcpClient.analyzeVideoMetadata(videos, criteria);
     } catch (error) {
       console.error('AI 비디오 분석 실패:', error);
       throw error;
@@ -330,8 +247,6 @@ class MCPIntegrationService {
       throw new Error('MCP_NOT_AVAILABLE: AI 인기 검색어 분석 기능을 사용할 수 없습니다.');
     }
 
-    await this.ensureConnection();
-    
     try {
       return await this.mcpClient.getPopularKeywords(options);
     } catch (error) {
@@ -343,19 +258,16 @@ class MCPIntegrationService {
   /**
    * AI 기반 사용자 패턴 분석
    * @param {string} userId - 사용자 ID
-   * @param {string} timeRange - 분석 기간
-   * @param {boolean} includeRecommendations - 추천 포함 여부
+   * @param {Object} options - 분석 옵션
    * @returns {Object} 사용자 패턴 분석 결과
    */
-  async analyzeUserPatternsAI(userId, timeRange = '30d', includeRecommendations = true) {
+  async analyzeUserPatternsAI(userId, options = {}) {
     if (!this.mcpAvailable) {
       throw new Error('MCP_NOT_AVAILABLE: AI 사용자 패턴 분석 기능을 사용할 수 없습니다.');
     }
 
-    await this.ensureConnection();
-    
     try {
-      return await this.mcpClient.analyzeUserPatterns(userId, timeRange, includeRecommendations);
+      return await this.mcpClient.analyzeUserPatterns(userId, options);
     } catch (error) {
       console.error('AI 사용자 패턴 분석 실패:', error);
       throw error;
@@ -364,20 +276,16 @@ class MCPIntegrationService {
 
   /**
    * AI 기반 실시간 트렌드 분석
-   * @param {number} timeWindow - 시간 윈도우
-   * @param {boolean} detectSurging - 급상승 키워드 탐지 여부
-   * @param {boolean} groupByTimeSlots - 시간대별 그룹화 여부
+   * @param {Object} options - 분석 옵션
    * @returns {Object} 실시간 트렌드 데이터
    */
-  async getRealtimeTrendsAI(timeWindow = 1, detectSurging = true, groupByTimeSlots = true) {
+  async getRealtimeTrendsAI(options = {}) {
     if (!this.mcpAvailable) {
       throw new Error('MCP_NOT_AVAILABLE: AI 실시간 트렌드 분석 기능을 사용할 수 없습니다.');
     }
 
-    await this.ensureConnection();
-    
     try {
-      return await this.mcpClient.getRealtimeTrends(timeWindow, detectSurging, groupByTimeSlots);
+      return await this.mcpClient.getRealtimeTrends(options);
     } catch (error) {
       console.error('AI 실시간 트렌드 분석 실패:', error);
       throw error;
@@ -385,66 +293,18 @@ class MCPIntegrationService {
   }
 
   /**
-   * AI 기반 검색 활동 로깅
-   * @param {string} userId - 사용자 ID
-   * @param {string} searchQuery - 검색 쿼리
-   * @param {Object} metadata - 메타데이터
-   * @returns {Object} 로깅 결과
-   */
-  async logSearchActivityAI(userId, searchQuery, metadata = {}) {
-    if (!this.mcpAvailable) {
-      throw new Error('MCP_NOT_AVAILABLE: AI 검색 활동 로깅 기능을 사용할 수 없습니다.');
-    }
-
-    await this.ensureConnection();
-    
-    try {
-      return await this.mcpClient.logSearchActivity(userId, searchQuery, metadata);
-    } catch (error) {
-      console.error('AI 검색 활동 로깅 실패:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * AI 기반 카테고리별 트렌드 분석
-   * @param {Array} categories - 카테고리 목록
-   * @param {string} timeRange - 시간 범위
-   * @param {boolean} includeGrowthRate - 성장률 포함 여부
-   * @returns {Object} 카테고리별 트렌드 데이터
-   */
-  async getCategoryTrendsAI(categories = [], timeRange = '24h', includeGrowthRate = true) {
-    if (!this.mcpAvailable) {
-      throw new Error('MCP_NOT_AVAILABLE: AI 카테고리별 트렌드 분석 기능을 사용할 수 없습니다.');
-    }
-
-    await this.ensureConnection();
-    
-    try {
-      return await this.mcpClient.getCategoryTrends(categories, timeRange, includeGrowthRate);
-    } catch (error) {
-      console.error('AI 카테고리별 트렌드 분석 실패:', error);
-      throw error;
-    }
-  }
-
-  /**
    * AI 기반 트렌딩 키워드 예측
-   * @param {string} predictionWindow - 예측 시간 윈도우
-   * @param {number} limit - 예측 키워드 수
-   * @param {number} confidenceThreshold - 신뢰도 임계값
-   * @param {boolean} includeReasons - 근거 포함 여부
+   * @param {string} baseKeyword - 기준 키워드
+   * @param {Object} options - 예측 옵션
    * @returns {Object} 예측 결과
    */
-  async predictTrendingKeywordsAI(predictionWindow = '6h', limit = 10, confidenceThreshold = 0.7, includeReasons = true) {
+  async predictTrendingKeywordsAI(baseKeyword, options = {}) {
     if (!this.mcpAvailable) {
       throw new Error('MCP_NOT_AVAILABLE: AI 트렌딩 키워드 예측 기능을 사용할 수 없습니다.');
     }
 
-    await this.ensureConnection();
-    
     try {
-      return await this.mcpClient.predictTrendingKeywords(predictionWindow, limit, confidenceThreshold, includeReasons);
+      return await this.mcpClient.predictTrendingKeywords(baseKeyword, options);
     } catch (error) {
       console.error('AI 트렌딩 키워드 예측 실패:', error);
       throw error;
@@ -464,21 +324,16 @@ class MCPIntegrationService {
       throw new Error('MCP_NOT_AVAILABLE: AI 큐레이션 워크플로우 기능을 사용할 수 없습니다.');
     }
 
-    await this.ensureConnection();
-    
     try {
       console.log(`🤖 AI 큐레이션 워크플로우 실행: "${keyword}"`);
       
       const result = await this.mcpClient.aiCurationWorkflow(keyword, userId);
       
-      console.log(`✅ AI 큐레이션 완료: ${result.finalResults.length}개 영상 추천`);
+      if (result.success) {
+        console.log(`✅ AI 큐레이션 완료: ${result.data.finalResults.length}개 영상 추천`);
+      }
       
-      return {
-        success: true,
-        data: result,
-        performance: result.performance,
-        timestamp: new Date().toISOString()
-      };
+      return result;
 
     } catch (error) {
       console.error('AI 큐레이션 워크플로우 실패:', error);

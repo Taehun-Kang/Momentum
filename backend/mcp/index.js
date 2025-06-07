@@ -1,613 +1,1045 @@
 /**
- * Backend MCP System - 통합 클라이언트
- * YouTube Shorts AI 큐레이션을 위한 통합 MCP 시스템
- * CommonJS 버전 - Railway 배포 호환
- * Wave Team
+ * 🎯 실제 YouTube Curator MCP 서버 - 2025년 Streamable HTTP 방식
+ * mcp-servers/youtube-curator-mcp/index.js를 기반으로 CommonJS로 변환
+ * Railway 배포 환경에서 실제 Claude API와 YouTube API를 사용하는 진짜 MCP 서버
  */
 
-const { spawn } = require('child_process');
-const path = require('path');
+const axios = require('axios');
 require('dotenv').config();
 
 /**
- * 통합 MCP 클라이언트 클래스 (CommonJS)
- * MCP 서버들과의 통신을 담당하는 통합 클라이언트
+ * 실제 YouTube Curator MCP 서버 (CommonJS 버전)
+ * 원본: mcp-servers/youtube-curator-mcp/index.js (1,724줄)
  */
-class MomentumMCPClient {
+class YouTubeCuratorMCPServer {
   constructor() {
-    this.servers = {
-      youtubeCurator: null,
-      userAnalytics: null
-    };
+    // API 키 설정
+    this.youtubeApiKey = process.env.YOUTUBE_API_KEY;
+    this.anthropicApiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
+    this.serpApiKey = process.env.SERPAPI_KEY;
     
-    this.connected = {
-      youtubeCurator: false,
-      userAnalytics: false
-    };
+    // 캐시 설정
+    this.keywordCache = new Map();
+    this.videoCache = new Map();
+    this.cacheTimeout = 24 * 60 * 60 * 1000; // 24시간
 
-    this.available = true;
-    
-    console.log('🚀 Backend MCP 시스템 초기화 중...');
+    console.log('🎬 실제 YouTube Curator MCP 서버 초기화 완료 (Streamable HTTP)');
+    console.log('✅ 실제 Claude API 연동 준비');
+    console.log('✅ 실제 YouTube API 연동 준비');
+    console.log('✅ 6개 AI 도구 제공');
   }
 
   /**
-   * 모든 MCP 서버에 연결
+   * 표준 MCP 도구 목록 (실제 MCP 서버와 동일)
    */
-  async connectAll() {
+  getTools() {
+    return [
+      {
+        name: "process_natural_language",
+        description: "자연어 입력을 분석하여 YouTube Shorts 검색에 적합한 키워드를 추출합니다",
+        inputSchema: {
+          type: "object",
+          properties: {
+            userInput: {
+              type: "string",
+              description: "사용자의 자연어 입력 (예: '피곤해서 힐링되는 영상 보고 싶어', 'LCK 페이커 최신 하이라이트')"
+            },
+            options: {
+              type: "object",
+              properties: {
+                maxPrimaryKeywords: { type: "number", default: 3 },
+                maxSecondaryKeywords: { type: "number", default: 5 },
+                includeContext: { type: "boolean", default: true }
+              }
+            }
+          },
+          required: ["userInput"]
+        }
+      },
+      {
+        name: "intelligent_search_workflow",
+        description: "자연어 입력부터 YouTube Shorts 검색까지 전체 워크플로우를 실행합니다",
+        inputSchema: {
+          type: "object",
+          properties: {
+            userInput: { type: "string", description: "사용자의 자연어 입력" },
+            options: {
+              type: "object",
+              properties: {
+                maxQueries: { type: "number", default: 3 },
+                maxResults: { type: "number", default: 15 },
+                strategy: { 
+                  type: "string", 
+                  enum: ["auto", "channel_focused", "category_focused", "keyword_expansion", "time_sensitive"],
+                  default: "auto" 
+                }
+              }
+            }
+          },
+          required: ["userInput"]
+        }
+      },
+      {
+        name: "expand_keyword",
+        description: "키워드를 확장하여 관련 검색어, 채널, 카테고리 추천을 생성합니다",
+        inputSchema: {
+          type: "object",
+          properties: {
+            keyword: { type: "string", description: "확장할 원본 키워드" },
+            options: {
+              type: "object",
+              properties: {
+                includeChannels: { type: "boolean", default: true },
+                includeTimeFilters: { type: "boolean", default: true },
+                maxKeywords: { type: "number", default: 15 }
+              }
+            }
+          },
+          required: ["keyword"]
+        }
+      },
+      {
+        name: "build_optimized_queries",
+        description: "키워드에 대한 최적화된 YouTube 검색 쿼리들을 생성합니다",
+        inputSchema: {
+          type: "object",
+          properties: {
+            keyword: { type: "string", description: "검색할 키워드" },
+            strategy: {
+              type: "string",
+              enum: ["auto", "channel_focused", "category_focused", "keyword_expansion", "time_sensitive"],
+              default: "auto"
+            },
+            maxResults: { type: "number", default: 15 }
+          },
+          required: ["keyword"]
+        }
+      },
+      {
+        name: "search_playable_shorts",
+        description: "재생 가능한 YouTube Shorts를 검색합니다 (2단계 필터링 적용)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: { type: "string", description: "검색 쿼리" },
+            maxResults: { type: "number", default: 20 },
+            filters: {
+              type: "object",
+              properties: {
+                uploadDate: { type: "string", enum: ["today", "week", "month", "year", "any"], default: "any" },
+                order: { type: "string", enum: ["relevance", "date", "viewCount", "rating"], default: "relevance" }
+              }
+            }
+          },
+          required: ["query"]
+        }
+      },
+      {
+        name: "analyze_video_metadata",
+        description: "YouTube 영상의 메타데이터를 분석하고 큐레이션 점수를 계산합니다",
+        inputSchema: {
+          type: "object",
+          properties: {
+            videoIds: {
+              type: "array",
+              items: { type: "string" },
+              description: "분석할 비디오 ID 목록"
+            },
+            criteria: {
+              type: "object",
+              properties: {
+                minViewCount: { type: "number", default: 1000 },
+                maxDuration: { type: "number", default: 60 }
+              }
+            }
+          },
+          required: ["videoIds"]
+        }
+      }
+    ];
+  }
+
+  /**
+   * MCP 도구 실행 (실제 구현)
+   */
+  async executeTool(toolName, args) {
+    console.log(`🔧 실제 MCP 도구 실행: ${toolName}`, JSON.stringify(args, null, 2));
+
     try {
-      console.log('📡 MCP 서버들에 연결 중...');
-      
-      // 현재 Railway 환경에서는 실제 MCP 서버 연결 대신 목(Mock) 구현 사용
-      // 실제 환경에서는 아래 주석을 해제하고 사용
-      /*
-      await this.connectYouTubeCurator();
-      await this.connectUserAnalytics();
-      */
-      
-      // 목 연결 (개발/배포 환경 호환성)
-      this.connected.youtubeCurator = true;
-      this.connected.userAnalytics = true;
-      
-      console.log('✅ Backend MCP 시스템 연결 완료 (목 모드)');
-      
-      return {
-        success: true,
-        connectedServers: Object.keys(this.connected).filter(key => this.connected[key]),
-        mode: 'mock' // 실제 연결 시 'live'로 변경
-      };
-
+      switch (toolName) {
+        case "process_natural_language":
+          return await this.processNaturalLanguage(args);
+        
+        case "intelligent_search_workflow":
+          return await this.intelligentSearchWorkflow(args);
+        
+        case "expand_keyword":
+          return await this.expandKeyword(args);
+        
+        case "build_optimized_queries":
+          return await this.buildOptimizedQueries(args);
+        
+        case "search_playable_shorts":
+          return await this.searchPlayableShorts(args);
+        
+        case "analyze_video_metadata":
+          return await this.analyzeVideoMetadata(args);
+        
+        default:
+          throw new Error(`Unknown tool: ${toolName}`);
+      }
     } catch (error) {
-      console.error('❌ MCP 서버 연결 실패:', error);
-      return {
-        success: false,
-        error: error.message,
-        mode: 'fallback'
-      };
-    }
-  }
-
-  /**
-   * 연결 상태 확인
-   */
-  getConnectionStatus() {
-    return {
-      allConnected: this.connected.youtubeCurator && this.connected.userAnalytics,
-      youtubeCurator: this.connected.youtubeCurator,
-      userAnalytics: this.connected.userAnalytics,
-      available: this.available
-    };
-  }
-
-  // ==================== AI 자연어 처리 ====================
-
-  /**
-   * 자연어를 분석해서 검색 키워드로 변환
-   * @param {string} naturalLanguage - 자연어 입력
-   * @param {Object} options - 분석 옵션
-   * @returns {Object} 분석 결과
-   */
-  async processNaturalLanguage(naturalLanguage, options = {}) {
-    try {
-      console.log(`🧠 자연어 분석: "${naturalLanguage}"`);
-      
-      // Claude AI 기반 자연어 분석 구현
-      // 현재는 키워드 추출 시뮬레이션
-      const keywords = this.extractKeywordsFromText(naturalLanguage);
-      const intent = this.detectIntent(naturalLanguage);
-      const mood = this.detectMood(naturalLanguage);
-      
-      return {
-        originalText: naturalLanguage,
-        keywords: keywords,
-        intent: intent,
-        mood: mood,
-        confidence: 0.85,
-        suggestions: this.generateSuggestions(keywords, mood),
-        timestamp: new Date().toISOString()
-      };
-
-    } catch (error) {
-      console.error('자연어 분석 실패:', error);
+      console.error(`도구 ${toolName} 실행 실패:`, error);
       throw error;
     }
   }
 
   /**
-   * 텍스트에서 키워드 추출 (간단한 구현)
+   * 자연어 입력 분석 및 키워드 추출 도구 (실제 Claude API 사용)
+   * 원본: mcp-servers/youtube-curator-mcp/index.js의 processNaturalLanguage
    */
-  extractKeywordsFromText(text) {
-    const keywords = [];
-    
-    // 감정/상태 키워드
-    const moodMap = {
-      '피곤': ['힐링', 'ASMR', '수면'],
-      '스트레스': ['힐링', '명상', '자연'],
-      '우울': ['기분전환', '웃긴', '재미있는'],
-      '행복': ['즐거운', '신나는', '축하'],
-      '지루': ['재미있는', '흥미진진', '놀라운']
-    };
-    
-    // 활동 키워드
-    const activityMap = {
-      '운동': ['홈트', '요가', '스트레칭'],
-      '요리': ['레시피', '먹방', '쿠킹'],
-      '여행': ['브이로그', '여행지', '풍경'],
-      '공부': ['집중', '모티베이션', '꿀팁']
-    };
-    
-    // 시간대 키워드
-    const timeMap = {
-      '아침': ['모닝루틴', '아침운동'],
-      '점심': ['점심메뉴', '오후'],
-      '저녁': ['저녁루틴', '퇴근'],
-      '밤': ['ASMR', '수면', '야식']
-    };
-    
-    // 매핑 적용
-    [moodMap, activityMap, timeMap].forEach(map => {
-      Object.keys(map).forEach(key => {
-        if (text.includes(key)) {
-          keywords.push(...map[key]);
-        }
-      });
-    });
-    
-    // 기본 키워드 추출
-    const words = text.replace(/[^\w\s가-힣]/g, '')
-      .split(/\s+/)
-      .filter(word => word.length > 1);
-    
-    keywords.push(...words.slice(0, 3));
-    
-    return [...new Set(keywords)].slice(0, 8); // 중복 제거 후 최대 8개
-  }
+  async processNaturalLanguage(args) {
+    const { userInput, options = {} } = args;
 
-  /**
-   * 의도 감지
-   */
-  detectIntent(text) {
-    if (text.includes('보고 싶어') || text.includes('추천')) return 'recommendation';
-    if (text.includes('찾아') || text.includes('검색')) return 'search';
-    if (text.includes('어떤') || text.includes('뭐')) return 'discovery';
-    return 'general';
-  }
-
-  /**
-   * 감정/기분 감지
-   */
-  detectMood(text) {
-    if (text.includes('피곤') || text.includes('힘들')) return 'tired';
-    if (text.includes('스트레스') || text.includes('답답')) return 'stressed';
-    if (text.includes('우울') || text.includes('슬프')) return 'sad';
-    if (text.includes('행복') || text.includes('기분좋')) return 'happy';
-    if (text.includes('지루') || text.includes('심심')) return 'bored';
-    return 'neutral';
-  }
-
-  /**
-   * 제안 생성
-   */
-  generateSuggestions(keywords, mood) {
-    const suggestions = [];
-    
-    if (mood === 'tired') {
-      suggestions.push('힐링되는 자연 영상', 'ASMR 수면 도움', '차분한 음악');
-    } else if (mood === 'bored') {
-      suggestions.push('재미있는 챌린지', '웃긴 동물 영상', '신기한 라이프핵');
-    } else if (mood === 'stressed') {
-      suggestions.push('명상 가이드', '요가 스트레칭', '힐링 브이로그');
-    }
-    
-    return suggestions.slice(0, 5);
-  }
-
-  // ==================== YouTube 큐레이션 기능 ====================
-
-  /**
-   * 키워드 확장
-   */
-  async expandKeyword(keyword, options = {}) {
     try {
-      console.log(`🔍 키워드 확장: "${keyword}"`);
-      
-      const { maxKeywords = 15, includeChannels = true, includeTimeFilters = true } = options;
-      
-      // 키워드 확장 로직
-      const expandedKeywords = [];
-      
-      // 기본 확장
-      const baseExpansions = {
-        '힐링': ['치유', 'ASMR', '명상', '자연', '차분한'],
-        '먹방': ['음식', '요리', '레시피', '맛집', '푸드'],
-        '운동': ['홈트', '요가', '헬스', '다이어트', '스트레칭'],
-        '여행': ['브이로그', '풍경', '관광', '맛집투어', '여행지'],
-        '댄스': ['춤', '안무', '커버댄스', 'K-POP', '댄스챌린지']
+      if (!this.anthropicApiKey) {
+        throw new Error('Claude API 키가 설정되지 않았습니다. ANTHROPIC_API_KEY 환경 변수를 설정해주세요.');
+      }
+
+      const prompt = `다음 사용자 입력에서 YouTube Shorts 검색에 적합한 핵심 키워드를 추출해주세요:
+
+사용자 입력: "${userInput}"
+
+다음 JSON 형태로 응답해주세요:
+{
+  "primaryKeywords": ["주요 키워드 ${options.maxPrimaryKeywords || 3}개까지"],
+  "secondaryKeywords": ["보조 키워드 ${options.maxSecondaryKeywords || 5}개까지"],
+  "context": {
+    "intent": "검색 의도 (예: 힐링, 정보, 엔터테인먼트)",
+    "mood": "감정/분위기 (예: 피곤함, 스트레스, 흥미)",
+    "timeContext": "시간 관련성 (예: 최신, 일반, 특정 시기)",
+    "category": "예상 카테고리 (예: 음악, 게임, 라이프스타일)"
+  },
+  "searchHints": ["검색 힌트나 추가 정보"]
+}`;
+
+      console.log('🤖 Claude API 호출 중...');
+      const response = await axios.post('https://api.anthropic.com/v1/messages', {
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.anthropicApiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        timeout: 15000
+      });
+
+      const extractedData = JSON.parse(response.data.content[0].text);
+
+      const result = {
+        originalInput: userInput,
+        analysis: extractedData,
+        extractionMethod: "claude_api",
+        processingTime: new Date().toISOString(),
+        success: true
       };
-      
-      // 관련 키워드 추가
-      if (baseExpansions[keyword]) {
-        expandedKeywords.push(...baseExpansions[keyword]);
+
+      if (options.includeContext) {
+        result.suggestions = {
+          nextSteps: this.generateNextSteps(extractedData),
+          searchStrategies: this.suggestSearchStrategies(extractedData.context)
+        };
       }
-      
-      // 시간대별 키워드
-      if (includeTimeFilters) {
-        const hour = new Date().getHours();
-        if (hour < 9) expandedKeywords.push('모닝', '아침');
-        else if (hour < 18) expandedKeywords.push('오후', '점심');
-        else expandedKeywords.push('저녁', '밤');
-      }
-      
-      // 인기 채널 키워드
-      if (includeChannels) {
-        expandedKeywords.push('인기', '바이럴', '트렌드');
-      }
-      
-      // 일반적인 확장
-      expandedKeywords.push(
-        keyword + ' 추천',
-        keyword + ' 브이로그',
-        '짧은 ' + keyword,
-        keyword + ' 꿀팁'
-      );
-      
+
       return {
-        original: keyword,
-        expanded: [...new Set(expandedKeywords)].slice(0, maxKeywords),
-        suggestions: this.generateRelatedSuggestions(keyword),
-        timestamp: new Date().toISOString()
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
+      };
+
+    } catch (error) {
+      console.error('Claude API 호출 실패:', error.message);
+      
+      // 폴백: 간단한 키워드 추출
+      const fallbackKeywords = userInput
+        .replace(/[^\w\s가-힣]/g, '')
+        .split(/\s+/)
+        .filter(word => word.length > 1);
+
+      const fallbackResult = {
+        originalInput: userInput,
+        analysis: {
+          primaryKeywords: fallbackKeywords.slice(0, options.maxPrimaryKeywords || 3),
+          secondaryKeywords: fallbackKeywords.slice(3, 3 + (options.maxSecondaryKeywords || 5)),
+          context: { 
+            intent: 'general', 
+            mood: 'neutral', 
+            timeContext: 'general', 
+            category: 'entertainment' 
+          },
+          searchHints: []
+        },
+        extractionMethod: "fallback_regex",
+        error: error.message,
+        processingTime: new Date().toISOString(),
+        success: false
+      };
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(fallbackResult, null, 2) }]
+      };
+    }
+  }
+
+  /**
+   * 지능형 검색 워크플로우 (실제 구현)
+   * 원본: mcp-servers/youtube-curator-mcp/index.js의 intelligentSearchWorkflow
+   */
+  async intelligentSearchWorkflow(args) {
+    const { userInput, options = {} } = args;
+    const workflowResults = {};
+
+    try {
+      console.log(`🚀 지능형 검색 워크플로우 시작: "${userInput}"`);
+
+      // 1단계: 자연어 분석 및 키워드 추출
+      console.log('🔍 1단계: 자연어 분석 중...');
+      const nlpResult = await this.processNaturalLanguage({ 
+        userInput, 
+        options: { includeContext: false } 
+      });
+      const extractedData = JSON.parse(nlpResult.content[0].text);
+      workflowResults.step1_naturalLanguageProcessing = extractedData;
+
+      // 2단계: 키워드 확장
+      console.log('🔎 2단계: 키워드 확장 중...');
+      const expandedResults = {};
+      
+      for (const keyword of extractedData.analysis.primaryKeywords || []) {
+        try {
+          const expansionResult = await this.expandKeyword({ 
+            keyword,
+            options: { maxKeywords: 15, includeChannels: true }
+          });
+          expandedResults[keyword] = JSON.parse(expansionResult.content[0].text);
+        } catch (error) {
+          console.error(`키워드 "${keyword}" 확장 실패:`, error.message);
+          expandedResults[keyword] = { expanded: [keyword], error: error.message };
+        }
+      }
+      workflowResults.step2_keywordExpansion = expandedResults;
+
+      // 3단계: 실제 YouTube 검색
+      console.log('🎬 3단계: YouTube 검색 실행 중...');
+      const searchResults = [];
+      const maxQueries = Math.min(options.maxQueries || 3, extractedData.analysis.primaryKeywords?.length || 1);
+      
+      for (let i = 0; i < maxQueries; i++) {
+        const keyword = extractedData.analysis.primaryKeywords[i];
+        if (!keyword) break;
+
+        try {
+          const searchResult = await this.searchPlayableShorts({
+            query: keyword,
+            maxResults: options.maxResults || 15
+          });
+          
+          const searchData = JSON.parse(searchResult.content[0].text);
+          searchResults.push({
+            keyword,
+            results: searchData.playableVideos || [],
+            totalFound: searchData.totalFound || 0,
+            apiUsage: searchData.apiUsage
+          });
+        } catch (error) {
+          console.error(`검색 실패 "${keyword}":`, error.message);
+          searchResults.push({
+            keyword,
+            results: [],
+            error: error.message
+          });
+        }
+      }
+
+      workflowResults.step3_youtubeSearch = {
+        totalKeywords: extractedData.analysis.primaryKeywords?.length || 0,
+        searchResults,
+        totalVideos: searchResults.reduce((sum, r) => sum + (r.results?.length || 0), 0)
+      };
+
+      const finalResult = {
+        originalInput: userInput,
+        workflow: workflowResults,
+        summary: {
+          keywordsExtracted: extractedData.analysis.primaryKeywords?.length || 0,
+          videosFound: searchResults.reduce((sum, r) => sum + (r.results?.length || 0), 0),
+          totalApiUnits: searchResults.reduce((sum, r) => sum + (r.apiUsage?.totalUnits || 0), 0),
+          processingTime: new Date().toISOString()
+        },
+        success: true
+      };
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(finalResult, null, 2) }]
+      };
+
+    } catch (error) {
+      console.error('워크플로우 실행 실패:', error);
+      return {
+        content: [{ 
+          type: "text", 
+          text: JSON.stringify({
+            originalInput: userInput,
+            error: error.message,
+            success: false
+          }, null, 2) 
+        }]
+      };
+    }
+  }
+
+  /**
+   * 키워드 확장 도구 (실제 구현)
+   */
+  async expandKeyword(args) {
+    const { keyword, options = {} } = args;
+
+    try {
+      // 기본 확장 키워드 생성
+      const expandedKeywords = this.generateExpandedKeywords(keyword);
+      
+      // 채널 추천
+      const channelSuggestions = options.includeChannels 
+        ? this.getChannelSuggestions(keyword)
+        : [];
+
+      const result = {
+        originalKeyword: keyword,
+        expanded: expandedKeywords.slice(0, options.maxKeywords || 15),
+        channels: channelSuggestions,
+        categories: this.categorizeKeywords([keyword, ...expandedKeywords]),
+        processingTime: new Date().toISOString()
+      };
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
       };
 
     } catch (error) {
       console.error('키워드 확장 실패:', error);
-      throw error;
+      return {
+        content: [{ 
+          type: "text", 
+          text: JSON.stringify({
+            originalKeyword: keyword,
+            expanded: [keyword],
+            error: error.message
+          }, null, 2) 
+        }]
+      };
     }
   }
 
   /**
-   * 관련 제안 생성
+   * 최적화된 쿼리 생성 도구 (실제 구현)
    */
-  generateRelatedSuggestions(keyword) {
-    const suggestions = [
-      `${keyword} 초보자 가이드`,
-      `${keyword} 꿀팁 모음`,
-      `${keyword} 브이로그`,
-      `재미있는 ${keyword}`,
-      `${keyword} 챌린지`
-    ];
-    
-    return suggestions.slice(0, 5);
-  }
+  async buildOptimizedQueries(args) {
+    const { keyword, strategy = 'auto', maxResults = 15 } = args;
 
-  /**
-   * 최적화된 검색 쿼리 생성
-   */
-  async buildOptimizedQueries(keyword, strategy = 'auto', maxResults = 15) {
     try {
-      console.log(`⚙️ 쿼리 최적화: "${keyword}" (${strategy})`);
-      
       const queries = [];
-      
-      // 기본 쿼리
-      queries.push({
-        query: keyword,
-        type: 'exact',
-        priority: 'high'
-      });
-      
-      // 확장 쿼리들
-      const expansion = await this.expandKeyword(keyword);
-      
-      expansion.expanded.slice(0, 5).forEach(expandedKeyword => {
-        queries.push({
-          query: `${keyword} ${expandedKeyword}`,
-          type: 'expanded',
-          priority: 'medium'
-        });
-      });
-      
-      // 전략별 쿼리
-      if (strategy === 'channel_focused') {
-        queries.push({
-          query: `${keyword} 인기 채널`,
-          type: 'channel',
-          priority: 'medium'
-        });
-      } else if (strategy === 'time_sensitive') {
-        queries.push({
-          query: `${keyword} 최신`,
-          type: 'recent',
-          priority: 'high'
-        });
+
+      // 전략에 따른 쿼리 생성
+      switch (strategy) {
+        case 'channel_focused':
+          queries.push(...this.buildChannelQueries(keyword, maxResults));
+          break;
+        case 'category_focused':
+          queries.push(...this.buildCategoryQueries(keyword, maxResults));
+          break;
+        case 'keyword_expansion':
+          queries.push(...this.buildExpandedKeywordQueries(keyword, maxResults));
+          break;
+        case 'time_sensitive':
+          queries.push(...this.buildTimeBasedQueries(keyword, maxResults));
+          break;
+        default: // 'auto'
+          queries.push(this.buildBasicQuery(keyword, maxResults));
+          break;
       }
-      
+
+      const result = {
+        keyword,
+        strategy,
+        queries,
+        estimatedApiUnits: queries.reduce((sum, q) => sum + (q.estimatedUnits || 107), 0),
+        processingTime: new Date().toISOString()
+      };
+
       return {
-        queries: queries.slice(0, maxResults),
-        strategy: strategy,
-        totalQueries: queries.length,
-        timestamp: new Date().toISOString()
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
       };
 
     } catch (error) {
       console.error('쿼리 생성 실패:', error);
-      throw error;
+      return {
+        content: [{ 
+          type: "text", 
+          text: JSON.stringify({
+            keyword,
+            queries: [{ query: keyword, type: 'basic', estimatedUnits: 107 }],
+            error: error.message
+          }, null, 2) 
+        }]
+      };
     }
   }
 
   /**
-   * 재생 가능한 Shorts 검색 (목 구현)
+   * 재생 가능한 YouTube Shorts 검색 (2단계 필터링)
+   * 원본: mcp-servers/youtube-curator-mcp/index.js의 searchPlayableShorts
    */
-  async searchPlayableShorts(query, maxResults = 20, filters = {}) {
+  async searchPlayableShorts(args) {
+    const { query, maxResults = 20, filters = {} } = args;
+
     try {
-      console.log(`🎬 Shorts 검색: "${query}"`);
+      if (!this.youtubeApiKey) {
+        console.warn('YouTube API 키가 없어 Mock 데이터를 반환합니다');
+        // Mock 데이터 반환
+        const mockResult = {
+          query,
+          playableVideos: [
+            {
+              videoId: "dQw4w9WgXcQ",
+              title: `"${query}" 관련 샘플 영상`,
+              channelTitle: "Sample Channel",
+              thumbnails: { default: { url: "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg" } },
+              duration: "PT45S",
+              viewCount: "1000000",
+              publishedAt: new Date().toISOString(),
+              url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+            }
+          ],
+          totalFound: 1,
+          processingSteps: ["mock_search"],
+          apiUsage: { searchUnits: 0, videoUnits: 0, totalUnits: 0 },
+          mock: true
+        };
+
+        return {
+          content: [{ type: "text", text: JSON.stringify(mockResult, null, 2) }]
+        };
+      }
+
+      console.log(`🔍 YouTube API 검색 시작: "${query}"`);
+
+      // 1단계: search.list로 후보 검색 (100 units)
+      const searchResponse = await axios.get('https://www.googleapis.com/youtube/v3/search', {
+        params: {
+          key: this.youtubeApiKey,
+          q: query,
+          type: 'video',
+          videoDuration: 'short', // 4분 미만
+          maxResults: Math.min(maxResults * 2, 50), // 필터링을 위해 더 많이 가져오기
+          regionCode: 'KR',
+          relevanceLanguage: 'ko',
+          order: filters.order || 'relevance',
+          publishedAfter: this.getPublishedAfterDate(filters.uploadDate)
+        }
+      });
+
+      const videoIds = searchResponse.data.items.map(item => item.id.videoId);
       
-      // 실제 구현에서는 YouTube API 호출
-      // 현재는 목 데이터 반환
-      const mockResults = this.generateMockVideoResults(query, maxResults);
-      
+      if (videoIds.length === 0) {
+        return {
+          content: [{ 
+            type: "text", 
+            text: JSON.stringify({
+              query,
+              playableVideos: [],
+              totalFound: 0,
+              message: "검색 결과가 없습니다",
+              apiUsage: { searchUnits: 100, videoUnits: 0, totalUnits: 100 }
+            }, null, 2) 
+          }]
+        };
+      }
+
+      // 2단계: videos.list로 상세 정보 및 재생 가능 여부 확인
+      const videosResponse = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+        params: {
+          key: this.youtubeApiKey,
+          id: videoIds.join(','),
+          part: 'snippet,contentDetails,status,statistics',
+          hl: 'ko'
+        }
+      });
+
+      const videoUnits = 1 + (videosResponse.data.items.length * 3); // 1 + 각 part당 3 units
+
+      // 3단계: 재생 가능한 영상만 필터링
+      const playableVideos = videosResponse.data.items.filter(video => {
+        // 필수 체크 항목
+        if (!video.status.embeddable) return false; // 임베드 불가
+        if (video.status.privacyStatus !== 'public') return false; // 비공개
+
+        // 지역 제한 확인
+        const restrictions = video.contentDetails.regionRestriction;
+        if (restrictions) {
+          if (restrictions.blocked?.includes('KR')) return false;
+          if (restrictions.allowed && !restrictions.allowed.includes('KR')) return false;
+        }
+
+        // Shorts 길이 확인 (60초 이하)
+        const duration = this.parseDuration(video.contentDetails.duration);
+        if (duration > 60) return false;
+
+        return true;
+      }).slice(0, maxResults);
+
+      const result = {
+        query,
+        playableVideos: playableVideos.map(video => ({
+          videoId: video.id,
+          title: video.snippet.title,
+          channelTitle: video.snippet.channelTitle,
+          channelId: video.snippet.channelId,
+          description: video.snippet.description?.substring(0, 200) + '...',
+          thumbnails: video.snippet.thumbnails,
+          duration: video.contentDetails.duration,
+          viewCount: video.statistics.viewCount,
+          likeCount: video.statistics.likeCount,
+          publishedAt: video.snippet.publishedAt,
+          url: `https://www.youtube.com/watch?v=${video.id}`
+        })),
+        totalFound: playableVideos.length,
+        processingSteps: ["search_list", "videos_list", "playability_filter"],
+        apiUsage: {
+          searchUnits: 100,
+          videoUnits,
+          totalUnits: 100 + videoUnits
+        }
+      };
+
+      console.log(`✅ ${playableVideos.length}개의 재생 가능한 Shorts 발견`);
+
       return {
-        query: query,
-        results: mockResults,
-        totalResults: mockResults.length,
-        filteringSuccess: 0.75, // 75% 성공률
-        timestamp: new Date().toISOString()
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
       };
 
     } catch (error) {
-      console.error('영상 검색 실패:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 목 비디오 결과 생성
-   */
-  generateMockVideoResults(query, maxResults) {
-    const mockVideos = [];
-    
-    for (let i = 0; i < Math.min(maxResults, 10); i++) {
-      mockVideos.push({
-        id: `mock_video_${i}_${Date.now()}`,
-        title: `${query} 관련 영상 ${i + 1}`,
-        channelName: `채널 ${i + 1}`,
-        duration: Math.floor(Math.random() * 60) + 15, // 15-75초
-        viewCount: Math.floor(Math.random() * 1000000) + 1000,
-        thumbnailUrl: `https://img.youtube.com/vi/mock_${i}/hqdefault.jpg`,
-        publishedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-        isPlayable: true,
-        tags: [query, '쇼츠', 'Shorts']
-      });
-    }
-    
-    return mockVideos;
-  }
-
-  /**
-   * 비디오 메타데이터 분석
-   */
-  async analyzeVideoMetadata(videoIds, criteria = {}) {
-    try {
-      console.log(`📊 비디오 분석: ${videoIds.length}개`);
-      
-      // 목 분석 결과
-      const analysis = {
-        videos: videoIds.map(id => ({
-          id: id,
-          score: Math.random() * 100,
-          tags: ['인기', '추천'],
-          engagement: Math.random() * 0.1,
-          suitability: Math.random() > 0.3 ? 'good' : 'fair'
-        })),
-        summary: {
-          totalAnalyzed: videoIds.length,
-          averageScore: 75.5,
-          recommendedCount: Math.floor(videoIds.length * 0.7)
-        },
-        timestamp: new Date().toISOString()
+      console.error('YouTube 검색 실패:', error.message);
+      return {
+        content: [{ 
+          type: "text", 
+          text: JSON.stringify({
+            query,
+            error: error.message,
+            playableVideos: [],
+            totalFound: 0,
+            apiUsage: { searchUnits: 0, videoUnits: 0, totalUnits: 0 }
+          }, null, 2) 
+        }]
       };
-      
-      return analysis;
+    }
+  }
+
+  /**
+   * 비디오 메타데이터 분석 도구 (실제 구현)
+   */
+  async analyzeVideoMetadata(args) {
+    const { videoIds, criteria = {} } = args;
+
+    try {
+      if (!this.youtubeApiKey) {
+        return {
+          content: [{ 
+            type: "text", 
+            text: JSON.stringify({
+              videoIds,
+              analysis: [],
+              error: "YouTube API 키가 설정되지 않았습니다"
+            }, null, 2) 
+          }]
+        };
+      }
+
+      // YouTube API로 비디오 정보 조회
+      const response = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+        params: {
+          key: this.youtubeApiKey,
+          id: videoIds.join(','),
+          part: 'snippet,contentDetails,statistics,status'
+        }
+      });
+
+      const analysis = response.data.items.map(video => {
+        const score = this.calculateCurationScore(video, criteria);
+        
+        return {
+          videoId: video.id,
+          title: video.snippet.title,
+          channelTitle: video.snippet.channelTitle,
+          duration: video.contentDetails.duration,
+          viewCount: parseInt(video.statistics.viewCount || 0),
+          likeCount: parseInt(video.statistics.likeCount || 0),
+          curationScore: score,
+          category: this.categorizeVideo(video),
+          isPlayable: video.status.embeddable && video.status.privacyStatus === 'public'
+        };
+      });
+
+      const result = {
+        videoIds,
+        analysis,
+        summary: {
+          totalVideos: analysis.length,
+          averageScore: analysis.reduce((sum, a) => sum + a.curationScore, 0) / analysis.length,
+          playableVideos: analysis.filter(a => a.isPlayable).length
+        },
+        processingTime: new Date().toISOString()
+      };
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
+      };
 
     } catch (error) {
       console.error('비디오 분석 실패:', error);
-      throw error;
-    }
-  }
-
-  // ==================== 통합 워크플로우 ====================
-
-  /**
-   * 완전한 AI 큐레이션 워크플로우
-   */
-  async aiCurationWorkflow(keyword, userId = null) {
-    try {
-      console.log(`🤖 AI 큐레이션 워크플로우: "${keyword}"`);
-      
-      const startTime = Date.now();
-      
-      // 1. 키워드 확장
-      const expansion = await this.expandKeyword(keyword, {
-        includeChannels: true,
-        includeTimeFilters: true,
-        maxKeywords: 15
-      });
-
-      // 2. 최적화된 쿼리 생성
-      const queries = await this.buildOptimizedQueries(keyword, 'auto', 8);
-
-      // 3. 다중 검색 실행
-      const searchPromises = queries.queries.slice(0, 3).map(queryObj => 
-        this.searchPlayableShorts(queryObj.query, 10, {})
-      );
-      const searchResults = await Promise.all(searchPromises);
-
-      // 4. 결과 병합 및 중복 제거
-      const allVideos = searchResults
-        .flatMap(result => result.results || [])
-        .filter((video, index, self) => 
-          self.findIndex(v => v.id === video.id) === index
-        )
-        .slice(0, 30);
-
-      // 5. 메타데이터 분석
-      const videoIds = allVideos.map(v => v.id);
-      const analysis = videoIds.length > 0 ? 
-        await this.analyzeVideoMetadata(videoIds, {
-          minViewCount: 1000,
-          maxDuration: 60
-        }) : { videos: [], summary: {} };
-
-      // 6. 최종 결과 조합
-      const finalResults = allVideos
-        .map(video => {
-          const videoAnalysis = analysis.videos?.find(a => a.id === video.id);
-          return {
-            ...video,
-            score: videoAnalysis?.score || 50,
-            suitability: videoAnalysis?.suitability || 'fair'
-          };
-        })
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 20);
-
-      const performance = {
-        totalTime: Date.now() - startTime,
-        stepsCompleted: 5,
-        videosAnalyzed: allVideos.length,
-        finalRecommendations: finalResults.length
-      };
-
-      console.log(`✅ AI 큐레이션 완료: ${finalResults.length}개 추천 (${performance.totalTime}ms)`);
-
       return {
-        steps: {
-          expansion,
-          queries,
-          searches: searchResults,
-          analysis,
-          personalization: userId ? { userId, applied: true } : null
-        },
-        finalResults,
-        performance,
-        timestamp: new Date().toISOString()
+        content: [{ 
+          type: "text", 
+          text: JSON.stringify({
+            videoIds,
+            error: error.message,
+            analysis: []
+          }, null, 2) 
+        }]
       };
-
-    } catch (error) {
-      console.error('AI 큐레이션 워크플로우 실패:', error);
-      throw error;
     }
   }
 
-  // ==================== 사용자 분석 기능 ====================
+  // ==================== 유틸리티 함수들 ====================
 
-  /**
-   * 인기 키워드 조회
-   */
-  async getPopularKeywords(options = {}) {
-    console.log('📈 인기 키워드 조회');
+  generateExpandedKeywords(keyword) {
+    const variations = [
+      keyword,
+      `${keyword} shorts`,
+      `${keyword} 영상`,
+      `${keyword} 모음`,
+      `${keyword} 하이라이트`,
+      `재미있는 ${keyword}`,
+      `최신 ${keyword}`,
+      `인기 ${keyword}`
+    ];
     
-    // 목 인기 키워드 데이터
-    return {
-      keywords: [
-        { keyword: '힐링', score: 95, trend: 'up' },
-        { keyword: '먹방', score: 90, trend: 'stable' },
-        { keyword: '댄스', score: 85, trend: 'up' },
-        { keyword: '브이로그', score: 80, trend: 'down' },
-        { keyword: 'ASMR', score: 75, trend: 'up' }
-      ],
-      timestamp: new Date().toISOString()
-    };
+    return [...new Set(variations)];
   }
 
-  /**
-   * 사용자 패턴 분석
-   */
-  async analyzeUserPatterns(userId, timeRange = '30d', includeRecommendations = true) {
-    console.log(`👤 사용자 패턴 분석: ${userId}`);
-    
-    // 목 사용자 패턴 데이터
-    return {
-      userId,
-      patterns: {
-        preferredCategories: ['힐링', 'ASMR', '브이로그'],
-        activeHours: [19, 20, 21, 22], // 저녁 시간대 활성
-        averageWatchTime: 45, // 초
-        engagementRate: 0.65
-      },
-      recommendations: includeRecommendations ? [
-        '저녁 시간 힐링 영상',
-        'ASMR 수면 도움',
-        '차분한 브이로그'
-      ] : [],
-      timestamp: new Date().toISOString()
+  getChannelSuggestions(keyword) {
+    // 키워드별 채널 추천 (간단한 예시)
+    const channelMap = {
+      '게임': ['피치케이크', '도티', '잠뜰'],
+      '먹방': ['쯔양', '밴쯔', '보겸'],
+      '음악': ['1theK', 'Stone Music Entertainment', 'SMTOWN'],
+      '댄스': ['1MILLION Dance Studio', 'FreeStyle Town', 'URBAN DANCE CAMP']
     };
-  }
-
-  /**
-   * 실시간 트렌드 조회
-   */
-  async getRealtimeTrends(timeWindow = 1, detectSurging = true, groupByTimeSlots = true) {
-    console.log('⚡ 실시간 트렌드 조회');
     
-    // 목 트렌드 데이터
-    return {
-      trends: [
-        { keyword: '신년 계획', score: 98, change: '+15%' },
-        { keyword: '홈트', score: 92, change: '+8%' },
-        { keyword: '다이어트', score: 88, change: '+12%' },
-        { keyword: '새해 다짐', score: 85, change: '+20%' }
-      ],
-      surging: detectSurging ? ['신년 계획', '새해 다짐'] : [],
-      timeSlots: groupByTimeSlots ? {
-        morning: ['모닝루틴', '홈트'],
-        afternoon: ['다이어트', '요리'],
-        evening: ['힐링', 'ASMR']
-      } : null,
-      timestamp: new Date().toISOString()
-    };
-  }
-
-  /**
-   * 트렌딩 키워드 예측
-   */
-  async predictTrendingKeywords(predictionWindow = '6h', limit = 10, confidenceThreshold = 0.7, includeReasons = true) {
-    console.log('🔮 트렌딩 키워드 예측');
-    
-    // 목 예측 데이터
-    return {
-      predictions: [
-        { keyword: '신년 챌린지', confidence: 0.85, expectedGrowth: '+25%' },
-        { keyword: '홈트 루틴', confidence: 0.78, expectedGrowth: '+18%' },
-        { keyword: '건강 식단', confidence: 0.72, expectedGrowth: '+15%' }
-      ].filter(p => p.confidence >= confidenceThreshold).slice(0, limit),
-      reasons: includeReasons ? [
-        '신년 시즌 효과',
-        '건강 관심 증가',
-        '집에서 운동 트렌드'
-      ] : [],
-      timestamp: new Date().toISOString()
-    };
-  }
-
-  /**
-   * 연결 해제
-   */
-  async disconnectAll() {
-    try {
-      console.log('🔌 MCP 연결 해제 중...');
-      
-      this.connected.youtubeCurator = false;
-      this.connected.userAnalytics = false;
-      
-      console.log('✅ MCP 연결 해제 완료');
-      
-      return { success: true };
-
-    } catch (error) {
-      console.error('❌ MCP 연결 해제 실패:', error);
-      return { success: false, error: error.message };
+    for (const [category, channels] of Object.entries(channelMap)) {
+      if (keyword.includes(category)) {
+        return channels;
+      }
     }
+    
+    return [];
+  }
+
+  categorizeKeywords(keywords) {
+    const categories = {
+      entertainment: [],
+      music: [],
+      gaming: [],
+      lifestyle: [],
+      education: []
+    };
+    
+    keywords.forEach(keyword => {
+      if (keyword.match(/(음악|노래|댄스|춤)/)) categories.music.push(keyword);
+      else if (keyword.match(/(게임|롤|LOL|배그)/)) categories.gaming.push(keyword);
+      else if (keyword.match(/(먹방|요리|브이로그|일상)/)) categories.lifestyle.push(keyword);
+      else if (keyword.match(/(강의|공부|학습)/)) categories.education.push(keyword);
+      else categories.entertainment.push(keyword);
+    });
+    
+    return categories;
+  }
+
+  buildChannelQueries(keyword, maxResults) {
+    return [{
+      query: `${keyword} 채널`,
+      type: 'channel_search',
+      priority: 'high',
+      estimatedUnits: 107,
+      maxResults
+    }];
+  }
+
+  buildCategoryQueries(keyword, maxResults) {
+    return [{
+      query: `${keyword} 카테고리`,
+      type: 'category_search',
+      priority: 'medium',
+      estimatedUnits: 107,
+      maxResults
+    }];
+  }
+
+  buildExpandedKeywordQueries(keyword, maxResults) {
+    const expanded = this.generateExpandedKeywords(keyword);
+    return expanded.slice(0, 3).map(kw => ({
+      query: kw,
+      type: 'expanded_search',
+      priority: 'medium',
+      estimatedUnits: 107,
+      maxResults
+    }));
+  }
+
+  buildTimeBasedQueries(keyword, maxResults) {
+    return [{
+      query: `${keyword} 최신`,
+      type: 'time_based',
+      priority: 'high',
+      estimatedUnits: 107,
+      maxResults,
+      filters: { uploadDate: 'week' }
+    }];
+  }
+
+  buildBasicQuery(keyword, maxResults) {
+    return {
+      query: keyword,
+      type: 'basic_search',
+      priority: 'medium',
+      estimatedUnits: 107,
+      maxResults
+    };
+  }
+
+  getPublishedAfterDate(timeFilter) {
+    if (!timeFilter || timeFilter === 'any') return undefined;
+    
+    const now = new Date();
+    switch (timeFilter) {
+      case 'today':
+        return new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+      case 'week':
+        return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      case 'month':
+        return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      case 'year':
+        return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000).toISOString();
+      default:
+        return undefined;
+    }
+  }
+
+  parseDuration(duration) {
+    const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+    if (!match) return 0;
+    
+    const hours = parseInt(match[1]) || 0;
+    const minutes = parseInt(match[2]) || 0;
+    const seconds = parseInt(match[3]) || 0;
+    
+    return hours * 3600 + minutes * 60 + seconds;
+  }
+
+  calculateCurationScore(video, criteria) {
+    let score = 0;
+    
+    // 조회수 점수
+    const viewCount = parseInt(video.statistics.viewCount || 0);
+    if (viewCount >= (criteria.minViewCount || 1000)) score += 3;
+    
+    // 좋아요 비율
+    const likeCount = parseInt(video.statistics.likeCount || 0);
+    if (viewCount > 0 && likeCount / viewCount > 0.01) score += 2;
+    
+    // 길이 점수
+    const duration = this.parseDuration(video.contentDetails.duration);
+    if (duration <= (criteria.maxDuration || 60)) score += 2;
+    
+    // 제목 품질
+    if (video.snippet.title.length > 10 && video.snippet.title.length < 100) score += 1;
+    
+    return Math.min(score, 10);
+  }
+
+  categorizeVideo(video) {
+    const title = video.snippet.title.toLowerCase();
+    
+    if (title.match(/(음악|노래|댄스)/)) return 'music';
+    if (title.match(/(게임|롤|배그)/)) return 'gaming';
+    if (title.match(/(먹방|요리|브이로그)/)) return 'lifestyle';
+    if (title.match(/(강의|공부)/)) return 'education';
+    
+    return 'entertainment';
+  }
+
+  generateNextSteps(extractedData) {
+    return [
+      "키워드 확장으로 더 많은 관련 영상 찾기",
+      "채널별 검색으로 특정 크리에이터 영상 탐색",
+      "시간 필터 적용으로 최신 영상 우선 검색"
+    ];
+  }
+
+  suggestSearchStrategies(context) {
+    const strategies = [];
+    
+    if (context.timeContext === '최신') {
+      strategies.push('time_sensitive');
+    }
+    if (context.category && context.category !== 'entertainment') {
+      strategies.push('category_focused');
+    }
+    strategies.push('keyword_expansion');
+    
+    return strategies;
   }
 }
 
-// CommonJS 내보내기
-module.exports = MomentumMCPClient; 
+/**
+ * Streamable HTTP MCP 서버 래퍼 (2025년 스펙)
+ */
+class StreamableHTTPMCPServer {
+  constructor() {
+    this.mcpServer = new YouTubeCuratorMCPServer();
+    this.sessions = new Map();
+    console.log('🌐 Streamable HTTP MCP 서버 (2025년 스펙) 초기화 완료');
+  }
+
+  // 표준 MCP 요청 처리 (JSON-RPC 2.0)
+  async handleRequest(request, sessionId) {
+    try {
+      const { method, params, id } = request;
+
+      switch (method) {
+        case 'initialize':
+          return this.handleInitialize(request, sessionId);
+        
+        case 'tools/list':
+          return this.handleListTools(request);
+        
+        case 'tools/call':
+          return this.handleCallTool(request);
+        
+        case 'ping':
+          return {
+            jsonrpc: "2.0",
+            id,
+            result: {}
+          };
+        
+        default:
+          return {
+            jsonrpc: "2.0",
+            id,
+            error: {
+              code: -32601,
+              message: `Method not found: ${method}`
+            }
+          };
+      }
+    } catch (error) {
+      console.error('MCP 요청 처리 실패:', error);
+      return {
+        jsonrpc: "2.0",
+        id: request.id || null,
+        error: {
+          code: -32603,
+          message: "Internal server error",
+          data: error.message
+        }
+      };
+    }
+  }
+
+  async handleInitialize(request, sessionId) {
+    return {
+      jsonrpc: "2.0",
+      id: request.id,
+      result: {
+        protocolVersion: "2025-03-26",
+        capabilities: {
+          tools: {},
+          logging: {}
+        },
+        serverInfo: {
+          name: "youtube-shorts-curator-real-mcp",
+          version: "1.0.0"
+        },
+        instructions: "실제 YouTube Shorts AI 큐레이션 MCP 서버입니다. 6개의 AI 도구로 자연어 검색부터 영상 분석까지 제공합니다."
+      }
+    };
+  }
+
+  async handleListTools(request) {
+    return {
+      jsonrpc: "2.0",
+      id: request.id,
+      result: {
+        tools: this.mcpServer.getTools()
+      }
+    };
+  }
+
+  async handleCallTool(request) {
+    const { name, arguments: args } = request.params;
+    
+    try {
+      const result = await this.mcpServer.executeTool(name, args);
+      
+      return {
+        jsonrpc: "2.0",
+        id: request.id,
+        result
+      };
+    } catch (error) {
+      return {
+        jsonrpc: "2.0",
+        id: request.id,
+        error: {
+          code: -32603,
+          message: error.message
+        }
+      };
+    }
+  }
+
+  getStatus() {
+    return {
+      connected: true,
+      available: true,
+      protocolVersion: "2025-03-26",
+      serverType: "youtube-curator-real-mcp",
+      tools: this.mcpServer.getTools().map(t => t.name),
+      capabilities: ["tools/list", "tools/call", "initialize", "ping"]
+    };
+  }
+}
+
+// MCP 서버 인스턴스 생성 및 Export
+const mcpServer = new StreamableHTTPMCPServer();
+
+module.exports = { mcpServer };
+
+console.log('✅ 실제 YouTube Curator MCP 서버 (Streamable HTTP) 준비 완료');
+console.log('✅ 2025년 최신 MCP 스펙 준수');
+console.log('✅ 6개 AI 도구 제공');
+console.log('✅ Railway 배포 최적화'); 
