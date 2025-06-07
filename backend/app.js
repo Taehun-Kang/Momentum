@@ -8,6 +8,7 @@ const videoRoutes = require('./routes/videoRoutes');
 const authRoutes = require('./routes/authRoutes');
 const trendRoutes = require('./routes/trendRoutes');
 const systemRoutes = require('./routes/systemRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 // Middleware imports
 const { securityHeaders, logApiUsage, rateLimitByTier } = require('./middleware/authMiddleware');
@@ -150,6 +151,17 @@ app.use('/api/v1/system',
   systemRoutes
 );
 
+// 분석 라우트
+app.use('/api/v1/analytics',
+  rateLimitByTier({
+    free: { requests: 50, window: 3600 },
+    premium: { requests: 500, window: 3600 },
+    pro: { requests: 5000, window: 3600 }
+  }),
+  logApiUsage('analytics_api', 3),
+  analyticsRoutes
+);
+
 // ============================================
 // 에러 처리 미들웨어
 // ============================================
@@ -170,7 +182,8 @@ app.use('*', (req, res) => {
       'POST /api/v1/videos/ai-search',
       'GET /api/v1/trends/keywords',
       'GET /api/v1/system/db-status',
-      'GET /api/v1/system/health'
+      'GET /api/v1/system/health',
+      'GET /api/v1/analytics/reports'
     ]
   });
 });
