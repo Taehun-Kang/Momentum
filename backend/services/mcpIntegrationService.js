@@ -1,14 +1,14 @@
 const path = require('path');
 
-// MCP 클라이언트 안전하게 로드 (배포 환경 고려)
+// MCP 클라이언트 안전하게 로드 (backend/mcp 폴더에서)
 let MomentumMCPClient = null;
 
 try {
-  // 개발 환경에서만 MCP 클라이언트 로드
-  MomentumMCPClient = require('../../mcp-integration/clients/mcp-client/index.js');
-  console.log('✅ MCP 클라이언트 모듈 로드 성공');
+  // backend/mcp 폴더에서 MCP 클라이언트 로드
+  MomentumMCPClient = require('../mcp/clients/mcp-client/index.js');
+  console.log('✅ MCP 클라이언트 모듈 로드 성공 (backend/mcp)');
 } catch (error) {
-  console.log('⚠️ MCP 클라이언트 모듈을 찾을 수 없습니다 (배포 환경)');
+  console.log('⚠️ MCP 클라이언트 모듈을 찾을 수 없습니다:', error.message);
   console.log('📝 MCP 기능이 비활성화됩니다. 기본 YouTube 검색만 사용 가능합니다.');
   
   // 더미 클래스 생성 (에러 방지)
@@ -28,8 +28,8 @@ try {
 }
 
 /**
- * MCP 통합 서비스 - 업데이트됨 (배포 환경 안전 모드)
- * 최신 mcp-integration 시스템과 기존 백엔드를 연결
+ * MCP 통합 서비스 - 업데이트됨 (backend/mcp 통합)
+ * backend/mcp 시스템과 백엔드를 연결
  * Wave Team
  */
 class MCPIntegrationService {
@@ -41,15 +41,15 @@ class MCPIntegrationService {
     this.mcpAvailable = MomentumMCPClient && MomentumMCPClient.name !== 'class'; // 실제 클래스인지 확인
     
     if (this.mcpAvailable) {
-      console.log('🔧 MCP 통합 서비스 초기화 시작 (최신 시스템)...');
+      console.log('🔧 MCP 통합 서비스 초기화 시작 (backend/mcp)...');
     } else {
       console.log('🔧 MCP 통합 서비스 (기본 모드) - MCP 기능 비활성화');
     }
   }
 
   /**
-   * 최신 MCP 시스템과 연결
-   * mcp-integration/servers/ 시스템 활용
+   * backend/mcp 시스템과 연결
+   * backend/mcp/servers/ 시스템 활용
    */
   async initialize() {
     if (this.isInitialized) {
@@ -79,10 +79,10 @@ class MCPIntegrationService {
     }
 
     try {
-      console.log('🚀 최신 MCP 클라이언트 연결 시도...');
-      console.log('📁 MCP 서버 경로: mcp-integration/servers/');
+      console.log('🚀 MCP 클라이언트 연결 시도...');
+      console.log('📁 MCP 서버 경로: backend/mcp/servers/');
       
-      // 최신 MCP 클라이언트 생성
+      // MCP 클라이언트 생성
       this.mcpClient = new MomentumMCPClient();
       
       // 모든 MCP 서버에 연결
@@ -92,7 +92,7 @@ class MCPIntegrationService {
         this.isInitialized = true;
         this.connectionRetries = 0;
         
-        console.log('✅ 최신 MCP 통합 서비스 초기화 완료');
+        console.log('✅ MCP 통합 서비스 초기화 완료 (backend/mcp)');
         console.log('📡 연결된 서버:', connectionResult.connectedServers);
         console.log('🎯 사용 가능한 도구들:');
         console.log('   - process_natural_language (자연어 분석)');
@@ -103,8 +103,8 @@ class MCPIntegrationService {
         return {
           success: true,
           connectedServers: connectionResult.connectedServers,
-          message: '최신 MCP 통합 서비스가 성공적으로 초기화되었습니다.',
-          version: '2.0.0',
+          message: 'MCP 통합 서비스가 성공적으로 초기화되었습니다.',
+          version: '2.1.0',
           features: [
             'Claude AI 자연어 분석',
             '4단계 자동 워크플로우', 
@@ -113,12 +113,12 @@ class MCPIntegrationService {
           ]
         };
       } else {
-        throw new Error('최신 MCP 서버 연결 실패');
+        throw new Error('MCP 서버 연결 실패');
       }
 
     } catch (error) {
-      console.error('❌ 최신 MCP 통합 서비스 초기화 실패:', error);
-      console.error('🔧 해결 방법: mcp-integration/servers/ 확인');
+      console.error('❌ MCP 통합 서비스 초기화 실패:', error);
+      console.error('🔧 해결 방법: backend/mcp/servers/ 확인');
       
       this.connectionRetries++;
       
@@ -142,7 +142,7 @@ class MCPIntegrationService {
         retries: this.connectionRetries,
         mode: 'fallback',
         troubleshooting: [
-          'mcp-integration/servers/youtube-curator-mcp/ 폴더 확인',
+          'backend/mcp/servers/youtube-curator-mcp/ 폴더 확인',
           'npm install 실행 여부 확인',
           '.env 파일의 API 키 설정 확인'
         ]

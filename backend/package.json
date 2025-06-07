@@ -18,7 +18,10 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "prod": "NODE_ENV=production node server.js",
-    "build": "echo 'No build step required for Node.js backend'"
+    "build": "npm run install-mcp",
+    "install-mcp": "cd mcp/clients/mcp-client && npm install && cd ../../servers/youtube-curator-mcp && npm install && cd ../user-analytics-mcp && npm install",
+    "setup-mcp": "npm run install-mcp",
+    "postinstall": "npm run install-mcp"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.3",
