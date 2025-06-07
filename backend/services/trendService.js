@@ -2,7 +2,7 @@ const axios = require('axios');
 
 class TrendService {
   constructor() {
-    this.serpApiKey = process.env.SERPAPI_KEY || '2317ddcf75e310407574fc6e83cebdfa5ab4c25b9fbeee880e22cbc1a0c34d08';
+    this.serpApiKey = process.env.SERPAPI_KEY || '';
     this.cache = new Map();
     this.cacheTimeout = 30 * 60 * 1000; // 30분 캐시
     
