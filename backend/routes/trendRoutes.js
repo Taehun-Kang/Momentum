@@ -8,13 +8,20 @@ router.get('/keywords', async (req, res) => {
   try {
     const { category, limit = 10 } = req.query;
     
-    const keywords = await supabaseService.client
+    // Fix: Proper query building without UUID error
+    let query = supabaseService.client
       .from('trending_keywords')
       .select('*')
-      .eq(category ? 'category' : 'id', category || 'id')
       .gt('expires_at', new Date().toISOString())
       .order('trend_score', { ascending: false })
       .limit(parseInt(limit));
+
+    // Only add category filter if category is provided
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    const keywords = await query;
 
     if (keywords.error) {
       throw keywords.error;
