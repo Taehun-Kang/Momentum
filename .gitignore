@@ -26,3 +26,20 @@ node_modules/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# MCP 관련 보안 파일들
+**/mcp-servers/**/.env
+**/mcp-integration/**/.env
+**/*-backup/
+**/workflow-result-*.json
+**/test-results-*.json
+
+# API 키 및 민감한 설정
+config/secrets.json
+config/api-keys.json
+
+# 임시 파일들
+*.tmp
+*.temp
+temp/
+tmp/

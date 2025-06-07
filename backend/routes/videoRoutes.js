@@ -5,6 +5,7 @@ const mcpService = require('../services/mcpService');
 const keywordExpansionService = require('../services/keywordExpansionService');
 const queryBuilderService = require('../services/queryBuilderService');
 const userAnalyticsService = require('../services/userAnalyticsService');
+const mcpIntegrationService = require('../services/mcpIntegrationService');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 /**
@@ -842,5 +843,316 @@ function getCategoryId(category) {
   };
   return categoryMap[category] || undefined;
 }
+
+/**
+ * POST /api/v1/videos/intelligent-search
+ * 🧠 Claude AI 기반 지능형 자연어 검색 (최신 MCP 시스템)
+ * "피곤해서 힐링되는 영상 보고 싶어" 같은 자연어 입력 처리
+ */
+router.post('/intelligent-search', async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    const { 
+      query, 
+      userTier = 'free',
+      maxResults = 20,
+      allowWorkflowSteps = true 
+    } = req.body;
+
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        error: 'MISSING_QUERY',
+        message: '자연어 검색 질문이 필요합니다.'
+      });
+    }
+
+    console.log(`🧠 지능형 검색 요청: "${query}" (${userTier})`);
+
+    // MCP 연결 상태 확인
+    const mcpStatus = mcpIntegrationService.getStatus();
+    if (!mcpStatus.connected) {
+      return res.status(503).json({
+        success: false,
+        error: 'MCP_NOT_CONNECTED',
+        message: 'AI 시스템이 연결되지 않았습니다. 잠시 후 다시 시도해주세요.',
+        status: mcpStatus
+      });
+    }
+
+    let result;
+
+    if (userTier === 'premium' && allowWorkflowSteps) {
+      // 🎯 프리미엄: 완전한 4단계 지능형 워크플로우
+      console.log('🎯 4단계 지능형 워크플로우 실행...');
+      
+      result = await mcpIntegrationService.executeAICurationWorkflow(query, req.user?.id);
+      
+      if (result.success) {
+        const searchTime = Date.now() - startTime;
+        
+        return res.json({
+          success: true,
+          searchType: 'intelligent_premium',
+          query,
+          userTier,
+          data: {
+            videos: result.data.finalResults,
+            workflowSteps: {
+              step1_analysis: result.data.steps?.analysis || '자연어 분석 완료',
+              step2_expansion: result.data.steps?.expansion || '키워드 확장 완료',
+              step3_optimization: result.data.steps?.queries || '쿼리 최적화 완료',
+              step4_search: result.data.steps?.search || '영상 검색 완료'
+            },
+            aiInsights: {
+              extractedKeywords: result.data.extractedKeywords,
+              searchStrategies: result.data.strategies,
+              filteringStats: result.data.filteringStats
+            },
+            performance: {
+              ...result.performance,
+              responseTime: searchTime
+            }
+          }
+        });
+      } else {
+        throw new Error(result.error || '지능형 워크플로우 실행 실패');
+      }
+
+    } else {
+      // 🆓 무료/기본: 자연어 분석 + 기본 검색
+      console.log('🆓 기본 자연어 분석 실행...');
+      
+      // 1. 자연어 분석으로 키워드 추출
+      const analysis = await mcpIntegrationService.extractKeywords(query, { useAI: true });
+      
+      // 2. 추출된 키워드로 검색
+      const keywords = analysis.keywords?.slice(0, 3) || [query]; // 상위 3개만
+      const searchPromises = keywords.map(keyword => 
+        youtubeService.searchShorts(keyword, { maxResults: Math.floor(maxResults / keywords.length) })
+      );
+      
+      const searchResults = await Promise.all(searchPromises);
+      const allVideos = searchResults.flat();
+      
+      // 중복 제거
+      const uniqueVideos = [];
+      const seenIds = new Set();
+      allVideos.forEach(video => {
+        if (!seenIds.has(video.id)) {
+          seenIds.add(video.id);
+          uniqueVideos.push(video);
+        }
+      });
+
+      const searchTime = Date.now() - startTime;
+
+      return res.json({
+        success: true,
+        searchType: 'intelligent_basic',
+        query,
+        userTier,
+        data: {
+          videos: uniqueVideos.slice(0, maxResults),
+          analysis: {
+            extractedKeywords: keywords,
+            originalIntent: analysis.intent || '일반 검색',
+            confidence: analysis.confidence || 0.8
+          },
+          performance: {
+            totalResults: uniqueVideos.length,
+            responseTime: searchTime
+          }
+        }
+      });
+    }
+
+  } catch (error) {
+    const searchTime = Date.now() - startTime;
+    console.error('지능형 검색 실패:', error);
+    
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      query: req.body.query,
+      responseTime: searchTime,
+      fallback: '기본 검색을 사용해보세요: POST /api/v1/videos/search'
+    });
+  }
+});
+
+/**
+ * GET /api/v1/videos/mcp-status
+ * 🔧 MCP 시스템 상태 확인
+ */
+router.get('/mcp-status', async (req, res) => {
+  try {
+    const status = mcpIntegrationService.getStatus();
+    
+    res.json({
+      success: true,
+      data: {
+        ...status,
+        availableFeatures: status.connected ? [
+          'process_natural_language',
+          'intelligent_search_workflow', 
+          'expand_keyword',
+          'search_playable_shorts',
+          'analyze_video_metadata'
+        ] : [],
+        upgradeMessage: status.connected ? null : 'MCP 시스템 연결 중입니다...'
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/v1/videos/workflow-search
+ * 🎯 완전한 4단계 워크플로우 (프리미엄 전용)
+ * 키워드 확장 → 쿼리 최적화 → 영상 검색 → 메타데이터 분석
+ */
+router.post('/workflow-search', async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    const { 
+      keyword,
+      userTier = 'free',
+      maxResults = 30,
+      includeAnalytics = true
+    } = req.body;
+
+    // 프리미엄 사용자만 허용
+    if (userTier !== 'premium') {
+      return res.status(403).json({
+        success: false,
+        error: 'PREMIUM_REQUIRED',
+        message: '완전한 워크플로우는 프리미엄 기능입니다.',
+        upgrade: {
+          benefit: '4단계 AI 워크플로우로 더 정확한 영상 추천',
+          features: [
+            '키워드 지능형 확장',
+            '검색 쿼리 최적화',
+            '2단계 영상 필터링',
+            '메타데이터 분석'
+          ]
+        }
+      });
+    }
+
+    if (!keyword) {
+      return res.status(400).json({
+        success: false,
+        error: 'MISSING_KEYWORD',
+        message: '검색 키워드가 필요합니다.'
+      });
+    }
+
+    console.log(`🎯 4단계 워크플로우 실행: "${keyword}"`);
+
+    // MCP 연결 확인
+    const mcpStatus = mcpIntegrationService.getStatus();
+    if (!mcpStatus.connected) {
+      return res.status(503).json({
+        success: false,
+        error: 'MCP_NOT_CONNECTED',
+        message: 'AI 워크플로우 시스템이 연결되지 않았습니다.'
+      });
+    }
+
+    // 🚀 완전한 AI 큐레이션 워크플로우 실행
+    const workflowResult = await mcpIntegrationService.executeAICurationWorkflow(
+      keyword, 
+      req.user?.id
+    );
+
+    if (!workflowResult.success) {
+      throw new Error(workflowResult.error || '워크플로우 실행 실패');
+    }
+
+    const searchTime = Date.now() - startTime;
+
+    // 🔥 프리미엄 검색 로그 기록
+    setImmediate(async () => {
+      try {
+        await userAnalyticsService.logSearch(
+          req.user?.id || null,
+          keyword,
+          {
+            searchType: 'workflow_premium',
+            resultsCount: workflowResult.data.finalResults.length,
+            responseTime: searchTime,
+            userTier: 'premium',
+            workflowSteps: Object.keys(workflowResult.data.steps || {}).length,
+            apiUsage: workflowResult.performance?.apiUsage || 0
+          }
+        );
+      } catch (logError) {
+        console.error('워크플로우 검색 로그 실패:', logError);
+      }
+    });
+
+    res.json({
+      success: true,
+      searchType: 'workflow_premium',
+      keyword,
+      data: {
+        videos: workflowResult.data.finalResults,
+        workflow: {
+          step1: {
+            name: '키워드 확장',
+            result: workflowResult.data.steps?.expansion || '완료',
+            expandedKeywords: workflowResult.data.expandedKeywords?.slice(0, 10)
+          },
+          step2: {
+            name: '쿼리 최적화', 
+            result: workflowResult.data.steps?.queries || '완료',
+            optimizedQueries: workflowResult.data.optimizedQueries?.slice(0, 5)
+          },
+          step3: {
+            name: '영상 검색',
+            result: workflowResult.data.steps?.search || '완료',
+            searchStats: workflowResult.data.searchStats
+          },
+          step4: {
+            name: '메타데이터 분석',
+            result: workflowResult.data.steps?.analysis || '완료',
+            analysisStats: workflowResult.data.analysisStats
+          }
+        },
+        performance: {
+          ...workflowResult.performance,
+          totalResponseTime: searchTime,
+          stepBreakdown: workflowResult.data.stepTiming
+        },
+        ...(includeAnalytics && {
+          analytics: {
+            filteringSuccessRate: workflowResult.data.filteringStats?.successRate,
+            apiEfficiency: workflowResult.data.performance?.efficiency,
+            recommendationScore: workflowResult.data.recommendationScore
+          }
+        })
+      }
+    });
+
+  } catch (error) {
+    const searchTime = Date.now() - startTime;
+    console.error('워크플로우 검색 실패:', error);
+    
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      keyword: req.body.keyword,
+      responseTime: searchTime
+    });
+  }
+});
 
 module.exports = router; 

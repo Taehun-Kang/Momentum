@@ -1,6 +1,6 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: true
 ---
 # 🤖 MCP 통합 가이드 (Model Context Protocol)
