@@ -1,0 +1,237 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 🗄️ 데이터베이스 스키마 가이드
+
+## 📊 테이블 구조 원칙
+
+### 사용자 관련 테이블
+```sql
+-- users (Supabase Auth 확장)
+users {
+  id: uuid (PK, Supabase Auth)
+  email: varchar(255)
+  name: varchar(100)
+  avatar_url: text
+  user_tier: enum('free', 'premium', 'pro')
+  created_at: timestamptz
+  updated_at: timestamptz
+  settings: jsonb
+  processing_restrictions: jsonb
+}
+
+-- user_preference_profiles (개인화)
+user_preference_profiles {
+  id: uuid (PK)
+  user_id: uuid (FK → users.id)
+  preferred_categories: text[]
+  preferred_keywords: text[]
+  disliked_categories: text[]
+  watch_time_patterns: jsonb
+  created_at: timestamptz
+  updated_at: timestamptz
+}
+```
+
+### 영상 캐시 테이블
+```sql
+-- video_cache (YouTube 영상 캐시)
+video_cache {
+  id: uuid (PK)
+  video_id: varchar(20) (UNIQUE)
+  title: text
+  channel_name: varchar(255)
+  duration: integer
+  view_count: bigint
+  thumbnail_url: text
+  is_playable: boolean
+  region_restrictions: jsonb
+  cached_at: timestamptz
+  expires_at: timestamptz
+}
+
+-- search_results_cache (검색 결과 캐시)
+search_results_cache {
+  id: uuid (PK)
+  search_query: varchar(255)
+  results: jsonb
+  total_results: integer
+  cached_at: timestamptz
+  expires_at: timestamptz
+}
+```
+
+### 트렌드 관련 테이블
+```sql
+-- trending_keywords (트렌드 키워드)
+trending_keywords {
+  id: uuid (PK)
+  keyword: varchar(255)
+  category: varchar(50)
+  trend_score: float
+  search_volume: integer
+  source: enum('bright_data', 'serp_api', 'internal')
+  detected_at: timestamptz
+  expires_at: timestamptz
+}
+
+-- trend_analysis (트렌드 분석)
+trend_analysis {
+  id: uuid (PK)
+  keyword: varchar(255)
+  hourly_data: jsonb
+  daily_data: jsonb
+  analysis_date: date
+  created_at: timestamptz
+}
+```
+
+### 로그 및 모니터링 테이블
+```sql
+-- search_logs (검색 로그)
+search_logs {
+  id: uuid (PK)
+  user_id: uuid (FK → users.id, nullable)
+  search_query: text
+  search_type: enum('keyword', 'ai_chat', 'trend')
+  results_count: integer
+  response_time: integer
+  ip_address: inet
+  created_at: timestamptz
+}
+
+-- api_usage_logs (API 사용량 로그)
+api_usage_logs {
+  id: uuid (PK)
+  api_name: varchar(50)
+  endpoint: varchar(255)
+  units_consumed: integer
+  response_time: integer
+  status_code: integer
+  error_message: text
+  created_at: timestamptz
+}
+```
+
+## 🔧 데이터베이스 규칙
+
+### 1. 명명 규칙
+- **테이블명**: `snake_case`, 복수형 사용
+- **컬럼명**: `snake_case`, 명확하고 간결하게
+- **인덱스명**: `idx_{table}_{column(s)}`
+- **FK명**: `fk_{table}_{referenced_table}`
+
+### 2. 필수 컬럼
+```sql
+-- 모든 테이블에 포함
+id: uuid DEFAULT gen_random_uuid() PRIMARY KEY
+created_at: timestamptz DEFAULT now()
+updated_at: timestamptz DEFAULT now()
+```
+
+### 3. JSONB 사용 가이드
+```sql
+-- 올바른 JSONB 사용
+user_preferences: jsonb DEFAULT '{}'::jsonb
+settings: jsonb DEFAULT '{
+  "notifications": true,
+  "theme": "light",
+  "language": "ko"
+}'::jsonb
+
+-- 인덱스 생성
+CREATE INDEX idx_users_settings_theme 
+ON users USING GIN ((settings->'theme'));
+```
+
+### 4. RLS (Row Level Security) 정책
+```sql
+-- 사용자 데이터 보호
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own profile" ON users
+  FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile" ON users
+  FOR UPDATE USING (auth.uid() = id);
+```
+
+### 5. 캐시 만료 처리
+```sql
+-- 자동 캐시 정리 함수
+CREATE OR REPLACE FUNCTION cleanup_expired_cache()
+RETURNS void AS $$
+BEGIN
+  DELETE FROM video_cache WHERE expires_at < now();
+  DELETE FROM search_results_cache WHERE expires_at < now();
+  DELETE FROM trending_keywords WHERE expires_at < now();
+END;
+$$ LANGUAGE plpgsql;
+
+-- 정기 실행 (cron 확장 필요)
+SELECT cron.schedule('cleanup-cache', '0 */4 * * *', 'SELECT cleanup_expired_cache()');
+```
+
+### 6. 성능 최적화 인덱스
+```sql
+-- 검색 최적화
+CREATE INDEX idx_video_cache_playable ON video_cache(is_playable);
+CREATE INDEX idx_video_cache_duration ON video_cache(duration);
+CREATE INDEX idx_trending_keywords_score ON trending_keywords(trend_score DESC);
+CREATE INDEX idx_search_logs_user_time ON search_logs(user_id, created_at);
+
+-- 복합 인덱스
+CREATE INDEX idx_video_cache_playable_duration 
+ON video_cache(is_playable, duration) WHERE is_playable = true;
+```
+
+## 🚨 주의사항
+
+### 절대 하지 말것
+- ❌ **CASCADE 삭제** 함부로 사용 금지
+- ❌ **대용량 JSONB** 단일 컬럼에 저장 금지 (>1MB)
+- ❌ **민감한 데이터** 평문 저장 금지
+- ❌ **인덱스 없는** 자주 조회되는 컬럼
+
+### 반드시 할것
+- ✅ **백업 정책** 설정 (Point-in-time recovery)
+- ✅ **모니터링** 설정 (쿼리 성능, 저장 공간)
+- ✅ **마이그레이션** 스크립트 작성
+- ✅ **테스트 데이터** 시드 파일 유지
+
+## 📝 마이그레이션 가이드
+
+### 새 테이블 생성 템플릿
+```sql
+-- 파일명: YYYYMMDD_create_table_name.sql
+CREATE TABLE table_name (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  -- 컬럼 정의
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+
+-- RLS 활성화
+ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;
+
+-- 트리거 설정 (updated_at 자동 업데이트)
+CREATE TRIGGER set_updated_at
+  BEFORE UPDATE ON table_name
+  FOR EACH ROW
+  EXECUTE FUNCTION trigger_set_updated_at();
+
+-- 인덱스 생성
+CREATE INDEX idx_table_name_created_at ON table_name(created_at);
+```
+
+### 컬럼 추가 템플릿
+```sql
+-- 파일명: YYYYMMDD_add_column_to_table.sql
+ALTER TABLE table_name 
+ADD COLUMN new_column data_type DEFAULT default_value;
+
+-- 인덱스 필요시 추가
+CREATE INDEX idx_table_name_new_column ON table_name(new_column);
+```

@@ -1,0 +1,275 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 🔄 점진적 개발 가이드 (Incremental Development)
+
+## 🎯 핵심 원칙
+
+### 0. 작은 단위로 개발 ⭐
+- **한 번에 하나의 기능만** 구현
+- **최대 개발 단위**: 2-3시간
+- **복잡한 기능**: 더 작은 단위로 분해
+- **완전히 동작하는 상태**로만 커밋
+
+### 1. test-lab 우선 개발
+```
+새 기능 개발 워크플로우:
+1. test-lab/feature-name/ 폴더 생성
+2. 독립적으로 최소 기능 구현
+3. 완전히 동작 확인
+4. 메인 코드베이스에 통합
+5. 테스트 및 문서 업데이트
+```
+
+### 2. 검증 후 통합
+- **test-lab에서 완전 검증** 후에만 통합
+- **한 번에 하나의 변경사항**만 적용
+- **롤백 계획** 항상 준비
+- **부분 배포** 가능한 구조 유지
+
+## 📁 프로젝트 구조 활용
+
+```
+Youtube/
+├── test-lab/           # 🧪 기능 테스트 및 프로토타입
+│   ├── youtube-api/    # YouTube API 연동 테스트
+│   ├── mcp-chat/       # MCP 대화형 검색 테스트
+│   ├── auth-system/    # 인증 시스템 테스트
+│   └── cache-system/   # 캐싱 시스템 테스트
+├── backend/            # 백엔드 서버
+├── frontend/           # 프론트엔드 앱
+└── shared/             # 공통 코드
+```
+
+## 🛠️ 개발 단계별 가이드
+
+### Phase 1: 최소 기능 구현 (test-lab)
+```javascript
+// test-lab/feature-name/basic-test.js
+// 최소한의 기능만 구현
+async function basicFeatureTest() {
+  console.log('🧪 Testing basic feature...');
+  
+  try {
+    // 1. 가장 단순한 케이스
+    const result = await simpleFunction();
+    console.log('✅ Basic test passed:', result);
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Basic test failed:', error);
+    return false;
+  }
+}
+
+// 실행
+basicFeatureTest().then(success => {
+  if (success) {
+    console.log('🎉 Ready for integration!');
+  } else {
+    console.log('🔧 Need more work...');
+  }
+});
+```
+
+### Phase 2: 에러 케이스 추가
+```javascript
+// test-lab/feature-name/error-handling-test.js
+async function errorHandlingTest() {
+  console.log('🧪 Testing error cases...');
+  
+  const testCases = [
+    { input: null, expect: 'error' },
+    { input: '', expect: 'error' },
+    { input: 'invalid', expect: 'error' },
+    { input: 'valid', expect: 'success' }
+  ];
+  
+  for (const testCase of testCases) {
+    try {
+      const result = await featureFunction(testCase.input);
+      console.log(`✅ Test case passed:`, testCase);
+    } catch (error) {
+      if (testCase.expect === 'error') {
+        console.log(`✅ Expected error caught:`, testCase);
+      } else {
+        console.error(`❌ Unexpected error:`, testCase, error);
+        return false;
+      }
+    }
+  }
+  
+  return true;
+}
+```
+
+### Phase 3: 성능 및 최적화
+```javascript
+// test-lab/feature-name/performance-test.js
+async function performanceTest() {
+  console.log('🧪 Testing performance...');
+  
+  const startTime = Date.now();
+  
+  // 대량 요청 테스트
+  const promises = Array(100).fill().map(() => featureFunction('test'));
+  await Promise.all(promises);
+  
+  const endTime = Date.now();
+  const avgTime = (endTime - startTime) / 100;
+  
+  console.log(`📊 Average response time: ${avgTime}ms`);
+  
+  return avgTime < 500; // 500ms 이하 목표
+}
+```
+
+### Phase 4: 메인 코드베이스 통합
+```javascript
+// backend/services/featureService.js
+// test-lab에서 검증된 코드를 메인에 통합
+
+class FeatureService {
+  constructor() {
+    // test-lab에서 검증된 설정
+    this.config = {
+      timeout: 5000,
+      retries: 3,
+      cache: true
+    };
+  }
+  
+  // test-lab에서 검증된 메서드
+  async processFeature(input) {
+    try {
+      // 검증된 로직 복사
+      return await this.performOperation(input);
+    } catch (error) {
+      // 검증된 에러 처리
+      console.error('Feature error:', error);
+      throw error;
+    }
+  }
+}
+
+module.exports = new FeatureService();
+```
+
+## 🚨 주의사항
+
+### 절대 하지 말것
+- ❌ **test-lab 건너뛰고** 바로 메인 코드 수정
+- ❌ **여러 기능을** 한 번에 개발
+- ❌ **불완전한 상태**로 커밋
+- ❌ **의존성이 복잡한** 기능 통합
+
+### 반드시 할것
+- ✅ **작은 단위로** 개발
+- ✅ **완전히 동작**하는 상태만 커밋
+- ✅ **test-lab에서** 충분히 검증
+- ✅ **롤백 계획** 준비
+
+## 📋 기능별 개발 체크리스트
+
+### YouTube API 통합
+- [ ] test-lab에서 API 키 테스트
+- [ ] 단일 영상 정보 조회 성공
+- [ ] 에러 처리 (할당량 초과, 네트워크 오류)
+- [ ] 캐싱 로직 추가
+- [ ] 메인 코드베이스 통합
+
+### MCP 대화형 검색
+- [ ] test-lab에서 Claude API 연결
+- [ ] 단순한 질문-답변 테스트
+- [ ] 컨텍스트 유지 확인
+- [ ] 키워드 추출 정확도 확인
+- [ ] 메인 코드베이스 통합
+
+### 사용자 인증
+- [ ] test-lab에서 Supabase Auth 설정
+- [ ] 회원가입/로그인 테스트
+- [ ] JWT 토큰 검증 테스트
+- [ ] 권한 체크 테스트
+- [ ] 메인 코드베이스 통합
+
+### 캐싱 시스템
+- [ ] test-lab에서 Redis/메모리 캐시 테스트
+- [ ] 캐시 히트/미스 로직 확인
+- [ ] TTL 설정 테스트
+- [ ] 캐시 무효화 테스트
+- [ ] 메인 코드베이스 통합
+
+## 🔄 일일 개발 루틴
+
+### 아침 (9:00-12:00)
+1. **어제 작업 리뷰** (30분)
+2. **오늘 목표 설정** (15분)
+3. **test-lab 새 기능 개발** (2시간)
+
+### 오후 (13:00-18:00)
+1. **test-lab 기능 완성** (1시간)
+2. **메인 코드베이스 통합** (2시간)
+3. **테스트 및 문서 업데이트** (1시간)
+4. **내일 계획 수립** (30분)
+
+## 📊 진행 상황 추적
+
+### 개발 단계 체크
+```
+[ ] test-lab에서 프로토타입 완성
+[ ] 기본 기능 동작 확인
+[ ] 에러 케이스 처리 완료
+[ ] 성능 최적화 완료
+[ ] 메인 코드베이스 통합
+[ ] 통합 테스트 통과
+[ ] 문서 업데이트 완료
+```
+
+### 품질 지표
+- **버그 발생률**: < 5%
+- **롤백 횟수**: 주당 < 1회
+- **기능 완성도**: 100% (부분 완성 금지)
+- **테스트 커버리지**: > 80%
+
+## 🏃‍♂️ 빠른 프로토타이핑 팁
+
+### 1. 최소 기능부터
+```javascript
+// ❌ 처음부터 완벽하게
+async function completeSearchFunction(query, filters, sorting, pagination) {
+  // 너무 복잡!
+}
+
+// ✅ 최소 기능부터
+async function simpleSearch(query) {
+  // 단순하게 시작
+  return await youtube.search(query);
+}
+```
+
+### 2. 하드코딩 → 설정화
+```javascript
+// 1단계: 하드코딩으로 동작 확인
+const result = await fetch('https://api.youtube.com/search?q=test');
+
+// 2단계: 변수로 분리
+const API_URL = 'https://api.youtube.com';
+const result = await fetch(`${API_URL}/search?q=test`);
+
+// 3단계: 설정 파일로 이동
+const result = await fetch(`${config.youtube.apiUrl}/search?q=test`);
+```
+
+### 3. 콘솔 로그 → 정식 로깅
+```javascript
+// 1단계: 콘솔로 디버깅
+console.log('API response:', response);
+
+// 2단계: 구조화된 로깅
+logger.info('API response received', { status: response.status });
+
+// 3단계: 모니터링 통합
+analytics.track('api_call', { endpoint: 'search', responseTime: ms });
+```

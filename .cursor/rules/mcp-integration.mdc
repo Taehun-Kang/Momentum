@@ -1,0 +1,631 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 🤖 MCP 통합 가이드 (Model Context Protocol)
+
+## 🎯 MCP 구현 전략
+
+### 핵심 MCP 서버들
+- **Claude API**: 자연어 이해 및 대화형 검색
+- **Bright Data MCP**: 실시간 웹 트렌드 수집
+- **Supabase MCP**: 데이터베이스 관리 및 쿼리
+- **SerpAPI MCP**: 검색 엔진 데이터 (백업)
+
+### MCP 아키텍처
+```
+Frontend (Vanilla JS)
+    ↓ WebSocket/REST
+Backend (Express.js)
+    ↓ MCP Protocol
+MCP Servers (Claude, Bright Data, Supabase)
+    ↓ External APIs
+External Services (YouTube, Google, etc.)
+```
+
+## 🛠️ MCP 클라이언트 구현
+
+### 기본 MCP 클라이언트 클래스
+```javascript
+// backend/services/mcpClient.js
+class MCPClient {
+  constructor(serverName, config) {
+    this.serverName = serverName;
+    this.config = config;
+    this.isConnected = false;
+    this.tools = new Map();
+    this.prompts = new Map();
+  }
+
+  // MCP 서버 연결
+  async connect() {
+    try {
+      this.transport = new SSEClientTransport(this.config.url);
+      this.client = new Client(
+        { name: "youtube-shorts-curator", version: "1.0.0" },
+        { capabilities: {} }
+      );
+
+      await this.client.connect(this.transport);
+      this.isConnected = true;
+
+      // 사용 가능한 도구와 프롬프트 로드
+      await this.loadCapabilities();
+
+      console.log(`✅ Connected to ${this.serverName} MCP`);
+    } catch (error) {
+      console.error(`❌ Failed to connect to ${this.serverName}:`, error);
+      throw error;
+    }
+  }
+
+  // 도구 및 프롬프트 로드
+  async loadCapabilities() {
+    try {
+      const tools = await this.client.request(
+        { method: "tools/list" },
+        ListToolsRequestSchema
+      );
+
+      const prompts = await this.client.request(
+        { method: "prompts/list" },
+        ListPromptsRequestSchema
+      );
+
+      tools.tools.forEach(tool => this.tools.set(tool.name, tool));
+      prompts.prompts.forEach(prompt => this.prompts.set(prompt.name, prompt));
+    } catch (error) {
+      console.error(`Failed to load capabilities for ${this.serverName}:`, error);
+    }
+  }
+
+  // 도구 실행
+  async callTool(name, arguments_obj) {
+    if (!this.tools.has(name)) {
+      throw new Error(`Tool ${name} not available on ${this.serverName}`);
+    }
+
+    try {
+      const result = await this.client.request(
+        {
+          method: "tools/call",
+          params: { name, arguments: arguments_obj }
+        },
+        CallToolRequestSchema
+      );
+
+      return result.content;
+    } catch (error) {
+      console.error(`Tool ${name} failed:`, error);
+      throw error;
+    }
+  }
+
+  // 프롬프트 실행
+  async getPrompt(name, arguments_obj) {
+    if (!this.prompts.has(name)) {
+      throw new Error(`Prompt ${name} not available on ${this.serverName}`);
+    }
+
+    try {
+      const result = await this.client.request(
+        {
+          method: "prompts/get",
+          params: { name, arguments: arguments_obj }
+        },
+        GetPromptRequestSchema
+      );
+
+      return result.messages;
+    } catch (error) {
+      console.error(`Prompt ${name} failed:`, error);
+      throw error;
+    }
+  }
+
+  // 연결 해제
+  async disconnect() {
+    if (this.isConnected && this.client) {
+      await this.client.close();
+      this.isConnected = false;
+    }
+  }
+}
+
+module.exports = MCPClient;
+```
+
+### Claude MCP 서비스
+```javascript
+// backend/services/claudeMcpService.js
+const MCPClient = require('./mcpClient');
+
+class ClaudeMcpService extends MCPClient {
+  constructor() {
+    super('claude', {
+      url: process.env.CLAUDE_MCP_URL,
+      apiKey: process.env.ANTHROPIC_API_KEY
+    });
+  }
+
+  // 자연어 쿼리를 키워드로 변환
+  async extractKeywords(userMessage) {
+    try {
+      const prompt = await this.getPrompt('extract_keywords', {
+        user_message: userMessage,
+        context: 'youtube_shorts_search',
+        language: 'korean'
+      });
+
+      const response = await this.callTool('analyze_text', {
+        text: userMessage,
+        task: 'keyword_extraction',
+        format: 'json'
+      });
+
+      return this.parseKeywordResponse(response);
+    } catch (error) {
+      console.error('Keyword extraction failed:', error);
+      // 폴백: 간단한 키워드 추출
+      return this.fallbackKeywordExtraction(userMessage);
+    }
+  }
+
+  // 대화형 검색 처리
+  async processChatSearch(userMessage, conversationHistory = []) {
+    try {
+      const context = {
+        message: userMessage,
+        history: conversationHistory,
+        domain: 'youtube_shorts',
+        preferences: await this.getUserPreferences()
+      };
+
+      const response = await this.callTool('chat_search', context);
+
+      return {
+        keywords: response.extracted_keywords,
+        intent: response.search_intent,
+        filters: response.suggested_filters,
+        explanation: response.explanation
+      };
+    } catch (error) {
+      console.error('Chat search failed:', error);
+      throw error;
+    }
+  }
+
+  // 검색 결과 개선 제안
+  async improveSuggestions(searchResults, userFeedback) {
+    try {
+      const response = await this.callTool('improve_search', {
+        results: searchResults,
+        feedback: userFeedback,
+        context: 'youtube_shorts'
+      });
+
+      return response.improved_suggestions;
+    } catch (error) {
+      console.error('Improve suggestions failed:', error);
+      return [];
+    }
+  }
+
+  // 응답 파싱
+  parseKeywordResponse(response) {
+    try {
+      const parsed = JSON.parse(response[0]?.text || '{}');
+      return {
+        primary: parsed.primary_keywords || [],
+        secondary: parsed.secondary_keywords || [],
+        categories: parsed.categories || [],
+        intent: parsed.search_intent || 'general'
+      };
+    } catch (error) {
+      console.error('Failed to parse keyword response:', error);
+      return { primary: [], secondary: [], categories: [], intent: 'general' };
+    }
+  }
+
+  // 폴백 키워드 추출
+  fallbackKeywordExtraction(message) {
+    const keywords = message
+      .replace(/[^\w\s가-힣]/g, '')
+      .split(/\s+/)
+      .filter(word => word.length > 1)
+      .slice(0, 5);
+
+    return {
+      primary: keywords,
+      secondary: [],
+      categories: ['일반'],
+      intent: 'general'
+    };
+  }
+
+  // 사용자 선호도 조회
+  async getUserPreferences() {
+    // 실제 구현에서는 데이터베이스에서 조회
+    return {
+      categories: ['브이로그', '먹방', '댄스'],
+      keywords: ['힐링', '웃긴', '신나는']
+    };
+  }
+}
+
+module.exports = new ClaudeMcpService();
+```
+
+### Bright Data MCP 서비스
+```javascript
+// backend/services/brightDataMcpService.js
+const MCPClient = require('./mcpClient');
+
+class BrightDataMcpService extends MCPClient {
+  constructor() {
+    super('bright-data', {
+      url: process.env.BRIGHT_DATA_MCP_URL,
+      apiKey: process.env.BRIGHT_DATA_API_KEY
+    });
+  }
+
+  // 실시간 트렌드 수집
+  async getTrendingKeywords() {
+    try {
+      const response = await this.callTool('scrape_trends', {
+        sources: ['google_trends', 'youtube_trending', 'twitter_trends'],
+        region: 'KR',
+        language: 'ko',
+        categories: ['entertainment', 'music', 'gaming', 'lifestyle']
+      });
+
+      return this.processTrendData(response);
+    } catch (error) {
+      console.error('Failed to get trending keywords:', error);
+      return [];
+    }
+  }
+
+  // 키워드별 트렌드 분석
+  async analyzeKeywordTrend(keyword) {
+    try {
+      const response = await this.callTool('analyze_keyword', {
+        keyword,
+        timeframe: '24h',
+        sources: ['google_trends', 'youtube'],
+        metrics: ['search_volume', 'growth_rate', 'related_terms']
+      });
+
+      return {
+        keyword,
+        trendScore: response.trend_score,
+        searchVolume: response.search_volume,
+        growthRate: response.growth_rate,
+        relatedTerms: response.related_terms,
+        updatedAt: new Date()
+      };
+    } catch (error) {
+      console.error(`Failed to analyze keyword ${keyword}:`, error);
+      return null;
+    }
+  }
+
+  // 카테고리별 트렌드
+  async getCategoryTrends(category) {
+    try {
+      const response = await this.callTool('category_trends', {
+        category,
+        region: 'KR',
+        limit: 20
+      });
+
+      return response.trending_keywords;
+    } catch (error) {
+      console.error(`Failed to get ${category} trends:`, error);
+      return [];
+    }
+  }
+
+  // 트렌드 데이터 처리
+  processTrendData(rawData) {
+    try {
+      return rawData.map(item => ({
+        keyword: item.keyword,
+        category: item.category,
+        trendScore: item.trend_score || 0,
+        searchVolume: item.search_volume || 0,
+        source: item.source,
+        detectedAt: new Date(),
+        expiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000) // 4시간 후 만료
+      }));
+    } catch (error) {
+      console.error('Failed to process trend data:', error);
+      return [];
+    }
+  }
+}
+
+module.exports = new BrightDataMcpService();
+```
+
+### Supabase MCP 서비스
+```javascript
+// backend/services/supabaseMcpService.js
+const MCPClient = require('./mcpClient');
+
+class SupabaseMcpService extends MCPClient {
+  constructor() {
+    super('supabase', {
+      url: process.env.SUPABASE_MCP_URL,
+      projectUrl: process.env.SUPABASE_URL,
+      apiKey: process.env.SUPABASE_SERVICE_ROLE_KEY
+    });
+  }
+
+  // 스마트 데이터 조회
+  async smartQuery(naturalLanguageQuery) {
+    try {
+      const response = await this.callTool('natural_query', {
+        query: naturalLanguageQuery,
+        schema: 'public',
+        context: 'youtube_shorts_curation'
+      });
+
+      return response.results;
+    } catch (error) {
+      console.error('Smart query failed:', error);
+      throw error;
+    }
+  }
+
+  // 사용자 패턴 분석
+  async analyzeUserPatterns(userId) {
+    try {
+      const response = await this.callTool('analyze_user', {
+        user_id: userId,
+        analysis_type: 'viewing_patterns',
+        timeframe: '30d'
+      });
+
+      return response.patterns;
+    } catch (error) {
+      console.error('User pattern analysis failed:', error);
+      return null;
+    }
+  }
+
+  // 개인화 추천 생성
+  async generatePersonalizedRecommendations(userId, context) {
+    try {
+      const response = await this.callTool('personalize', {
+        user_id: userId,
+        context,
+        limit: 20
+      });
+
+      return response.recommendations;
+    } catch (error) {
+      console.error('Personalization failed:', error);
+      return [];
+    }
+  }
+}
+
+module.exports = new SupabaseMcpService();
+```
+
+## 🔄 MCP 통합 워크플로우
+
+### 대화형 검색 플로우
+```javascript
+// backend/services/chatSearchService.js
+class ChatSearchService {
+  constructor() {
+    this.claudeMcp = require('./claudeMcpService');
+    this.brightDataMcp = require('./brightDataMcpService');
+    this.supabaseMcp = require('./supabaseMcpService');
+  }
+
+  async processChatMessage(userId, message, conversationHistory) {
+    try {
+      // 1. Claude MCP로 메시지 분석
+      const analysis = await this.claudeMcp.processChatSearch(
+        message, 
+        conversationHistory
+      );
+
+      // 2. 트렌드 데이터 확인 (Bright Data MCP)
+      const trendContext = await this.brightDataMcp.analyzeKeywordTrend(
+        analysis.keywords.primary[0]
+      );
+
+      // 3. 사용자 개인화 (Supabase MCP)
+      const userContext = await this.supabaseMcp.analyzeUserPatterns(userId);
+
+      // 4. 통합 검색 실행
+      const searchResults = await this.executeIntegratedSearch({
+        keywords: analysis.keywords,
+        trendContext,
+        userContext,
+        filters: analysis.filters
+      });
+
+      return {
+        response: analysis.explanation,
+        results: searchResults,
+        suggestions: await this.generateSuggestions(analysis, trendContext)
+      };
+
+    } catch (error) {
+      console.error('Chat search failed:', error);
+      throw error;
+    }
+  }
+
+  // 통합 검색 실행
+  async executeIntegratedSearch(context) {
+    // YouTube API 검색 로직과 연동
+    const youtubeService = require('./youtubeService');
+    
+    return await youtubeService.searchWithContext(context);
+  }
+
+  // 제안 생성
+  async generateSuggestions(analysis, trendContext) {
+    const suggestions = [];
+
+    // 트렌드 기반 제안
+    if (trendContext?.relatedTerms) {
+      suggestions.push(...trendContext.relatedTerms.slice(0, 3));
+    }
+
+    // 카테고리 기반 제안
+    if (analysis.categories.length > 0) {
+      suggestions.push(`${analysis.categories[0]} 관련 영상`);
+    }
+
+    return suggestions;
+  }
+}
+
+module.exports = new ChatSearchService();
+```
+
+## 🚨 MCP 모범 사례
+
+### 1. 에러 처리 및 폴백
+```javascript
+// MCP 호출 시 항상 폴백 준비
+async function safelyCallMcp(mcpService, method, params) {
+  try {
+    return await mcpService[method](mdc:params);
+  } catch (error) {
+    console.error(`MCP ${method} failed:`, error);
+    
+    // 폴백 로직
+    return getFallbackResponse(method, params);
+  }
+}
+
+function getFallbackResponse(method, params) {
+  switch (method) {
+    case 'extractKeywords':
+      return basicKeywordExtraction(params.message);
+    case 'getTrendingKeywords':
+      return getCachedTrends();
+    default:
+      return null;
+  }
+}
+```
+
+### 2. 연결 관리
+```javascript
+// MCP 연결 풀 관리
+class MCPConnectionManager {
+  constructor() {
+    this.connections = new Map();
+    this.reconnectAttempts = new Map();
+  }
+
+  async getConnection(serviceName) {
+    if (!this.connections.has(serviceName)) {
+      await this.createConnection(serviceName);
+    }
+
+    const connection = this.connections.get(serviceName);
+    
+    if (!connection.isConnected) {
+      await this.reconnect(serviceName);
+    }
+
+    return connection;
+  }
+
+  async reconnect(serviceName) {
+    const attempts = this.reconnectAttempts.get(serviceName) || 0;
+    
+    if (attempts >= 3) {
+      throw new Error(`Max reconnection attempts reached for ${serviceName}`);
+    }
+
+    this.reconnectAttempts.set(serviceName, attempts + 1);
+    
+    setTimeout(async () => {
+      await this.createConnection(serviceName);
+      this.reconnectAttempts.delete(serviceName);
+    }, 1000 * Math.pow(2, attempts)); // 지수 백오프
+  }
+}
+```
+
+### 3. 성능 최적화
+```javascript
+// MCP 응답 캐싱
+class MCPCache {
+  constructor() {
+    this.cache = new Map();
+    this.ttl = new Map();
+  }
+
+  set(key, value, ttlMs = 300000) { // 5분 기본 TTL
+    this.cache.set(key, value);
+    this.ttl.set(key, Date.now() + ttlMs);
+  }
+
+  get(key) {
+    if (!this.cache.has(key)) return null;
+    
+    if (Date.now() > this.ttl.get(key)) {
+      this.cache.delete(key);
+      this.ttl.delete(key);
+      return null;
+    }
+
+    return this.cache.get(key);
+  }
+}
+
+const mcpCache = new MCPCache();
+
+// 캐시된 MCP 호출
+async function cachedMcpCall(key, mcpCall) {
+  const cached = mcpCache.get(key);
+  if (cached) return cached;
+
+  const result = await mcpCall();
+  mcpCache.set(key, result);
+  return result;
+}
+```
+
+## 📊 MCP 모니터링
+
+### 성능 지표
+- **응답 시간**: < 2초
+- **성공률**: > 95%
+- **캐시 적중률**: > 80%
+- **폴백 사용률**: < 10%
+
+### 로깅 및 모니터링
+```javascript
+// MCP 호출 로깅
+function logMcpCall(serviceName, method, params, result, error, duration) {
+  const logData = {
+    timestamp: new Date().toISOString(),
+    service: serviceName,
+    method,
+    params: JSON.stringify(params),
+    success: !error,
+    error: error?.message,
+    duration,
+    resultSize: JSON.stringify(result).length
+  };
+
+  console.log('MCP Call:', logData);
+  
+  // 메트릭 수집
+  analytics.track('mcp_call', logData);
+}
+```
