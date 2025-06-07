@@ -1,9 +1,34 @@
 const path = require('path');
-// 새로운 MCP 통합 시스템 연결
-const MomentumMCPClient = require('../../mcp-integration/clients/mcp-client/index.js');
+
+// MCP 클라이언트 안전하게 로드 (배포 환경 고려)
+let MomentumMCPClient = null;
+
+try {
+  // 개발 환경에서만 MCP 클라이언트 로드
+  MomentumMCPClient = require('../../mcp-integration/clients/mcp-client/index.js');
+  console.log('✅ MCP 클라이언트 모듈 로드 성공');
+} catch (error) {
+  console.log('⚠️ MCP 클라이언트 모듈을 찾을 수 없습니다 (배포 환경)');
+  console.log('📝 MCP 기능이 비활성화됩니다. 기본 YouTube 검색만 사용 가능합니다.');
+  
+  // 더미 클래스 생성 (에러 방지)
+  MomentumMCPClient = class {
+    constructor() {
+      this.available = false;
+    }
+    
+    async connectAll() {
+      return { success: false, error: 'MCP client not available' };
+    }
+    
+    getConnectionStatus() {
+      return { allConnected: false };
+    }
+  };
+}
 
 /**
- * MCP 통합 서비스 - 업데이트됨
+ * MCP 통합 서비스 - 업데이트됨 (배포 환경 안전 모드)
  * 최신 mcp-integration 시스템과 기존 백엔드를 연결
  * Wave Team
  */
@@ -13,8 +38,13 @@ class MCPIntegrationService {
     this.isInitialized = false;
     this.connectionRetries = 0;
     this.maxRetries = 3;
+    this.mcpAvailable = MomentumMCPClient && MomentumMCPClient.name !== 'class'; // 실제 클래스인지 확인
     
-    console.log('🔧 MCP 통합 서비스 초기화 시작 (최신 시스템)...');
+    if (this.mcpAvailable) {
+      console.log('🔧 MCP 통합 서비스 초기화 시작 (최신 시스템)...');
+    } else {
+      console.log('🔧 MCP 통합 서비스 (기본 모드) - MCP 기능 비활성화');
+    }
   }
 
   /**
@@ -24,6 +54,28 @@ class MCPIntegrationService {
   async initialize() {
     if (this.isInitialized) {
       return { success: true, message: 'Already initialized' };
+    }
+
+    // MCP 클라이언트가 사용 불가능한 경우
+    if (!this.mcpAvailable) {
+      console.log('⚠️ MCP 시스템 사용 불가 - 기본 검색 모드로 실행');
+      this.isInitialized = true;
+      
+      return {
+        success: false,
+        mode: 'fallback',
+        message: 'MCP 시스템을 사용할 수 없어 기본 모드로 실행됩니다.',
+        availableFeatures: [
+          '기본 YouTube 검색',
+          '캐시된 트렌드 키워드',
+          '사용자 인증'
+        ],
+        missingFeatures: [
+          'AI 자연어 검색',
+          '4단계 워크플로우',
+          '지능형 키워드 확장'
+        ]
+      };
     }
 
     try {
@@ -77,12 +129,18 @@ class MCPIntegrationService {
         setTimeout(async () => {
           await this.initialize();
         }, 10000);
+      } else {
+        // 최대 재시도 후에도 실패하면 폴백 모드로 전환
+        console.log('⚠️ MCP 연결 최대 재시도 초과 - 기본 모드로 전환');
+        this.isInitialized = true;
+        this.mcpAvailable = false;
       }
       
       return {
         success: false,
         error: error.message,
         retries: this.connectionRetries,
+        mode: 'fallback',
         troubleshooting: [
           'mcp-integration/servers/youtube-curator-mcp/ 폴더 확인',
           'npm install 실행 여부 확인',
@@ -96,6 +154,17 @@ class MCPIntegrationService {
    * MCP 클라이언트 상태 확인
    */
   getStatus() {
+    if (!this.mcpAvailable) {
+      return {
+        initialized: true,
+        connected: false,
+        mode: 'fallback',
+        message: 'MCP 클라이언트가 사용 불가능합니다. 기본 검색 모드로 실행 중입니다.',
+        availableFeatures: ['기본 YouTube 검색', '캐시된 트렌드', '사용자 인증'],
+        missingFeatures: ['AI 자연어 검색', '4단계 워크플로우', '지능형 분석']
+      };
+    }
+
     if (!this.isInitialized || !this.mcpClient) {
       return {
         initialized: false,
@@ -119,6 +188,10 @@ class MCPIntegrationService {
    * 연결 확인 및 자동 재연결
    */
   async ensureConnection() {
+    if (!this.mcpAvailable) {
+      throw new Error('MCP_NOT_AVAILABLE');
+    }
+
     if (!this.isInitialized || !this.mcpClient) {
       await this.initialize();
       return;
@@ -131,6 +204,32 @@ class MCPIntegrationService {
     }
   }
 
+  // ==================== 안전한 폴백 메서드들 ====================
+
+  /**
+   * 안전한 키워드 추출 (MCP 없을 때 폴백)
+   */
+  async extractKeywords(message, options = {}) {
+    if (!this.mcpAvailable) {
+      // 간단한 키워드 추출 폴백
+      const keywords = message
+        .replace(/[^\w\s가-힣]/g, '')
+        .split(/\s+/)
+        .filter(word => word.length > 1)
+        .slice(0, 5);
+
+      return {
+        keywords,
+        intent: 'general',
+        confidence: 0.5,
+        fallback: true
+      };
+    }
+
+    await this.ensureConnection();
+    return await this.mcpClient.processNaturalLanguage(message, options);
+  }
+
   // ==================== YouTube Curator 관련 메서드들 ====================
 
   /**
@@ -140,6 +239,10 @@ class MCPIntegrationService {
    * @returns {Object} 확장된 키워드 데이터
    */
   async expandKeywordAI(keyword, options = {}) {
+    if (!this.mcpAvailable) {
+      throw new Error('MCP_NOT_AVAILABLE: AI 키워드 확장 기능을 사용할 수 없습니다.');
+    }
+
     await this.ensureConnection();
     
     try {
@@ -158,6 +261,10 @@ class MCPIntegrationService {
    * @returns {Object} 최적화된 쿼리들
    */
   async buildOptimizedQueriesAI(keyword, strategy = 'auto', maxResults = 15) {
+    if (!this.mcpAvailable) {
+      throw new Error('MCP_NOT_AVAILABLE: AI 쿼리 최적화 기능을 사용할 수 없습니다.');
+    }
+
     await this.ensureConnection();
     
     try {
@@ -176,6 +283,10 @@ class MCPIntegrationService {
    * @returns {Object} 검색 결과
    */
   async searchPlayableShortsAI(query, maxResults = 20, filters = {}) {
+    if (!this.mcpAvailable) {
+      throw new Error('MCP_NOT_AVAILABLE: AI 영상 검색 기능을 사용할 수 없습니다.');
+    }
+
     await this.ensureConnection();
     
     try {
@@ -193,6 +304,10 @@ class MCPIntegrationService {
    * @returns {Object} 분석 결과
    */
   async analyzeVideoMetadataAI(videoIds, criteria = {}) {
+    if (!this.mcpAvailable) {
+      throw new Error('MCP_NOT_AVAILABLE: AI 비디오 분석 기능을 사용할 수 없습니다.');
+    }
+
     await this.ensureConnection();
     
     try {
@@ -211,6 +326,10 @@ class MCPIntegrationService {
    * @returns {Object} 인기 검색어 데이터
    */
   async getPopularKeywordsAI(options = {}) {
+    if (!this.mcpAvailable) {
+      throw new Error('MCP_NOT_AVAILABLE: AI 인기 검색어 분석 기능을 사용할 수 없습니다.');
+    }
+
     await this.ensureConnection();
     
     try {
@@ -229,6 +348,10 @@ class MCPIntegrationService {
    * @returns {Object} 사용자 패턴 분석 결과
    */
   async analyzeUserPatternsAI(userId, timeRange = '30d', includeRecommendations = true) {
+    if (!this.mcpAvailable) {
+      throw new Error('MCP_NOT_AVAILABLE: AI 사용자 패턴 분석 기능을 사용할 수 없습니다.');
+    }
+
     await this.ensureConnection();
     
     try {
@@ -247,6 +370,10 @@ class MCPIntegrationService {
    * @returns {Object} 실시간 트렌드 데이터
    */
   async getRealtimeTrendsAI(timeWindow = 1, detectSurging = true, groupByTimeSlots = true) {
+    if (!this.mcpAvailable) {
+      throw new Error('MCP_NOT_AVAILABLE: AI 실시간 트렌드 분석 기능을 사용할 수 없습니다.');
+    }
+
     await this.ensureConnection();
     
     try {
@@ -265,6 +392,10 @@ class MCPIntegrationService {
    * @returns {Object} 로깅 결과
    */
   async logSearchActivityAI(userId, searchQuery, metadata = {}) {
+    if (!this.mcpAvailable) {
+      throw new Error('MCP_NOT_AVAILABLE: AI 검색 활동 로깅 기능을 사용할 수 없습니다.');
+    }
+
     await this.ensureConnection();
     
     try {
@@ -283,6 +414,10 @@ class MCPIntegrationService {
    * @returns {Object} 카테고리별 트렌드 데이터
    */
   async getCategoryTrendsAI(categories = [], timeRange = '24h', includeGrowthRate = true) {
+    if (!this.mcpAvailable) {
+      throw new Error('MCP_NOT_AVAILABLE: AI 카테고리별 트렌드 분석 기능을 사용할 수 없습니다.');
+    }
+
     await this.ensureConnection();
     
     try {
@@ -302,6 +437,10 @@ class MCPIntegrationService {
    * @returns {Object} 예측 결과
    */
   async predictTrendingKeywordsAI(predictionWindow = '6h', limit = 10, confidenceThreshold = 0.7, includeReasons = true) {
+    if (!this.mcpAvailable) {
+      throw new Error('MCP_NOT_AVAILABLE: AI 트렌딩 키워드 예측 기능을 사용할 수 없습니다.');
+    }
+
     await this.ensureConnection();
     
     try {
@@ -321,6 +460,10 @@ class MCPIntegrationService {
    * @returns {Object} 큐레이션 결과
    */
   async executeAICurationWorkflow(keyword, userId = null) {
+    if (!this.mcpAvailable) {
+      throw new Error('MCP_NOT_AVAILABLE: AI 큐레이션 워크플로우 기능을 사용할 수 없습니다.');
+    }
+
     await this.ensureConnection();
     
     try {
@@ -357,6 +500,10 @@ class MCPIntegrationService {
    * @returns {Object} 트렌드 기반 큐레이션 결과
    */
   async executeTrendBasedCuration(timeWindow = 2, topTrends = 5) {
+    if (!this.mcpAvailable) {
+      throw new Error('MCP_NOT_AVAILABLE: 트렌드 기반 큐레이션 기능을 사용할 수 없습니다.');
+    }
+
     await this.ensureConnection();
     
     try {
@@ -393,18 +540,28 @@ class MCPIntegrationService {
    * @returns {Object} 향상된 검색 결과
    */
   async enhancedSearch(keyword, options = {}) {
+    const {
+      userTier = 'free',
+      userId = null,
+      enableAI = true,
+      maxResults = 20
+    } = options;
+
+    console.log(`🔍 향상된 검색 실행: "${keyword}" (${userTier})`);
+
+    if (!this.mcpAvailable || !enableAI) {
+      // MCP 없이 기본 검색
+      return {
+        success: false,
+        message: 'AI 기능을 사용할 수 없습니다. 기본 검색을 사용해주세요.',
+        searchType: 'basic_fallback',
+        fallbackUrl: '/api/v1/videos/search'
+      };
+    }
+
     await this.ensureConnection();
     
     try {
-      const {
-        userTier = 'free',
-        userId = null,
-        enableAI = true,
-        maxResults = 20
-      } = options;
-
-      console.log(`🔍 향상된 검색 실행: "${keyword}" (${userTier})`);
-
       let searchResult;
 
       if (enableAI && userTier === 'premium') {
@@ -474,7 +631,7 @@ class MCPIntegrationService {
    */
   async cleanup() {
     try {
-      if (this.mcpClient && this.isInitialized) {
+      if (this.mcpClient && this.isInitialized && this.mcpAvailable) {
         console.log('🧹 MCP 통합 서비스 정리 중...');
         
         await this.mcpClient.disconnectAll();
