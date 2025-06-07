@@ -6,7 +6,7 @@ const keywordExpansionService = require('../services/keywordExpansionService');
 const queryBuilderService = require('../services/queryBuilderService');
 const userAnalyticsService = require('../services/userAnalyticsService');
 const mcpIntegrationService = require('../services/mcpIntegrationService');
-const authMiddleware = require('../middlewares/authMiddleware');
+const authMiddleware = require('../middleware/authMiddleware');
 
 /**
  * GET /api/v1/videos/search

@@ -19,7 +19,7 @@
     "test:watch": "jest --watch",
     "prod": "NODE_ENV=production node server.js",
     "build": "npm run install-mcp",
-    "install-mcp": "cd mcp/clients/mcp-client && npm install && cd ../../servers/youtube-curator-mcp && npm install && cd ../user-analytics-mcp && npm install",
+    "install-mcp": "cd mcp && npm install",
     "setup-mcp": "npm run install-mcp",
     "postinstall": "npm run install-mcp"
   },

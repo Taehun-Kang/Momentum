@@ -1,0 +1,29 @@
+{
+  "name": "backend-mcp-system",
+  "version": "1.0.0",
+  "description": "Integrated MCP system for YouTube Shorts AI curation backend",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"No tests specified\""
+  },
+  "keywords": [
+    "mcp",
+    "youtube",
+    "ai",
+    "curation",
+    "backend"
+  ],
+  "author": "Wave Team",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@anthropic-ai/sdk": "^0.24.3",
+    "@supabase/supabase-js": "^2.50.0",
+    "axios": "^1.6.2",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+} 
