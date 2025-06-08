@@ -15,7 +15,7 @@ class MCPIntegrationService {
     this.maxRetries = 3;
     this.mcpAvailable = false;
     
-    console.log('🔧 MCP 통합 서비스 (Railway Networking) 초기화...');
+    console.log('🔧 MCP 통합 서비스 (Railway Private Networking) 초기화...');
     console.log(`📡 MCP Service URL: ${this.mcpServiceUrl}`);
     
     // 초기 연결 테스트

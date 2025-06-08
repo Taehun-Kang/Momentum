@@ -96,6 +96,83 @@ try {
   console.error('❌ Video 라우트 로드 실패:', error.message);
 }
 
+// MCP 기능 테스트 엔드포인트 (임시)
+app.get('/test-mcp', async (req, res) => {
+  try {
+    const mcpIntegrationService = require('./services/mcpIntegrationService');
+    
+    // MCP 상태 확인
+    const status = mcpIntegrationService.getStatus();
+    console.log('🧪 MCP 상태 테스트:', status);
+    
+    // 기본 검색 테스트
+    const searchResult = await mcpIntegrationService.searchVideos('먹방', 5);
+    console.log('🧪 MCP 검색 테스트 결과:', searchResult);
+    
+    res.json({
+      success: true,
+      message: 'MCP 기능 테스트 완료',
+      data: {
+        status,
+        searchTest: searchResult
+      }
+    });
+  } catch (error) {
+    console.error('🧪 MCP 테스트 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
+// 트렌드 키워드 테스트
+app.get('/test-trends', async (req, res) => {
+  try {
+    const mcpIntegrationService = require('./services/mcpIntegrationService');
+    
+    const trends = await mcpIntegrationService.getTrendingKeywords('KR', 'entertainment', 5);
+    console.log('🧪 트렌드 테스트 결과:', trends);
+    
+    res.json({
+      success: true,
+      message: '트렌드 키워드 테스트 완료',
+      data: trends
+    });
+  } catch (error) {
+    console.error('🧪 트렌드 테스트 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// AI 자연어 처리 테스트
+app.post('/test-ai', async (req, res) => {
+  try {
+    const { message = '재미있는 먹방 영상 보고 싶어' } = req.body;
+    const mcpIntegrationService = require('./services/mcpIntegrationService');
+    
+    const optimized = await mcpIntegrationService.optimizeQuery(message);
+    console.log('🧪 AI 처리 테스트 결과:', optimized);
+    
+    res.json({
+      success: true,
+      message: 'AI 자연어 처리 테스트 완료',
+      input: message,
+      data: optimized
+    });
+  } catch (error) {
+    console.error('🧪 AI 테스트 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // 404 핸들러
 app.use('*', (req, res) => {
   res.status(404).json({

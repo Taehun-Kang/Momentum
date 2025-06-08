@@ -166,92 +166,121 @@ class AuthMiddleware {
   };
 
   /**
-   * Rate Limiting 미들웨어 (사용자 티어별)
+   * 사용자 검색 패턴 업데이트
    */
-  rateLimitByTier = (limits = {}) => {
-    const defaultLimits = {
-      free: { requests: 100, window: 3600 }, // 1시간에 100회
-      premium: { requests: 1000, window: 3600 }, // 1시간에 1000회
-      pro: { requests: 10000, window: 3600 } // 1시간에 10000회
-    };
+  updateSearchPattern = async (req, res, next) => {
+    // 응답 후 검색 패턴 업데이트
+    res.on('finish', async () => {
+      try {
+        if (req.user && req.body.keywords) {
+          const timeContext = {
+            hour: new Date().getHours(),
+            isWeekend: [0, 6].includes(new Date().getDay())
+          };
 
-    const rateLimits = { ...defaultLimits, ...limits };
-    const userRequestCounts = new Map(); // 실제로는 Redis 사용 권장
-
-    return async (req, res, next) => {
-      const userId = req.user?.id || req.ip;
-      const userTier = req.user?.user_tier || 'free';
-      const limit = rateLimits[userTier];
-
-      const now = Date.now();
-      const windowStart = now - (limit.window * 1000);
-
-      // 사용자의 요청 기록 조회
-      let userRequests = userRequestCounts.get(userId) || [];
-      
-      // 윈도우 범위 밖의 요청 제거
-      userRequests = userRequests.filter(timestamp => timestamp > windowStart);
-
-      // 현재 요청 추가
-      userRequests.push(now);
-      userRequestCounts.set(userId, userRequests);
-
-      // 제한 확인
-      if (userRequests.length > limit.requests) {
-        return res.status(429).json({
-          success: false,
-          error: 'RATE_LIMIT_EXCEEDED',
-          message: `요청 한도를 초과했습니다. ${userTier} 티어는 ${limit.window/3600}시간에 ${limit.requests}회까지 가능합니다.`,
-          retryAfter: Math.ceil((userRequests[0] - windowStart) / 1000),
-          upgradeMessage: userTier === 'free' ? '프리미엄으로 업그레이드하면 더 많은 요청이 가능합니다.' : null
-        });
+          await supabaseService.updateUserSearchPattern(
+            req.user.id,
+            req.body.keywords,
+            timeContext
+          );
+        }
+      } catch (error) {
+        console.error('검색 패턴 업데이트 실패:', error);
       }
+    });
 
-      // 응답 헤더에 사용량 정보 추가
-      res.set({
-        'X-RateLimit-Limit': limit.requests,
-        'X-RateLimit-Remaining': limit.requests - userRequests.length,
-        'X-RateLimit-Reset': Math.ceil((windowStart + limit.window * 1000) / 1000)
-      });
-
-      next();
-    };
+    next();
   };
 
   /**
-   * API 사용량 로깅 미들웨어
+   * 사용량 추적 미들웨어 (Rate Limiting + API 사용량 로깅 조합)
    */
-  logApiUsage = (quotaCategory = 'general', unitsConsumed = 1) => {
+  trackUsage = (options = {}) => {
+    const {
+      quotaCategory = 'general',
+      unitsConsumed = 1,
+      enableRateLimit = true,
+      rateLimits = {}
+    } = options;
+
     return async (req, res, next) => {
       const startTime = Date.now();
 
-      // 응답 후 로깅
-      res.on('finish', async () => {
-        try {
-          const responseTime = Date.now() - startTime;
+      try {
+        // 1. Rate Limiting (선택사항)
+        if (enableRateLimit) {
+          const userId = req.user?.id || req.ip;
+          const userTier = req.user?.user_tier || 'free';
           
-          await supabaseService.logApiUsage({
-            apiName: 'momentum_api',
-            endpoint: req.originalUrl,
-            method: req.method,
-            unitsConsumed,
-            quotaCategory,
-            responseTime,
-            statusCode: res.statusCode,
-            errorMessage: res.statusCode >= 400 ? 'API Error' : null,
-            requestParams: {
-              query: req.query,
-              body: req.method === 'POST' ? req.body : undefined,
-              userAgent: req.headers['user-agent'],
-              userId: req.user?.id
-            }
-          });
-        } catch (error) {
-          console.error('API 사용량 로깅 실패:', error);
-        }
-      });
+          const defaultLimits = {
+            free: { requests: 100, window: 3600 },
+            premium: { requests: 1000, window: 3600 },
+            pro: { requests: 10000, window: 3600 }
+          };
 
-      next();
+          const limits = { ...defaultLimits, ...rateLimits };
+          const limit = limits[userTier];
+
+          // 간단한 메모리 기반 Rate Limiting (프로덕션에서는 Redis 권장)
+          if (!this.requestCounts) this.requestCounts = new Map();
+          
+          const now = Date.now();
+          const windowStart = now - (limit.window * 1000);
+          
+          let userRequests = this.requestCounts.get(userId) || [];
+          userRequests = userRequests.filter(timestamp => timestamp > windowStart);
+          
+          if (userRequests.length >= limit.requests) {
+            return res.status(429).json({
+              success: false,
+              error: 'RATE_LIMIT_EXCEEDED',
+              message: `요청 한도 초과. ${userTier} 티어는 ${limit.window/3600}시간에 ${limit.requests}회까지 가능합니다.`,
+              retryAfter: Math.ceil((userRequests[0] - windowStart) / 1000)
+            });
+          }
+
+          userRequests.push(now);
+          this.requestCounts.set(userId, userRequests);
+
+          // 헤더 설정
+          res.set({
+            'X-RateLimit-Limit': limit.requests,
+            'X-RateLimit-Remaining': limit.requests - userRequests.length,
+            'X-RateLimit-Reset': Math.ceil((windowStart + limit.window * 1000) / 1000)
+          });
+        }
+
+        // 2. API 사용량 로깅 (응답 후)
+        res.on('finish', async () => {
+          try {
+            const responseTime = Date.now() - startTime;
+            
+            await supabaseService.logApiUsage({
+              apiName: 'momentum_api',
+              endpoint: req.originalUrl,
+              method: req.method,
+              unitsConsumed,
+              quotaCategory,
+              responseTime,
+              statusCode: res.statusCode,
+              errorMessage: res.statusCode >= 400 ? 'API Error' : null,
+              requestParams: {
+                query: req.query,
+                body: req.method === 'POST' ? req.body : undefined,
+                userAgent: req.headers['user-agent'],
+                userId: req.user?.id
+              }
+            });
+          } catch (error) {
+            console.error('API 사용량 로깅 실패:', error);
+          }
+        });
+
+        next();
+      } catch (error) {
+        console.error('사용량 추적 미들웨어 오류:', error);
+        next(); // 오류가 발생해도 계속 진행
+      }
     };
   };
 
@@ -293,33 +322,6 @@ class AuthMiddleware {
 
     next();
   };
-
-  /**
-   * 사용자 검색 패턴 업데이트
-   */
-  updateSearchPattern = async (req, res, next) => {
-    // 응답 후 검색 패턴 업데이트
-    res.on('finish', async () => {
-      try {
-        if (req.user && req.body.keywords) {
-          const timeContext = {
-            hour: new Date().getHours(),
-            isWeekend: [0, 6].includes(new Date().getDay())
-          };
-
-          await supabaseService.updateUserSearchPattern(
-            req.user.id,
-            req.body.keywords,
-            timeContext
-          );
-        }
-      } catch (error) {
-        console.error('검색 패턴 업데이트 실패:', error);
-      }
-    });
-
-    next();
-  };
 }
 
 // 싱글톤 인스턴스 내보내기
@@ -330,8 +332,7 @@ module.exports = {
   optionalAuth: authMiddleware.optionalAuth,
   requirePremium: authMiddleware.requirePremium,
   requireAdmin: authMiddleware.requireAdmin,
-  rateLimitByTier: authMiddleware.rateLimitByTier,
-  logApiUsage: authMiddleware.logApiUsage,
+  trackUsage: authMiddleware.trackUsage,
   securityHeaders: authMiddleware.securityHeaders,
   createSession: authMiddleware.createSession,
   updateSearchPattern: authMiddleware.updateSearchPattern
