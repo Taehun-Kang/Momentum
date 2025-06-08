@@ -45,15 +45,16 @@ router.get('/search', async (req, res) => {
 
     console.log(`🔍 MCP 기본 검색: "${q}"`);
 
-    // ✅ MCP 서버로 검색 (Claude AI 최적화 + 한글 지원)
+    // ✅ MCP 서버 형식에 맞춰 요청
     const mcpResult = await callMcpServer('/api/search', {
-      keyword: q,
-      useAI: false, // 기본 검색은 AI 비활성화
-      maxResults: parseInt(maxResults),
-      order
+      query: q, // ✅ keyword → query로 변경
+      options: {
+        maxResults: parseInt(maxResults),
+        order
+      }
     });
 
-    const videos = mcpResult.videos || [];
+    const videos = mcpResult.results?.videos || [];
     const searchTime = Date.now() - startTime;
 
     // 🔥 검색 로그 기록
@@ -128,16 +129,17 @@ router.get('/trending', async (req, res) => {
 
     console.log(`🔥 MCP 인기 영상 검색 (지역: ${regionCode})`);
 
-    // ✅ MCP 서버로 트렌딩 검색
+    // ✅ MCP 서버 형식에 맞춰 요청
     const mcpResult = await callMcpServer('/api/search', {
-      keyword: '인기 쇼츠', // 한국 맞춤 트렌딩 키워드
-      useAI: false,
-      maxResults: parseInt(maxResults),
-      order: 'relevance',
-      regionCode
+      query: '인기 쇼츠', // 한국 맞춤 트렌딩 키워드
+      options: {
+        maxResults: parseInt(maxResults),
+        order: 'relevance',
+        regionCode
+      }
     });
 
-    const videos = mcpResult.videos || [];
+    const videos = mcpResult.results?.videos || [];
 
     res.json({
       success: true,
@@ -183,14 +185,15 @@ router.get('/categories/:category', async (req, res) => {
 
     const query = categoryQueries[category.toLowerCase()] || `${category} 쇼츠`;
 
-    // ✅ MCP 서버로 카테고리 검색
+    // ✅ MCP 서버 형식에 맞춰 요청
     const mcpResult = await callMcpServer('/api/search', {
-      keyword: query,
-      useAI: false,
-      maxResults: parseInt(maxResults)
+      query: query,
+      options: {
+        maxResults: parseInt(maxResults)
+      }
     });
 
-    const videos = mcpResult.videos || [];
+    const videos = mcpResult.results?.videos || [];
 
     res.json({
       success: true,
