@@ -4541,72 +4541,79 @@ JSON 형식으로 응답:
 
 // 메인 실행 로직
 async function main() {
-  const mcpServer = new YouTubeShortsAIMCPServer();
-  
-  // Railway 환경 자동 감지 및 트랜스포트 결정
-  const isRailway = !!process.env.PORT;
-  const transport = process.env.MCP_TRANSPORT || (isRailway ? 'http' : 'stdio');
+  const server = new YouTubeShortsAIMCPServer();
   
   console.log('🎬 YouTube Shorts AI MCP 서버 초기화 중...');
-  console.log(`📍 감지된 환경: ${isRailway ? 'Railway (배포)' : 'Local (개발)'}`);
-  console.log(`🚀 트랜스포트 모드: ${transport.toUpperCase()}`);
   
-  // API 키 설정 상태 확인
-  console.log('\n🔑 API 설정 상태:');
-  console.log(`  - YouTube API: ${mcpServer.config.youtubeApiKey ? '✅ 설정됨' : '❌ 미설정'}`);
-  console.log(`  - Claude API: ${mcpServer.config.claudeApiKey ? '✅ 설정됨' : '❌ 미설정'}`);
-  console.log(`  - Bright Data API: ${mcpServer.config.brightDataApiKey ? '✅ 설정됨' : '❌ 미설정'}`);
+  // 환경 감지
+  const isRailway = process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID;
+  const isStdio = process.argv.includes('--stdio');
+  const isHTTP = process.argv.includes('--http') || process.env.MCP_TRANSPORT === 'http';
   
-  // 중요 설정 정보
-  console.log('\n⚙️ 최적화 설정:');
+  console.log(`📍 감지된 환경: ${isRailway ? 'Railway (배포)' : '로컬'}`);
+  console.log(`🚀 트랜스포트 모드: ${isStdio ? 'STDIO' : isHTTP || isRailway ? 'HTTP' : 'STDIO'}`);
+  
+  // API 상태 표시
+  console.log('\\n🔑 API 설정 상태:');
+  console.log(`  - YouTube API: ${server.config.youtubeApiKey ? '✅ 설정됨' : '❌ 미설정'}`);
+  console.log(`  - Claude API: ${server.config.claudeApiKey ? '✅ 설정됨' : '❌ 미설정'}`);
+  console.log(`  - Bright Data API: ${server.config.brightDataApiKey ? '✅ 설정됨' : '❌ 미설정'}`);
+  
+  // 최적화 설정 표시
+  console.log('\\n⚙️ 최적화 설정:');
   console.log('  - search.list maxResults: 50 (최대 후보 확보)');
   console.log('  - 2단계 필터링: 활성화 (재생 가능 영상만)');
   console.log('  - API 할당량 관리: 일일 10,000 units');
   console.log('  - 캐싱 전략: 4시간 TTL');
   console.log('  - 스마트 페이지네이션: 30개 미만 시 자동 다음 페이지');
   
-  console.log('\n🎯 제공 기능:');
+  // 기능 개요 표시
+  console.log('\\n🎯 제공 기능:');
   console.log('  - 🛠️  10개 MCP 도구 (검색, 트렌드, 워크플로우)');
   console.log('  - 📁 3개 리소스 (캐시, 트렌드, 사용량)');
   console.log('  - 💬 3개 프롬프트 (최적화, 분석, 추천)');
   
-  console.log('\n🌐 연결 방식:');
-  if (transport === 'stdio') {
-    console.log('  - 📡 STDIO: Claude Desktop MCP 연동');
-  } else if (transport === 'http') {
-    console.log('  - 🌐 StreamableHTTP: 정식 MCP over HTTP (포트 3000)');
-    console.log('  - 🔗 Backend 호환성: Express API 레이어 (포트 3001)');
-    console.log('  - 🔄 폴백: Express HTTP 서버 (MCP 실패 시)');
-  }
-  
+  console.log('\\n🌐 연결 방식:');
+  console.log('  - 🌐 StreamableHTTP: 정식 MCP over HTTP (포트 3000)');
+  console.log('  - 🔗 Backend 호환성: Express API 레이어 (포트 3001)');
+  console.log('  - 🔄 폴백: Express HTTP 서버 (MCP 실패 시)');
+
   try {
-    if (transport === 'stdio') {
-      console.log('\n📡 STDIO 모드 시작 (Claude Desktop 연동용)...');
-      await mcpServer.startStdio();
-    } else if (transport === 'http') {
-      const port = parseInt(process.env.PORT || '3000');
-      console.log(`\n🌐 HTTP 모드 시작 (Railway 배포용) - 포트: ${port}...`);
-      console.log('⭐ 정식 MCP StreamableHTTP 트랜스포트 우선 시도');
-      await mcpServer.startHTTP(port);
+    if (isStdio) {
+      console.log('\\n🔌 STDIO 모드 시작...');
+      await server.startStdio();
+    } else if (isHTTP || isRailway) {
+      const port = parseInt(process.env.PORT) || 3000;
+      
+      if (isRailway) {
+        // Railway: Express HTTP 서버만 사용 (헬스체크 호환성)
+        console.log(`\\n🌐 Railway 배포 모드 - Express HTTP 서버 (포트: ${port})...`);
+        await server.startExpressHTTP(port);
+      } else {
+        // 로컬: MCP StreamableHTTP 우선 시도
+        console.log(`\\n🌐 HTTP 모드 시작 (로컬 개발용) - 포트: ${port}...`);
+        console.log('⭐ 정식 MCP StreamableHTTP 트랜스포트 우선 시도');
+        
+        try {
+          await server.startHTTP(port);
+          
+          // Backend 호환성 레이어도 시작 (다른 포트)
+          setTimeout(async () => {
+            await server.startBackendCompatibilityLayer(port + 1);
+          }, 1000);
+          
+        } catch (mcpError) {
+          console.error('❌ MCP StreamableHTTP 시작 실패:', mcpError);
+          console.log('🔄 Express HTTP 폴백 모드로 전환...');
+          await server.startExpressHTTP(port);
+        }
+      }
     } else {
-      throw new Error(`❌ 지원하지 않는 트랜스포트: ${transport}`);
+      console.log('\\n🔌 기본값: STDIO 모드 시작...');
+      await server.startStdio();
     }
-    
   } catch (error) {
-    console.error('\n❌ MCP 서버 시작 실패:', error);
-    console.error('💡 확인사항:');
-    console.error('  - 환경 변수 (.env) 설정');
-    console.error('  - API 키 유효성');
-    console.error('  - 포트 충돌 여부');
-    console.error('  - Railway 네트워킹 설정');
-    
-    if (transport === 'http') {
-      console.error('\n🔧 Railway 배포 시 확인사항:');
-      console.error('  - PORT 환경변수 설정');
-      console.error('  - Railway Private Networking 활성화');
-      console.error('  - 백엔드에서 올바른 MCP URL 설정');
-    }
-    
+    console.error('❌ 서버 시작 실패:', error);
     process.exit(1);
   }
 }
