@@ -232,12 +232,12 @@ app.listen(PORT, HOST, () => {
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('📴 SIGTERM 신호 수신. 서버 종료 중...');
-  process.exit(0);
+    process.exit(0);
 });
 
 process.on('SIGINT', () => {
   console.log('📴 SIGINT 신호 수신. 서버 종료 중...');
-  process.exit(0);
+    process.exit(0);
 });
 
 module.exports = app; 
