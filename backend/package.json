@@ -17,10 +17,16 @@
     "dev": "nodemon server.js",
     "test": "jest",
     "test:watch": "jest --watch",
-    "prod": "NODE_ENV=production node server.js"
+    "prod": "NODE_ENV=production node server.js",
+    "mcp:start": "cd mcp && node railway-startup.js",
+    "mcp:dev": "cd mcp && node --watch railway-startup.js",
+    "mcp:test": "cd mcp && node correct-mcp-client.js",
+    "mcp:server": "cd mcp && node correct-mcp-server.js",
+    "mcp:host": "cd mcp && node railway-mcp-host.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.3",
+    "@modelcontextprotocol/sdk": "^1.12.1",
     "@supabase/supabase-js": "^2.50.0",
     "axios": "^1.6.2",
     "bcrypt": "^5.1.1",
@@ -31,7 +37,8 @@
     "googleapis": "^128.0.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "node-cache": "^5.1.2"
+    "node-cache": "^5.1.2",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "jest": "^29.7.0",
