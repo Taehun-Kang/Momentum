@@ -261,6 +261,120 @@ class MCPIntegrationService {
     }
   }
 
+  /**
+   * 대화형 응답 생성 (videoRoutes.js 호환)
+   */
+  async generateResponse(keywords, videoCount, originalMessage) {
+    if (!this.mcpAvailable) {
+      // 기본 응답 생성
+      return {
+        message: `"${originalMessage}"에 대한 검색 결과 ${videoCount}개의 영상을 찾았습니다.`,
+        keywords,
+        suggestions: keywords.slice(0, 3),
+        fallback: true
+      };
+    }
+
+    try {
+      // MCP를 통한 Claude AI 응답 생성
+      const response = await this.optimizeQuery(
+        `다음 검색으로 ${videoCount}개의 YouTube Shorts를 찾았습니다. 사용자에게 친근한 응답을 생성해주세요: "${originalMessage}"`,
+        { keywords, videoCount }
+      );
+
+      return {
+        message: response.optimizedQuery || `${videoCount}개의 관련 영상을 찾았습니다!`,
+        keywords,
+        suggestions: response.keywords || keywords.slice(0, 3),
+        aiGenerated: true
+      };
+    } catch (error) {
+      console.error('AI 응답 생성 실패, 폴백 사용:', error);
+      return await this.generateResponse(keywords, videoCount, originalMessage);
+    }
+  }
+
+  /**
+   * 트렌드 분석 (videoRoutes.js 호환)
+   */
+  async analyzeTrends(category = 'all') {
+    if (!this.mcpAvailable) {
+      // 기본 트렌드 데이터
+      const fallbackTrends = {
+        trending: ['먹방', '브이로그', '댄스', '요리', '게임'],
+        categories: {
+          entertainment: ['먹방', '댄스', '개그'],
+          lifestyle: ['브이로그', '요리', '운동'],
+          music: ['커버', 'K-POP', '악기연주']
+        },
+        region: 'KR',
+        updatedAt: new Date().toISOString(),
+        source: 'fallback'
+      };
+
+      return category === 'all' ? fallbackTrends : {
+        ...fallbackTrends,
+        trending: fallbackTrends.categories[category] || fallbackTrends.trending.slice(0, 3)
+      };
+    }
+
+    try {
+      // MCP를 통한 실시간 트렌드 조회
+      const trendData = await this.getTrendingKeywords('KR', category);
+      
+      return {
+        trending: trendData.trends?.map(t => t.keyword) || ['먹방', '브이로그', '댄스'],
+        categories: {
+          entertainment: ['먹방', '댄스', '개그'],
+          lifestyle: ['브이로그', '요리', '운동'],
+          music: ['커버', 'K-POP', '악기연주']
+        },
+        region: 'KR',
+        updatedAt: new Date().toISOString(),
+        source: 'mcp_service'
+      };
+    } catch (error) {
+      console.error('트렌드 분석 실패, 폴백 사용:', error);
+      return await this.analyzeTrends(category);
+    }
+  }
+
+  /**
+   * 시간 컨텍스트 조회 (videoRoutes.js 호환)
+   */
+  getTimeContext() {
+    const now = new Date();
+    const hour = now.getHours();
+    
+    let timeOfDay;
+    if (hour >= 5 && hour < 12) timeOfDay = 'morning';
+    else if (hour >= 12 && hour < 17) timeOfDay = 'afternoon';
+    else if (hour >= 17 && hour < 22) timeOfDay = 'evening';
+    else timeOfDay = 'night';
+
+    return {
+      timeOfDay,
+      hour,
+      date: now.toISOString().split('T')[0],
+      timestamp: now.toISOString(),
+      recommendedKeywords: this.getTimeBasedKeywords(timeOfDay)
+    };
+  }
+
+  /**
+   * 시간대별 추천 키워드
+   */
+  getTimeBasedKeywords(timeOfDay) {
+    const keywordMap = {
+      morning: ['모닝루틴', '아침운동', '출근준비', '아침요리'],
+      afternoon: ['점심메뉴', '카페브이로그', '오후간식', '낮잠'],
+      evening: ['퇴근길', '저녁요리', '하루정리', '일상'],
+      night: ['ASMR', '수면음악', '밤산책', '힐링']
+    };
+
+    return keywordMap[timeOfDay] || keywordMap.night;
+  }
+
   // ==================== 통합 워크플로우 메서드들 ====================
 
   /**
