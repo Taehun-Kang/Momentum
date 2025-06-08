@@ -8,24 +8,30 @@ const axios = require('axios');
  */
 class MCPIntegrationService {
   constructor() {
-    // Railway 내부 네트워킹 URL 후보들
+    // Railway 내부 네트워킹 URL 후보들 (단순화된 Express 서버)
     this.mcpServiceUrls = [
       process.env.MCP_SERVICE_URL,
+      // ⭐ 단순화된 Express 서버 (포트 3000만 사용)
+      'http://mcp-service.railway.internal:3000', // Express 전용 서버
+      'https://mcp-service.railway.internal:3000',
+      'http://mcp-service:3000',
+      // 기존 포트들 (폴백용)
+      'http://mcp-service.railway.internal:3001',
       'http://mcp-service.railway.internal:8080',
+      'https://mcp-service.railway.internal:3001',
       'https://mcp-service.railway.internal:8080',
-      'http://mcp-service:8080',
-      'https://mcp-service:8080',
-      'http://mcp-service.railway.internal',
-      'https://mcp-service.railway.internal'
+      'http://mcp-service:3001',
+      'http://mcp-service:8080'
     ].filter(url => url); // null/undefined 제거
     
-    this.mcpServiceUrl = this.mcpServiceUrls[0] || 'http://mcp-service.railway.internal:8080';
+    this.mcpServiceUrl = this.mcpServiceUrls[0] || 'http://mcp-service.railway.internal:3000';
     this.isInitialized = false;
     this.connectionRetries = 0;
     this.maxRetries = 3;
     this.mcpAvailable = false;
+    this.mcpMode = 'unknown'; // 'express_only', 'express_fallback', 'legacy'
     
-    console.log('🔧 MCP 통합 서비스 (Railway Private Networking) 초기화...');
+    console.log('🔧 MCP 통합 서비스 (단순화된 Express 기반) 초기화...');
     console.log(`📡 MCP Service URL 후보들:`, this.mcpServiceUrls);
     
     // 초기 연결 테스트
@@ -33,7 +39,7 @@ class MCPIntegrationService {
   }
 
   /**
-   * MCP 서비스와의 연결 테스트
+   * MCP 서비스와의 연결 테스트 (개선된 모드 탐지)
    */
   async testConnection() {
     console.log('🔍 Railway Private Network URL 패턴 테스트 시작...');
@@ -54,7 +60,23 @@ class MCPIntegrationService {
           this.mcpServiceUrl = testUrl;
           this.mcpAvailable = true;
           this.isInitialized = true;
-          console.log(`✅ MCP 서비스 연결 성공! URL: ${testUrl}`);
+          
+          // ⭐ MCP 모드 탐지
+          const healthData = response.data;
+          if (healthData.mode === 'express_only') {
+            this.mcpMode = 'express_only';
+            console.log(`✅ MCP 서비스 연결 성공! (Express 전용 모드) URL: ${testUrl}`);
+          } else if (healthData.mode === 'express_fallback') {
+            this.mcpMode = 'express_fallback';
+            console.log(`✅ MCP 서비스 연결 성공! (Express 폴백 모드) URL: ${testUrl}`);
+          } else if (testUrl.includes(':3000')) {
+            this.mcpMode = 'express_only';
+            console.log(`✅ MCP 서비스 연결 성공! (Express 서버 포트 3000) URL: ${testUrl}`);
+          } else {
+            this.mcpMode = 'legacy';
+            console.log(`✅ MCP 서비스 연결 성공! (레거시 포트) URL: ${testUrl}`);
+          }
+          
           return; // 성공하면 중단
         }
       } catch (error) {
@@ -68,6 +90,7 @@ class MCPIntegrationService {
     console.log('📝 MCP 기능이 비활성화됩니다. 기본 YouTube 검색만 사용 가능합니다.');
     
     this.mcpAvailable = false;
+    this.mcpMode = 'disabled';
     this.isInitialized = true; // 폴백 모드로 초기화
   }
 
@@ -113,23 +136,47 @@ class MCPIntegrationService {
   }
 
   /**
-   * MCP 클라이언트 상태 확인
+   * MCP 클라이언트 상태 확인 (개선된 모드 정보)
    */
   getStatus() {
+    const modeDescriptions = {
+      'express_only': 'Express 전용 서버 (포트 3000)',
+      'express_fallback': 'Express 폴백 모드',
+      'legacy': '레거시 포트 (8080)',
+      'disabled': 'MCP 서비스 비활성화',
+      'unknown': '모드 미확인'
+    };
+
+    const connectionDetails = {
+      url: this.mcpServiceUrl,
+      mode: this.mcpMode,
+      modeDescription: modeDescriptions[this.mcpMode] || '알 수 없음',
+      protocol: 'REST API',
+      retryCount: this.connectionRetries
+    };
+
     return {
       initialized: this.isInitialized,
       connected: this.mcpAvailable,
       serviceUrl: this.mcpServiceUrl,
       mode: this.mcpAvailable ? 'railway_networking' : 'fallback',
+      mcpMode: this.mcpMode,
+      connectionDetails,
       message: this.mcpAvailable 
-        ? 'MCP 서비스와 Railway Private Network로 연결됨'
+        ? `MCP 서비스와 Railway Private Network로 연결됨 (${modeDescriptions[this.mcpMode]})`
         : 'MCP 서비스에 연결할 수 없습니다. 기본 검색 모드로 실행 중입니다.',
       availableFeatures: this.mcpAvailable 
-        ? ['AI 자연어 검색', '4단계 워크플로우', '지능형 분석', 'MCP Tools']
+        ? ['AI 자연어 검색', '2단계 필터링', '스마트 페이지네이션', 'Express API 호환']
         : ['기본 YouTube 검색', '캐시된 트렌드', '사용자 인증'],
       missingFeatures: this.mcpAvailable 
         ? []
-        : ['AI 자연어 검색', '4단계 워크플로우', '지능형 분석']
+        : ['AI 자연어 검색', '2단계 필터링', '스마트 페이지네이션'],
+      performance: {
+        preferredPort: 3000,
+        fallbackPorts: [3001, 8080],
+        mcpCompliant: false, // Express 전용이므로 정식 MCP 미준수
+        railwayOptimized: true
+      }
     };
   }
 

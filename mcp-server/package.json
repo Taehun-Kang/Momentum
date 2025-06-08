@@ -1,18 +1,15 @@
 {
-  "name": "youtube-shorts-ai-mcp-system",
+  "name": "youtube-shorts-mcp-server",
   "version": "1.0.0",
-  "description": "🎬 YouTube Shorts AI Curation MCP System - Railway MCP Host + MCP Server",
-  "main": "railway-mcp-host.js",
+  "description": "YouTube Shorts AI 큐레이션 MCP 서버",
+  "main": "correct-mcp-server.js",
   "type": "module",
   "scripts": {
-    "start": "node railway-mcp-host.js",
-    "start:production": "node railway-mcp-host.js",
-    "start:http": "node correct-mcp-server-http.js",
-    "start:host": "node railway-mcp-host.js",
-    "dev": "node --watch railway-startup.js",
-    "dev:server": "node --watch correct-mcp-server-http.js",
-    "test": "node correct-mcp-client.js",
-    "install-claude": "echo 'Add this server to your Claude Desktop config'"
+    "start": "node correct-mcp-server.js",
+    "dev": "node --watch correct-mcp-server.js",
+    "test": "node --test",
+    "stdio": "MCP_TRANSPORT=stdio node correct-mcp-server.js",
+    "http": "MCP_TRANSPORT=http PORT=3000 node correct-mcp-server.js"
   },
   "keywords": [
     "mcp",
@@ -20,29 +17,23 @@
     "youtube",
     "shorts",
     "ai",
-    "claude",
     "curation",
-    "anthropic",
-    "bright-data",
-    "video-search",
-    "railway",
-    "express",
-    "mcp-host"
+    "claude"
   ],
-  "author": "YouTube Shorts AI Team",
+  "author": "Wave Team",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.1",
     "@anthropic-ai/sdk": "^0.24.3",
-    "axios": "^1.6.0",
-    "dotenv": "^16.4.5",
-    "zod": "^3.22.4",
-    "express": "^4.18.2",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "axios": "^1.6.2",
     "cors": "^2.8.5",
-    "helmet": "^7.1.0"
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "zod": "^3.22.4"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   },
   "repository": {
     "type": "git",
@@ -53,26 +44,38 @@
   },
   "homepage": "https://github.com/youtube-shorts-ai/mcp-system#readme",
   "mcp": {
-    "host": {
-      "name": "railway-mcp-host",
-      "version": "1.0.0",
-      "description": "Railway MCP Host with Claude API integration",
-      "endpoints": [
-        "POST /api/search",
-        "POST /api/chat",
-        "GET /api/trends",
-        "POST /mcp/connect"
-      ]
-    },
     "server": {
       "name": "youtube-shorts-ai-curator",
       "version": "1.0.0",
       "description": "AI-powered YouTube Shorts curation with LLM optimization and real-time trends",
       "capabilities": {
-        "tools": ["search_videos", "get_trending_keywords", "optimize_query", "get_server_stats"],
-        "resources": ["api-usage"],
-        "prompts": ["optimize-search"]
-      }
+        "tools": [
+          "search_videos",
+          "get_trending_keywords",
+          "optimize_query",
+          "get_server_stats",
+          "extract_related_keywords",
+          "expand_keywords_with_brightdata",
+          "extract_trending_keywords_advanced"
+        ],
+        "resources": [
+          "cached-searches",
+          "trend-data",
+          "api-usage"
+        ],
+        "prompts": [
+          "optimize-search",
+          "analyze-results",
+          "trend-recommendations"
+        ]
+      },
+      "endpoints": [
+        "POST /api/tools/call",
+        "GET /api/resources/:name",
+        "POST /api/search",
+        "POST /api/chat",
+        "GET /api/trends"
+      ]
     }
   }
-} 
+}
