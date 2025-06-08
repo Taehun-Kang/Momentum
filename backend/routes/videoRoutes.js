@@ -9,7 +9,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 // 🔥 MCP 서버 호출 헬퍼 함수
 async function callMcpServer(endpoint, data = {}) {
   try {
-    const response = await fetch(`http://mcp-service.railway.internal:8080${endpoint}`, {
+    const response = await fetch(`http://mcp-service.railway.internal:3000${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -221,14 +221,14 @@ router.get('/categories/:category', async (req, res) => {
 router.get('/status', async (req, res) => {
   try {
     // MCP 서버 헬스 체크
-    const healthCheck = await fetch('http://mcp-service.railway.internal:8080/health');
+    const healthCheck = await fetch('http://mcp-service.railway.internal:3000/health');
     const mcpStatus = healthCheck.ok;
     
     res.json({
       success: true,
       data: {
         mcpServerConnected: mcpStatus,
-        mcpServerUrl: 'mcp-service.railway.internal:8080',
+        mcpServerUrl: 'mcp-service.railway.internal:3000',
         message: mcpStatus ? 'MCP Server is healthy' : 'MCP Server connection failed'
       }
     });
