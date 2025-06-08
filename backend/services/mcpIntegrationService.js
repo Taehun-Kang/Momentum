@@ -8,15 +8,25 @@ const axios = require('axios');
  */
 class MCPIntegrationService {
   constructor() {
-    // Railway 내부 네트워킹 URL
-    this.mcpServiceUrl = process.env.MCP_SERVICE_URL || 'http://mcp-service.railway.internal:8080';
+    // Railway 내부 네트워킹 URL 후보들
+    this.mcpServiceUrls = [
+      process.env.MCP_SERVICE_URL,
+      'http://mcp-service.railway.internal:8080',
+      'https://mcp-service.railway.internal:8080',
+      'http://mcp-service:8080',
+      'https://mcp-service:8080',
+      'http://mcp-service.railway.internal',
+      'https://mcp-service.railway.internal'
+    ].filter(url => url); // null/undefined 제거
+    
+    this.mcpServiceUrl = this.mcpServiceUrls[0] || 'http://mcp-service.railway.internal:8080';
     this.isInitialized = false;
     this.connectionRetries = 0;
     this.maxRetries = 3;
     this.mcpAvailable = false;
     
     console.log('🔧 MCP 통합 서비스 (Railway Private Networking) 초기화...');
-    console.log(`📡 MCP Service URL: ${this.mcpServiceUrl}`);
+    console.log(`📡 MCP Service URL 후보들:`, this.mcpServiceUrls);
     
     // 초기 연결 테스트
     this.testConnection();
@@ -26,28 +36,39 @@ class MCPIntegrationService {
    * MCP 서비스와의 연결 테스트
    */
   async testConnection() {
-    try {
-      const response = await axios.get(`${this.mcpServiceUrl}/health`, {
-        timeout: 5000,
-        headers: {
-          'User-Agent': 'Momentum-Backend/1.0.0'
+    console.log('🔍 Railway Private Network URL 패턴 테스트 시작...');
+    
+    for (let i = 0; i < this.mcpServiceUrls.length; i++) {
+      const testUrl = this.mcpServiceUrls[i];
+      console.log(`🧪 테스트 중: ${testUrl}`);
+      
+      try {
+        const response = await axios.get(`${testUrl}/health`, {
+          timeout: 5000,
+          headers: {
+            'User-Agent': 'Momentum-Backend/1.0.0'
+          }
+        });
+        
+        if (response.status === 200) {
+          this.mcpServiceUrl = testUrl;
+          this.mcpAvailable = true;
+          this.isInitialized = true;
+          console.log(`✅ MCP 서비스 연결 성공! URL: ${testUrl}`);
+          return; // 성공하면 중단
         }
-      });
-      
-      if (response.status === 200) {
-        this.mcpAvailable = true;
-        this.isInitialized = true;
-        console.log('✅ MCP 서비스 연결 성공 (Railway Private Network)');
-      } else {
-        throw new Error(`Unexpected status: ${response.status}`);
+      } catch (error) {
+        console.log(`❌ ${testUrl} 연결 실패: ${error.message}`);
+        continue; // 다음 URL 시도
       }
-    } catch (error) {
-      console.log('⚠️ MCP 서비스 연결 실패:', error.message);
-      console.log('📝 MCP 기능이 비활성화됩니다. 기본 YouTube 검색만 사용 가능합니다.');
-      
-      this.mcpAvailable = false;
-      this.isInitialized = true; // 폴백 모드로 초기화
     }
+    
+    // 모든 URL 실패
+    console.log('⚠️ 모든 MCP 서비스 URL 연결 실패');
+    console.log('📝 MCP 기능이 비활성화됩니다. 기본 YouTube 검색만 사용 가능합니다.');
+    
+    this.mcpAvailable = false;
+    this.isInitialized = true; // 폴백 모드로 초기화
   }
 
   /**
