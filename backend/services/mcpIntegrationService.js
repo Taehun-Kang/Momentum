@@ -154,53 +154,23 @@ class MCPIntegrationService {
    */
   async searchVideos(query, maxResults = 10, nextPageToken = null) {
     const data = {
-      jsonrpc: "2.0",
-      id: Date.now(),
-      method: "tools/call",
-      params: {
-        name: "search_videos",
-        arguments: {
-          query,
-          maxResults,
-          nextPageToken
-        }
+      query,
+      options: {
+        maxResults,
+        nextPageToken
       }
     };
 
-    const response = await this.callMCPService('/mcp', 'POST', data);
-    
-    if (response.error) {
-      throw new Error(response.error.message);
-    }
-    
-    return response.result;
+    const response = await this.callMCPService('/api/search', 'POST', data);
+    return response;
   }
 
   /**
    * get_trending_keywords 도구 호출
    */
   async getTrendingKeywords(region = 'KR', category = 'entertainment', limit = 10) {
-    const data = {
-      jsonrpc: "2.0",
-      id: Date.now(),
-      method: "tools/call",
-      params: {
-        name: "get_trending_keywords",
-        arguments: {
-          region,
-          category,
-          limit
-        }
-      }
-    };
-
-    const response = await this.callMCPService('/mcp', 'POST', data);
-    
-    if (response.error) {
-      throw new Error(response.error.message);
-    }
-    
-    return response.result;
+    const response = await this.callMCPService(`/api/trends?region=${region}&category=${category}`, 'GET');
+    return response;
   }
 
   /**
@@ -208,48 +178,20 @@ class MCPIntegrationService {
    */
   async optimizeQuery(userMessage, context = null) {
     const data = {
-      jsonrpc: "2.0",
-      id: Date.now(),
-      method: "tools/call",
-      params: {
-        name: "optimize_query",
-        arguments: {
-          userMessage,
-          context
-        }
-      }
+      message: userMessage,
+      conversationHistory: context ? [context] : []
     };
 
-    const response = await this.callMCPService('/mcp', 'POST', data);
-    
-    if (response.error) {
-      throw new Error(response.error.message);
-    }
-    
-    return response.result;
+    const response = await this.callMCPService('/api/chat', 'POST', data);
+    return response;
   }
 
   /**
    * get_server_stats 도구 호출
    */
   async getServerStats() {
-    const data = {
-      jsonrpc: "2.0",
-      id: Date.now(),
-      method: "tools/call",
-      params: {
-        name: "get_server_stats",
-        arguments: {}
-      }
-    };
-
-    const response = await this.callMCPService('/mcp', 'POST', data);
-    
-    if (response.error) {
-      throw new Error(response.error.message);
-    }
-    
-    return response.result;
+    const response = await this.callMCPService('/health', 'GET');
+    return response;
   }
 
   // ==================== 안전한 폴백 메서드들 ====================
