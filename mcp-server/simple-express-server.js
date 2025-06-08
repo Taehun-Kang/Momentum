@@ -24,7 +24,7 @@ class YouTubeShortsExpressServer {
   constructor() {
     this.config = {
       youtubeApiKey: process.env.YOUTUBE_API_KEY,
-      claudeApiKey: process.env.CLAUDE_API_KEY,
+      claudeApiKey: process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY,
       brightDataApiKey: process.env.BRIGHT_DATA_API_KEY
     };
 
