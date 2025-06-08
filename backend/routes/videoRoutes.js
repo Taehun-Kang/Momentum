@@ -1,15 +1,34 @@
 const express = require('express');
 const router = express.Router();
-const youtubeService = require('../services/youtubeService');
 const keywordExpansionService = require('../services/keywordExpansionService');
 const queryBuilderService = require('../services/queryBuilderService');
 const userAnalyticsService = require('../services/userAnalyticsService');
 const mcpIntegrationService = require('../services/mcpIntegrationService');
 const authMiddleware = require('../middleware/authMiddleware');
 
+// 🔥 MCP 서버 호출 헬퍼 함수
+async function callMcpServer(endpoint, data = {}) {
+  try {
+    const response = await fetch(`http://mcp-service.railway.internal:8080${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`MCP Server error: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error(`MCP Server call failed (${endpoint}):`, error.message);
+    throw error;
+  }
+}
+
 /**
  * GET /api/v1/videos/search
- * 기본 Shorts 검색
+ * 기본 Shorts 검색 (MCP 서버 활용)
  */
 router.get('/search', async (req, res) => {
   const startTime = Date.now();
@@ -24,23 +43,27 @@ router.get('/search', async (req, res) => {
       });
     }
 
-    console.log(`🔍 기본 검색: "${q}"`);
+    console.log(`🔍 MCP 기본 검색: "${q}"`);
 
-    const videos = await youtubeService.searchShorts(q, {
+    // ✅ MCP 서버로 검색 (Claude AI 최적화 + 한글 지원)
+    const mcpResult = await callMcpServer('/api/search', {
+      keyword: q,
+      useAI: false, // 기본 검색은 AI 비활성화
       maxResults: parseInt(maxResults),
       order
     });
 
+    const videos = mcpResult.videos || [];
     const searchTime = Date.now() - startTime;
 
     // 🔥 검색 로그 기록
     setImmediate(async () => {
       try {
         await userAnalyticsService.logSearch(
-          req.user?.id || null, // 로그인한 사용자 ID (옵션)
+          req.user?.id || null,
           q,
           {
-            searchType: 'basic',
+            searchType: 'mcp_basic',
             resultsCount: videos.length,
             responseTime: searchTime,
             userTier: req.user?.tier || 'free',
@@ -50,7 +73,6 @@ router.get('/search', async (req, res) => {
         );
       } catch (logError) {
         console.error('검색 로그 기록 실패:', logError);
-        // 로그 실패가 API 응답에 영향주지 않도록
       }
     });
 
@@ -60,13 +82,14 @@ router.get('/search', async (req, res) => {
         query: q,
         videos,
         totalResults: videos.length,
-        searchTime: `${searchTime}ms`
+        searchTime: `${searchTime}ms`,
+        source: 'mcp_server'
       }
     });
 
   } catch (error) {
     const searchTime = Date.now() - startTime;
-    console.error('Search error:', error);
+    console.error('MCP Search error:', error);
     
     // 실패한 검색도 로그 기록
     setImmediate(async () => {
@@ -75,7 +98,7 @@ router.get('/search', async (req, res) => {
           req.user?.id || null,
           req.query.q || 'unknown',
           {
-            searchType: 'basic_failed',
+            searchType: 'mcp_basic_failed',
             resultsCount: 0,
             responseTime: searchTime,
             userTier: req.user?.tier || 'free',
@@ -97,30 +120,37 @@ router.get('/search', async (req, res) => {
 
 /**
  * GET /api/v1/videos/trending
- * 인기 Shorts 영상
+ * 인기 Shorts 영상 (MCP 서버 활용)
  */
 router.get('/trending', async (req, res) => {
   try {
-    const { maxResults = 20, regionCode = 'US' } = req.query;
+    const { maxResults = 20, regionCode = 'KR' } = req.query;
 
-    console.log(`🔥 인기 영상 검색 (지역: ${regionCode})`);
+    console.log(`🔥 MCP 인기 영상 검색 (지역: ${regionCode})`);
 
-    const videos = await youtubeService.getTrendingShorts({
+    // ✅ MCP 서버로 트렌딩 검색
+    const mcpResult = await callMcpServer('/api/search', {
+      keyword: '인기 쇼츠', // 한국 맞춤 트렌딩 키워드
+      useAI: false,
       maxResults: parseInt(maxResults),
+      order: 'relevance',
       regionCode
     });
+
+    const videos = mcpResult.videos || [];
 
     res.json({
       success: true,
       data: {
         videos,
         totalResults: videos.length,
-        regionCode
+        regionCode,
+        source: 'mcp_server'
       }
     });
 
   } catch (error) {
-    console.error('Trending error:', error);
+    console.error('MCP Trending error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -130,30 +160,50 @@ router.get('/trending', async (req, res) => {
 
 /**
  * GET /api/v1/videos/categories/:category
- * 카테고리별 Shorts
+ * 카테고리별 Shorts (MCP 서버 활용)
  */
 router.get('/categories/:category', async (req, res) => {
   try {
     const { category } = req.params;
     const { maxResults = 15 } = req.query;
 
-    console.log(`📂 카테고리 검색: ${category}`);
+    console.log(`📂 MCP 카테고리 검색: ${category}`);
 
-    const videos = await youtubeService.getShortsByCategory(category, {
+    // 카테고리를 한국어 키워드로 변환
+    const categoryQueries = {
+      comedy: '웃긴 영상',
+      music: '음악 댄스',
+      gaming: '게임 하이라이트',
+      education: '교육 학습',
+      lifestyle: '라이프스타일 브이로그',
+      food: '요리 먹방',
+      sports: '스포츠 하이라이트',
+      tech: '기술 리뷰'
+    };
+
+    const query = categoryQueries[category.toLowerCase()] || `${category} 쇼츠`;
+
+    // ✅ MCP 서버로 카테고리 검색
+    const mcpResult = await callMcpServer('/api/search', {
+      keyword: query,
+      useAI: false,
       maxResults: parseInt(maxResults)
     });
+
+    const videos = mcpResult.videos || [];
 
     res.json({
       success: true,
       data: {
         category,
         videos,
-        totalResults: videos.length
+        totalResults: videos.length,
+        source: 'mcp_server'
       }
     });
 
   } catch (error) {
-    console.error('Category search error:', error);
+    console.error('MCP Category search error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -163,41 +213,50 @@ router.get('/categories/:category', async (req, res) => {
 
 /**
  * GET /api/v1/videos/status
- * YouTube API 상태 확인
+ * MCP 서버 상태 확인
  */
 router.get('/status', async (req, res) => {
   try {
-    const status = await youtubeService.getServiceStatus();
+    // MCP 서버 헬스 체크
+    const healthCheck = await fetch('http://mcp-service.railway.internal:8080/health');
+    const mcpStatus = healthCheck.ok;
     
     res.json({
       success: true,
-      data: status
+      data: {
+        mcpServerConnected: mcpStatus,
+        mcpServerUrl: 'mcp-service.railway.internal:8080',
+        message: mcpStatus ? 'MCP Server is healthy' : 'MCP Server connection failed'
+      }
     });
 
   } catch (error) {
-    console.error('Status check error:', error);
+    console.error('MCP Status check error:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
+      mcpServerConnected: false
     });
   }
 });
 
 /**
  * POST /api/v1/videos/cache/clear
- * 캐시 정리
+ * 캐시 정리 (MCP 서버로 요청)
  */
 router.post('/cache/clear', async (req, res) => {
   try {
-    await youtubeService.clearCache();
+    // MCP 서버에 캐시 클리어 요청
+    const clearResult = await callMcpServer('/api/admin/clear-cache', {});
     
     res.json({
       success: true,
-      message: 'Cache cleared successfully'
+      message: 'MCP Server cache cleared successfully',
+      details: clearResult
     });
 
   } catch (error) {
-    console.error('Cache clear error:', error);
+    console.error('MCP Cache clear error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -207,7 +266,7 @@ router.post('/cache/clear', async (req, res) => {
 
 /**
  * POST /api/v1/videos/ai-search
- * AI 기반 자연어 검색 (Claude MCP)
+ * AI 기반 자연어 검색 (MCP 서버의 Claude AI 활용)
  */
 router.post('/ai-search', async (req, res) => {
   try {
@@ -220,50 +279,29 @@ router.post('/ai-search', async (req, res) => {
       });
     }
 
-    console.log(`🤖 AI 검색 요청: "${message}"`);
+    console.log(`🤖 MCP AI 검색 요청: "${message}"`);
 
-    // 1. 키워드 추출
-    const extraction = await mcpIntegrationService.extractKeywords(message, { useAI });
-    console.log('추출된 키워드:', extraction);
-
-    // 2. 검색 실행
-    const searchPromises = extraction.keywords.map(keyword => 
-      youtubeService.searchShorts(keyword, { maxResults: 10 })
-    );
-
-    const searchResults = await Promise.all(searchPromises);
-    
-    // 3. 결과 병합 및 중복 제거
-    const allVideos = searchResults.flat();
-    const uniqueVideos = [];
-    const seenIds = new Set();
-    
-    allVideos.forEach(video => {
-      if (!seenIds.has(video.id)) {
-        seenIds.add(video.id);
-        uniqueVideos.push(video);
-      }
+    // ✅ MCP 서버의 Claude AI 대화형 검색 직접 활용
+    const mcpResult = await callMcpServer('/api/chat', {
+      message,
+      useAI,
+      maxResults: 20
     });
-
-    // 4. 대화형 응답 생성
-    const response = await mcpIntegrationService.generateResponse(
-      extraction.keywords,
-      uniqueVideos.length,
-      message
-    );
 
     res.json({
       success: true,
       data: {
-        extraction,
-        response,
-        videos: uniqueVideos.slice(0, 20), // 최대 20개
-        totalResults: uniqueVideos.length
+        query: message,
+        response: mcpResult.response || '검색 결과를 찾았습니다.',
+        keywords: mcpResult.keywords || [],
+        videos: mcpResult.videos || [],
+        totalResults: mcpResult.videos?.length || 0,
+        source: 'mcp_claude_ai'
       }
     });
 
   } catch (error) {
-    console.error('AI search error:', error);
+    console.error('MCP AI search error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -273,28 +311,20 @@ router.post('/ai-search', async (req, res) => {
 
 /**
  * GET /api/v1/videos/trending-keywords
- * 현재 트렌딩 키워드 제공
+ * 현재 트렌딩 키워드 제공 (MCP 서버 활용)
  */
 router.get('/trending-keywords', async (req, res) => {
   try {
     const { category = 'all' } = req.query;
     
-    // 캐시 확인
-    const cacheKey = `trending-keywords-${category}`;
-    const cached = youtubeService.cache.get(cacheKey);
-    
-    if (cached) {
-      console.log('📦 트렌드 캐시 적중');
-      return res.json({
-        success: true,
-        data: cached,
-        cached: true
-      });
-    }
+    console.log(`📈 MCP 트렌딩 키워드 요청: ${category}`);
 
-    // 트렌드 분석
-    const trends = await mcpIntegrationService.analyzeTrends(category);
-    
+    // ✅ MCP 서버의 트렌드 분석 활용
+    const mcpResult = await callMcpServer('/api/trends', {
+      category,
+      region: 'KR'
+    });
+
     // 시간대별 추천 추가
     const timeContext = mcpIntegrationService.getTimeContext();
     const timeBasedKeywords = {
@@ -304,11 +334,13 @@ router.get('/trending-keywords', async (req, res) => {
       night: ['ASMR', '수면음악', '밤산책']
     };
 
-    trends.timeRecommended = timeBasedKeywords[timeContext.timeOfDay] || [];
-    trends.currentTime = timeContext;
-
-    // 캐시 저장 (1시간)
-    youtubeService.cache.set(cacheKey, trends, 3600);
+    const trends = {
+      trending: mcpResult.trending || [],
+      categories: mcpResult.categories || {},
+      timeRecommended: timeBasedKeywords[timeContext.timeOfDay] || [],
+      currentTime: timeContext,
+      source: 'mcp_server'
+    };
 
     res.json({
       success: true,
@@ -317,7 +349,7 @@ router.get('/trending-keywords', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Trending keywords error:', error);
+    console.error('MCP Trending keywords error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -327,29 +359,23 @@ router.get('/trending-keywords', async (req, res) => {
 
 /**
  * POST /api/v1/videos/personalized
- * 개인화 추천 (프리미엄 기능)
+ * 개인화 추천 (MCP 서버 활용)
  */
 router.post('/personalized', async (req, res) => {
   try {
     const { userId, preferences = {}, recentViews = [] } = req.body;
 
-    // 여기서는 간단한 개인화 로직
-    // 실제로는 더 복잡한 추천 알고리즘 필요
+    console.log(`👤 MCP 개인화 추천: 사용자 ${userId}`);
+
+    // 개인화 키워드 생성
     const personalizedKeywords = [];
 
     // 선호 카테고리 기반
     if (preferences.categories) {
       for (const category of preferences.categories) {
-        const trends = await mcpIntegrationService.analyzeTrends(category);
-        personalizedKeywords.push(...trends.trending.slice(0, 2));
+        const mcpResult = await callMcpServer('/api/trends', { category });
+        personalizedKeywords.push(...(mcpResult.trending || []).slice(0, 2));
       }
-    }
-
-    // 최근 시청 기반
-    if (recentViews.length > 0) {
-      // 최근 시청한 영상의 키워드 분석
-      // 여기서는 시뮬레이션
-      personalizedKeywords.push('관련영상', '추천영상');
     }
 
     // 시간대 기반
@@ -361,20 +387,24 @@ router.post('/personalized', async (req, res) => {
     // 중복 제거
     const uniqueKeywords = [...new Set(personalizedKeywords)];
 
-    // 영상 검색
+    // ✅ MCP 서버로 개인화된 검색 실행
     const searchPromises = uniqueKeywords.slice(0, 5).map(keyword =>
-      youtubeService.searchShorts(keyword, { maxResults: 10 })
+      callMcpServer('/api/search', {
+        keyword,
+        useAI: false,
+        maxResults: 10
+      })
     );
 
     const results = await Promise.all(searchPromises);
     
-    // 수동 중복 제거
-    const allVideos = results.flat();
+    // 결과 병합 및 중복 제거
+    const allVideos = results.flatMap(r => r.videos || []);
     const uniqueVideos = [];
     const seenIds = new Set();
     
     allVideos.forEach(video => {
-      if (!seenIds.has(video.id)) {
+      if (video && video.id && !seenIds.has(video.id)) {
         seenIds.add(video.id);
         uniqueVideos.push(video);
       }
@@ -386,12 +416,13 @@ router.post('/personalized', async (req, res) => {
         recommendedKeywords: uniqueKeywords,
         videos: uniqueVideos.slice(0, 30),
         context: timeContext,
-        personalizationLevel: preferences.categories ? 'high' : 'basic'
+        personalizationLevel: preferences.categories ? 'high' : 'basic',
+        source: 'mcp_server'
       }
     });
 
   } catch (error) {
-    console.error('Personalization error:', error);
+    console.error('MCP Personalization error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -399,16 +430,16 @@ router.post('/personalized', async (req, res) => {
   }
 });
 
-// 🔥 업그레이드된 고급 검색 API (키워드 확장 + 쿼리 빌더 활용)
+// 🔥 업그레이드된 고급 검색 API (MCP 서버 + 키워드 확장)
 router.post('/search-smart', authMiddleware.trackUsage, async (req, res) => {
   const startTime = Date.now();
   
   try {
     const { 
       keyword,
-      userTier = 'free', // free, premium
+      userTier = 'free',
       maxResults = 30,
-      strategy = 'auto', // auto, keyword_only, channel_focused, time_sensitive
+      strategy = 'auto',
       enableExpansion = true,
       filters = {}
     } = req.body;
@@ -421,70 +452,40 @@ router.post('/search-smart', authMiddleware.trackUsage, async (req, res) => {
       });
     }
 
-    console.log(`🧠 스마트 검색 시작: "${keyword}" (${userTier})`);
+    console.log(`🧠 MCP 스마트 검색 시작: "${keyword}" (${userTier})`);
 
     let finalResults = [];
     let expansionData = null;
-    let queryPlan = null;
 
     if (enableExpansion && userTier === 'premium') {
-      // 프리미엄 유저: 키워드 확장 + 고급 쿼리 빌더
-      console.log('🔥 프리미엄 스마트 검색 실행');
+      // 프리미엄 유저: 키워드 확장 + MCP AI 검색
+      console.log('🔥 프리미엄 MCP 스마트 검색 실행');
       
       // 1. 키워드 확장
       expansionData = await keywordExpansionService.expandKeyword(keyword);
       
-      // 2. 고급 쿼리 생성
-      queryPlan = await queryBuilderService.buildOptimizedQueries(keyword, {
-        maxResults: Math.floor(maxResults / 3), // 여러 쿼리 분산
-        strategy,
-        filters
+      // 2. ✅ MCP 서버의 Claude AI로 스마트 검색
+      const mcpResult = await callMcpServer('/api/chat', {
+        message: `"${keyword}"와 관련된 인기 쇼츠 영상을 찾아줘. 확장 키워드: ${expansionData.expanded.join(', ')}`,
+        useAI: true,
+        maxResults
       });
 
-      // 3. 다중 쿼리 실행
-      const queryResults = await executeMultipleQueries(queryPlan.queries);
-      
-      // 4. 결과 병합 및 중복 제거
-      finalResults = mergeAndDeduplicateResults(queryResults);
-      
-      // 5. 결과 부족 시 추가 검색 (요구사항 11번)
-      if (finalResults.length < maxResults) {
-        console.log(`📊 결과 부족 (${finalResults.length}/${maxResults}), 추가 검색 실행`);
-        const additionalResults = await executeAdditionalSearch(
-          keyword, 
-          expansionData, 
-          maxResults - finalResults.length
-        );
-        finalResults.push(...additionalResults);
-      }
+      finalResults = mcpResult.videos || [];
 
     } else {
-      // 무료 유저: 기본 검색 + 간단한 키워드 확장
-      console.log('🆓 무료 유저 검색 실행');
+      // 무료 유저: 기본 MCP 검색
+      console.log('🆓 무료 유저 MCP 검색 실행');
       
-      if (enableExpansion) {
-        // 간단한 키워드 확장 (캐시된 결과 우선)
-        expansionData = await keywordExpansionService.expandKeyword(keyword);
-        
-        // 상위 3개 확장 키워드만 사용
-        const topKeywords = [keyword, ...expansionData.expanded.slice(0, 2)];
-        const searchPromises = topKeywords.map(kw => 
-          youtubeService.searchShorts(kw, { maxResults: 10 })
-        );
-        
-        const results = await Promise.all(searchPromises);
-        finalResults = mergeAndDeduplicateResults(results);
-      } else {
-        // 기본 검색만
-        const result = await youtubeService.searchShorts(keyword, { maxResults });
-        finalResults = result.videos || result;
-      }
+      const mcpResult = await callMcpServer('/api/search', {
+        keyword,
+        useAI: false,
+        maxResults
+      });
+      
+      finalResults = mcpResult.videos || [];
     }
 
-    // 6. 결과 정렬 및 최적화
-    const optimizedResults = optimizeSearchResults(finalResults, keyword, maxResults);
-
-    // 7. 응답 생성
     const searchTime = Date.now() - startTime;
 
     // 🔥 스마트 검색 로그 기록
@@ -494,8 +495,8 @@ router.post('/search-smart', authMiddleware.trackUsage, async (req, res) => {
           req.user?.id || null,
           keyword,
           {
-            searchType: userTier === 'premium' ? 'smart_premium' : 'smart_free',
-            resultsCount: optimizedResults.length,
+            searchType: userTier === 'premium' ? 'mcp_smart_premium' : 'mcp_smart_free',
+            resultsCount: finalResults.length,
             responseTime: searchTime,
             userTier: userTier,
             ipAddress: req.ip,
@@ -512,42 +513,34 @@ router.post('/search-smart', authMiddleware.trackUsage, async (req, res) => {
       data: {
         keyword,
         userTier,
-        strategy: queryPlan?.strategy || ['basic_search'],
-        results: optimizedResults,
-        total: optimizedResults.length,
+        strategy: [userTier === 'premium' ? 'mcp_ai_search' : 'mcp_basic_search'],
+        results: finalResults,
+        total: finalResults.length,
         expansion: expansionData ? {
           originalKeyword: keyword,
           expandedKeywords: expansionData.expanded?.slice(0, 10),
           suggestedChannels: expansionData.suggestions?.channels,
-          categories: Object.keys(expansionData.categories || {}).filter(k => 
-            expansionData.categories[k]?.length > 0
-          )
-        } : null,
-        queryPlan: queryPlan ? {
-          totalQueries: queryPlan.queries.length,
-          estimatedResults: queryPlan.estimatedResults,
-          strategies: queryPlan.strategy
+          categories: Object.keys(expansionData.categories || {})
         } : null,
         performance: {
           searchTime: `${searchTime}ms`,
           fromCache: false,
-          apiCallsUsed: queryPlan?.queries.length || 1
+          source: 'mcp_server'
         }
       }
     });
 
   } catch (error) {
     const searchTime = Date.now() - startTime;
-    console.error('Smart search error:', error);
+    console.error('MCP Smart search error:', error);
     
-    // 실패한 스마트 검색 로그 기록
     setImmediate(async () => {
       try {
         await userAnalyticsService.logSearch(
           req.user?.id || null,
           req.body.keyword || 'unknown',
           {
-            searchType: 'smart_failed',
+            searchType: 'mcp_smart_failed',
             resultsCount: 0,
             responseTime: searchTime,
             userTier: req.body.userTier || 'free',
@@ -562,136 +555,13 @@ router.post('/search-smart', authMiddleware.trackUsage, async (req, res) => {
 
     res.status(500).json({
       success: false,
-      error: 'SMART_SEARCH_FAILED',
+      error: 'MCP_SMART_SEARCH_FAILED',
       message: error.message
     });
   }
 });
 
-// 다중 쿼리 실행 함수
-async function executeMultipleQueries(queries) {
-  const results = [];
-  
-  for (const query of queries) {
-    try {
-      console.log(`🔍 쿼리 실행: ${query.description}`);
-      
-      let searchResult;
-      
-      if (query.type === 'channel_search' && query.channelId) {
-        // 채널 특정 검색
-        searchResult = await youtubeService.searchShorts(query.query, {
-          ...query.params,
-          channelId: query.channelId
-        });
-      } else {
-        // 일반 키워드 검색
-        searchResult = await youtubeService.searchShorts(query.query, query.params);
-      }
-      
-      const videos = searchResult.videos || searchResult;
-      if (videos && videos.length > 0) {
-        results.push({
-          query: query.query,
-          type: query.type,
-          videos: videos,
-          weight: query.weight
-        });
-      }
-      
-    } catch (error) {
-      console.error(`쿼리 실행 실패: ${query.description}`, error.message);
-      // 개별 쿼리 실패는 전체 검색을 중단하지 않음
-    }
-  }
-  
-  return results;
-}
-
-// 결과 병합 및 중복 제거
-function mergeAndDeduplicateResults(queryResults) {
-  const allVideos = [];
-  const seenIds = new Set();
-  
-  // 가중치별로 정렬
-  const sortedResults = queryResults.sort((a, b) => (b.weight || 0) - (a.weight || 0));
-  
-  sortedResults.forEach(result => {
-    const videos = result.videos || result;
-    if (Array.isArray(videos)) {
-      videos.forEach(video => {
-        if (video && video.id && !seenIds.has(video.id)) {
-          seenIds.add(video.id);
-          // 가중치 정보 추가
-          video.searchMeta = {
-            source: result.type || 'basic_search',
-            query: result.query,
-            weight: result.weight || 0.5
-          };
-          allVideos.push(video);
-        }
-      });
-    }
-  });
-  
-  return allVideos;
-}
-
-// 추가 검색 실행 (결과 부족 시)
-async function executeAdditionalSearch(keyword, expansionData, neededCount) {
-  try {
-    // 확장 키워드로 추가 검색
-    const additionalKeywords = expansionData.expanded.slice(3, 8); // 4-8번째 키워드
-    const searchPromises = additionalKeywords.slice(0, 3).map(kw =>
-      youtubeService.searchShorts(kw, { maxResults: Math.ceil(neededCount / 3) })
-    );
-    
-    const results = await Promise.all(searchPromises);
-    return mergeAndDeduplicateResults(results.map((videos, index) => ({
-      videos: videos.videos || videos,
-      type: 'additional_search',
-      query: additionalKeywords[index],
-      weight: 0.3
-    })));
-    
-  } catch (error) {
-    console.error('추가 검색 실패:', error);
-    return [];
-  }
-}
-
-// 검색 결과 최적화
-function optimizeSearchResults(results, originalKeyword, maxResults) {
-  return results
-    .filter(video => video && video.id) // 유효한 비디오만
-    .sort((a, b) => {
-      // 가중치 기반 정렬
-      const weightA = a.searchMeta?.weight || 0.5;
-      const weightB = b.searchMeta?.weight || 0.5;
-      
-      if (weightA !== weightB) {
-        return weightB - weightA;
-      }
-      
-      // 조회수 기반 정렬 (가중치가 같으면)
-      const viewsA = parseInt(a.statistics?.viewCount || 0);
-      const viewsB = parseInt(b.statistics?.viewCount || 0);
-      
-      return viewsB - viewsA;
-    })
-    .slice(0, maxResults) // 최대 결과 수 제한
-    .map(video => {
-      // 메타데이터 정리
-      const { searchMeta, ...cleanVideo } = video;
-      return {
-        ...cleanVideo,
-        relevanceScore: searchMeta?.weight || 0.5,
-        searchSource: searchMeta?.source || 'basic_search'
-      };
-    });
-}
-
-// 멀티 키워드 검색 (여러 키워드 병렬 처리)
+// 다중 키워드 검색 (MCP 서버 활용)
 router.post('/multi-search', authMiddleware.trackUsage, async (req, res) => {
   try {
     const { keywords = [], limit = 10 } = req.body;
@@ -700,55 +570,53 @@ router.post('/multi-search', authMiddleware.trackUsage, async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'INVALID_KEYWORDS',
-        message: '1-5개의 키워드를 입력해주세요.'
+        message: '1-5개의 키워드가 필요합니다.'
       });
     }
 
-    // 병렬 검색 실행
-    const searchPromises = keywords.map(async (keyword) => {
-      try {
-        const result = await youtubeService.searchShorts(keyword, { maxResults: limit });
-        return {
-          keyword,
-          success: true,
-          videos: result.videos,
-          count: result.videos.length
-        };
-      } catch (error) {
-        return {
-          keyword,
-          success: false,
-          error: error.message,
-          videos: []
-        };
-      }
-    });
+    console.log(`🔍 MCP 다중 검색: ${keywords.join(', ')}`);
 
-    const results = await Promise.allSettled(searchPromises);
-    const processedResults = results.map(result => 
-      result.status === 'fulfilled' ? result.value : {
-        keyword: 'unknown',
-        success: false,
-        error: 'Search failed',
-        videos: []
-      }
+    // ✅ MCP 서버로 병렬 검색
+    const searchPromises = keywords.map(keyword =>
+      callMcpServer('/api/search', {
+        keyword,
+        useAI: false,
+        maxResults: Math.ceil(limit / keywords.length)
+      })
     );
+
+    const results = await Promise.all(searchPromises);
+    
+    // 결과 병합
+    const allVideos = [];
+    const seenIds = new Set();
+    
+    results.forEach((result, index) => {
+      const videos = result.videos || [];
+      videos.forEach(video => {
+        if (video && video.id && !seenIds.has(video.id)) {
+          seenIds.add(video.id);
+          video.sourceKeyword = keywords[index];
+          allVideos.push(video);
+        }
+      });
+    });
 
     res.json({
       success: true,
       data: {
-        searches: processedResults,
-        total: processedResults.reduce((sum, r) => sum + r.videos.length, 0),
-        successCount: processedResults.filter(r => r.success).length
+        keywords,
+        videos: allVideos.slice(0, limit),
+        totalResults: allVideos.length,
+        source: 'mcp_server'
       }
     });
 
   } catch (error) {
-    console.error('Multi search error:', error);
+    console.error('MCP Multi-search error:', error);
     res.status(500).json({
       success: false,
-      error: 'MULTI_SEARCH_FAILED',
-      message: error.message
+      error: error.message
     });
   }
 });
@@ -760,7 +628,7 @@ router.get('/similar/:videoId', authMiddleware.trackUsage, async (req, res) => {
     const { limit = 10 } = req.query;
 
     // 기존 영상 정보 조회
-    const originalVideo = await youtubeService.getVideoDetails(videoId);
+    const originalVideo = await callMcpServer('/api/video', { id: videoId });
     if (!originalVideo) {
       return res.status(404).json({
         success: false,
@@ -770,14 +638,15 @@ router.get('/similar/:videoId', authMiddleware.trackUsage, async (req, res) => {
     }
 
     // 채널 기반 추천
-    const channelVideos = await youtubeService.getChannelShorts(
-      originalVideo.channelId, 
-      { maxResults: Math.floor(limit / 2) }
-    );
+    const channelVideos = await callMcpServer('/api/channel', {
+      id: originalVideo.channelId,
+      maxResults: Math.floor(limit / 2)
+    });
 
     // 키워드 기반 추천  
     const keywords = originalVideo.title.split(' ').slice(0, 3).join(' ');
-    const keywordVideos = await youtubeService.searchShorts(keywords, {
+    const keywordVideos = await callMcpServer('/api/search', {
+      keyword: keywords,
       maxResults: Math.floor(limit / 2)
     });
 
@@ -800,15 +669,16 @@ router.get('/similar/:videoId', authMiddleware.trackUsage, async (req, res) => {
         },
         similarVideos: uniqueVideos,
         total: uniqueVideos.length,
-        strategies: ['channel_based', 'keyword_based']
+        strategies: ['channel_based', 'keyword_based'],
+        source: 'mcp_server'
       }
     });
 
   } catch (error) {
-    console.error('Similar videos error:', error);
+    console.error('MCP Similar videos error:', error);
     res.status(500).json({
       success: false,
-      error: 'SIMILAR_SEARCH_FAILED',
+      error: 'MCP_SIMILAR_SEARCH_FAILED',
       message: error.message
     });
   }
@@ -929,11 +799,15 @@ router.post('/intelligent-search', async (req, res) => {
       // 2. 추출된 키워드로 검색
       const keywords = analysis.keywords?.slice(0, 3) || [query]; // 상위 3개만
       const searchPromises = keywords.map(keyword => 
-        youtubeService.searchShorts(keyword, { maxResults: Math.floor(maxResults / keywords.length) })
+        callMcpServer('/api/search', {
+          keyword,
+          useAI: false,
+          maxResults: Math.floor(maxResults / keywords.length)
+        })
       );
       
       const searchResults = await Promise.all(searchPromises);
-      const allVideos = searchResults.flat();
+      const allVideos = searchResults.flatMap(r => r.videos || []);
       
       // 중복 제거
       const uniqueVideos = [];
