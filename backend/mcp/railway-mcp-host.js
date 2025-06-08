@@ -239,7 +239,7 @@ class RailwayMCPHost {
    */
   async searchYouTubeDirectly(optimizedQuery, options = {}) {
     const axios = (await import('axios')).default;
-    
+      
     if (!process.env.YOUTUBE_API_KEY) {
       throw new Error('YouTube API 키가 설정되지 않았습니다.');
     }
@@ -291,7 +291,7 @@ class RailwayMCPHost {
         
         return true;
       });
-
+      
       console.log(`✅ ${playableShorts.length}/${searchResults.length} 재생 가능한 영상 발견`);
 
       return {
@@ -351,7 +351,7 @@ class RailwayMCPHost {
       });
 
       const analysis = JSON.parse(contextResponse.content[0].text);
-      
+
       // 2단계: 검색이 필요한 경우 영상 검색
       let searchResults = null;
       if (analysis.needsSearch && analysis.searchQuery) {
@@ -389,9 +389,9 @@ class RailwayMCPHost {
     ];
 
     // TODO: Bright Data API 연동
-    return {
-      region,
-      category,
+      return {
+        region,
+        category,
       trends: fallbackTrends,
       source: 'fallback',
       updatedAt: new Date().toISOString()
