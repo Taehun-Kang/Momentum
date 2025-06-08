@@ -54,19 +54,17 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/', (req, res) => {
   res.json({
     service: 'Momentum Backend',
-    description: 'YouTube Shorts AI 큐레이션 서비스',
+    description: 'YouTube Shorts AI 큐레이션 서비스 - API 서버',
     version: '1.0.0',
     team: 'Wave Team',
     endpoints: {
       health: '/health',
-      mcp: '/mcp',
-      tools: '/tools',
       videos: '/api/v1/videos/*'
     },
     features: [
-      '🤖 실제 MCP 서버 (Streamable HTTP)',
-      '🧠 실제 Claude API 자연어 처리',
       '🎬 실제 YouTube API 2단계 필터링',
+      '📊 사용자 분석 및 키워드 확장',
+      '🔍 고급 검색 최적화',
       '⚡ Railway 배포 최적화'
     ]
   });
@@ -81,73 +79,13 @@ app.get('/health', (req, res) => {
     memory: process.memoryUsage(),
     env: process.env.NODE_ENV || 'development',
     services: {
-      mcp: 'active',
+      backend: 'active',
       youtube_api: process.env.YOUTUBE_API_KEY ? 'configured' : 'mock',
       claude_api: process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY ? 'configured' : 'mock',
       supabase: process.env.SUPABASE_URL ? 'configured' : 'mock'
     }
   });
 });
-
-// 실제 MCP 서버 로드 및 연결
-try {
-  console.log('🎬 실제 YouTube Curator MCP 서버 로드 중...');
-  const { mcpServer } = require('./mcp/index.js');
-  
-  // MCP 엔드포인트 직접 구현 (라우터 마운트 대신)
-  app.post('/mcp', async (req, res) => {
-    try {
-      const sessionId = req.headers['mcp-session-id'] || require('crypto').randomUUID();
-      const request = req.body;
-
-      console.log(`📨 MCP 요청 수신 [${sessionId}]:`, request.method);
-
-      const response = await mcpServer.handleRequest(request, sessionId);
-      
-      res.setHeader('mcp-session-id', sessionId);
-      res.json(response);
-
-    } catch (error) {
-      console.error('MCP 요청 처리 실패:', error);
-      res.status(500).json({
-        jsonrpc: "2.0",
-        error: {
-          code: -32603,
-          message: "Internal server error"
-        },
-        id: null
-      });
-    }
-  });
-
-  // GET 요청은 405 Method Not Allowed 반환
-  app.get('/mcp', (req, res) => {
-    res.status(405).setHeader('Allow', 'POST').json({
-      jsonrpc: "2.0",
-      error: {
-        code: -32000,
-        message: "Method not allowed. Use POST for MCP requests."
-      },
-      id: null
-    });
-  });
-
-  // 사용 가능한 도구 목록 (디버깅용)
-  app.get('/tools', (req, res) => {
-    res.json({
-      tools: mcpServer.mcpServer.getTools(),
-      count: mcpServer.mcpServer.getTools().length
-    });
-  });
-  
-  console.log('✅ 실제 MCP 서버 연결 완료');
-  console.log('📍 MCP 엔드포인트: POST /mcp');
-  console.log('📍 도구 목록: GET /tools');
-  
-} catch (error) {
-  console.error('❌ MCP 서버 로드 실패:', error.message);
-  console.log('📝 기본 서버만 실행됩니다.');
-}
 
 // Video API Routes
 try {
@@ -166,8 +104,6 @@ app.use('*', (req, res) => {
     availableEndpoints: [
       'GET /',
       'GET /health', 
-      'POST /mcp',
-      'GET /tools',
       'GET|POST /api/v1/videos/*'
     ]
   });
@@ -200,16 +136,14 @@ app.listen(PORT, HOST, () => {
   console.log(`🌍 환경: ${process.env.NODE_ENV || 'development'}`);
   console.log('');
   console.log('🔧 활성화된 서비스:');
-  console.log('  ✅ 실제 MCP 서버 (Streamable HTTP)');
-  console.log('  ✅ YouTube Shorts AI 큐레이션');
-  console.log('  ✅ 자연어 검색 (Claude API)');
+  console.log('  ✅ YouTube Shorts API 서버');
+  console.log('  ✅ 사용자 분석 시스템');
+  console.log('  ✅ 키워드 확장 서비스');
   console.log('  ✅ 2단계 영상 필터링');
   console.log('');
   console.log('📡 주요 엔드포인트:');
-  console.log(`  🤖 MCP Server: POST ${HOST}:${PORT}/mcp`);
-  console.log(`  🛠️ Tools List: GET ${HOST}:${PORT}/tools`);
-  console.log(`  ❤️ Health Check: GET ${HOST}:${PORT}/health`);
   console.log(`  🎬 Video API: GET ${HOST}:${PORT}/api/v1/videos/*`);
+  console.log(`  ❤️ Health Check: GET ${HOST}:${PORT}/health`);
   console.log('');
   
   if (!process.env.ANTHROPIC_API_KEY && !process.env.CLAUDE_API_KEY) {
@@ -222,9 +156,8 @@ app.listen(PORT, HOST, () => {
   
   console.log('');
   console.log('🎯 테스트 방법:');
-  console.log('  curl -X POST http://localhost:3000/mcp \\');
-  console.log('    -H "Content-Type: application/json" \\');
-  console.log('    -d \'{"jsonrpc":"2.0","id":1,"method":"tools/list"}\'');
+  console.log(`  curl -X GET ${HOST}:${PORT}/health`);
+  console.log(`  curl -X GET "${HOST}:${PORT}/api/v1/videos/search?q=먹방"`);
   console.log('');
   console.log('🚀 ================================ 🚀');
 });
