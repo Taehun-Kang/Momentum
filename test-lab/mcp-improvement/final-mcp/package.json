@@ -1,0 +1,78 @@
+{
+  "name": "youtube-shorts-ai-mcp-system",
+  "version": "1.0.0",
+  "description": "🎬 YouTube Shorts AI Curation MCP System - Railway MCP Host + MCP Server",
+  "main": "railway-mcp-host.js",
+  "type": "module",
+  "scripts": {
+    "start": "node railway-startup.js",
+    "start:production": "node railway-startup.js",
+    "start:http": "node correct-mcp-server-http.js",
+    "start:host": "node railway-mcp-host.js",
+    "dev": "node --watch railway-startup.js",
+    "dev:server": "node --watch correct-mcp-server-http.js",
+    "test": "node correct-mcp-client.js",
+    "install-claude": "echo 'Add this server to your Claude Desktop config'"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "youtube",
+    "shorts",
+    "ai",
+    "claude",
+    "curation",
+    "anthropic",
+    "bright-data",
+    "video-search",
+    "railway",
+    "express",
+    "mcp-host"
+  ],
+  "author": "YouTube Shorts AI Team",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@anthropic-ai/sdk": "^0.24.3",
+    "axios": "^1.6.0",
+    "dotenv": "^16.4.5",
+    "zod": "^3.22.4",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/youtube-shorts-ai/mcp-system.git"
+  },
+  "bugs": {
+    "url": "https://github.com/youtube-shorts-ai/mcp-system/issues"
+  },
+  "homepage": "https://github.com/youtube-shorts-ai/mcp-system#readme",
+  "mcp": {
+    "host": {
+      "name": "railway-mcp-host",
+      "version": "1.0.0",
+      "description": "Railway MCP Host with Claude API integration",
+      "endpoints": [
+        "POST /api/search",
+        "POST /api/chat",
+        "GET /api/trends",
+        "POST /mcp/connect"
+      ]
+    },
+    "server": {
+      "name": "youtube-shorts-ai-curator",
+      "version": "1.0.0",
+      "description": "AI-powered YouTube Shorts curation with LLM optimization and real-time trends",
+      "capabilities": {
+        "tools": ["search_videos", "get_trending_keywords", "optimize_query", "get_server_stats"],
+        "resources": ["api-usage"],
+        "prompts": ["optimize-search"]
+      }
+    }
+  }
+} 

@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "youtube-shorts-ai": {
+      "command": "node",
+      "args": [
+        "/Users/kangtaehun/Desktop/큐레이팅/Youtube/test-lab/mcp-improvement/final-mcp/correct-mcp-server.js"
+      ],
+      "env": {
+        "YOUTUBE_API_KEY": "your-youtube-api-key-here",
+        "ANTHROPIC_API_KEY": "your-claude-api-key-here"
+      }
+    }
+  }
+} 
