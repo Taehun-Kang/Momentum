@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const youtubeService = require('../services/youtubeService');
-const mcpService = require('../services/mcpService');
 const keywordExpansionService = require('../services/keywordExpansionService');
 const queryBuilderService = require('../services/queryBuilderService');
 const userAnalyticsService = require('../services/userAnalyticsService');
@@ -224,7 +223,7 @@ router.post('/ai-search', async (req, res) => {
     console.log(`🤖 AI 검색 요청: "${message}"`);
 
     // 1. 키워드 추출
-    const extraction = await mcpService.extractKeywords(message, { useAI });
+    const extraction = await mcpIntegrationService.extractKeywords(message, { useAI });
     console.log('추출된 키워드:', extraction);
 
     // 2. 검색 실행
@@ -247,7 +246,7 @@ router.post('/ai-search', async (req, res) => {
     });
 
     // 4. 대화형 응답 생성
-    const response = await mcpService.generateResponse(
+    const response = await mcpIntegrationService.generateResponse(
       extraction.keywords,
       uniqueVideos.length,
       message
@@ -294,10 +293,10 @@ router.get('/trending-keywords', async (req, res) => {
     }
 
     // 트렌드 분석
-    const trends = await mcpService.analyzeTrends(category);
+    const trends = await mcpIntegrationService.analyzeTrends(category);
     
     // 시간대별 추천 추가
-    const timeContext = mcpService.getTimeContext();
+    const timeContext = mcpIntegrationService.getTimeContext();
     const timeBasedKeywords = {
       morning: ['모닝루틴', '아침운동', '출근준비'],
       afternoon: ['점심메뉴', '카페브이로그', '오후간식'],
@@ -341,7 +340,7 @@ router.post('/personalized', async (req, res) => {
     // 선호 카테고리 기반
     if (preferences.categories) {
       for (const category of preferences.categories) {
-        const trends = await mcpService.analyzeTrends(category);
+        const trends = await mcpIntegrationService.analyzeTrends(category);
         personalizedKeywords.push(...trends.trending.slice(0, 2));
       }
     }
@@ -354,7 +353,7 @@ router.post('/personalized', async (req, res) => {
     }
 
     // 시간대 기반
-    const timeContext = mcpService.getTimeContext();
+    const timeContext = mcpIntegrationService.getTimeContext();
     if (timeContext.timeOfDay === 'night') {
       personalizedKeywords.push('ASMR', '수면영상');
     }
