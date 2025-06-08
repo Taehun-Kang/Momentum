@@ -323,10 +323,16 @@ router.get('/trending-keywords', async (req, res) => {
     console.log(`📈 MCP 트렌딩 키워드 요청: ${category}`);
 
     // ✅ MCP 서버의 트렌드 분석 활용
-    const mcpResult = await callMcpServer('/api/trends', {
-      category,
-      region: 'KR'
+    const mcpResponse = await fetch(`http://mcp-service.railway.internal:3000/api/trends?region=KR&category=${category}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
     });
+    
+    if (!mcpResponse.ok) {
+      throw new Error(`MCP trends API error: ${mcpResponse.status}`);
+    }
+    
+    const mcpResult = await mcpResponse.json();
 
     // 시간대별 추천 추가
     const timeContext = mcpIntegrationService.getTimeContext();
@@ -376,8 +382,19 @@ router.post('/personalized', async (req, res) => {
     // 선호 카테고리 기반
     if (preferences.categories) {
       for (const category of preferences.categories) {
-        const mcpResult = await callMcpServer('/api/trends', { category });
-        personalizedKeywords.push(...(mcpResult.trending || []).slice(0, 2));
+        try {
+          const mcpResponse = await fetch(`http://mcp-service.railway.internal:3000/api/trends?region=KR&category=${category}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          if (mcpResponse.ok) {
+            const mcpResult = await mcpResponse.json();
+            personalizedKeywords.push(...(mcpResult.trending || []).slice(0, 2));
+          }
+        } catch (error) {
+          console.warn(`카테고리 ${category} 트렌드 조회 실패:`, error);
+        }
       }
     }
 
