@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "🎬 YouTube Shorts AI Curation MCP System - Railway MCP Host + MCP Server",
   "main": "railway-mcp-host.js",
-  "type": "module",
   "scripts": {
     "start": "node railway-startup.js",
     "start:production": "node railway-startup.js",
