@@ -46,9 +46,11 @@ class YouTubeShortsAIMCPServer {
     // 설정 초기화
     this.config = {
       youtubeApiKey: process.env.YOUTUBE_API_KEY,
-      claudeApiKey: process.env.CLAUDE_API_KEY,
+      claudeApiKey: process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY,
+      // ⭐ 직접 API 호출로 변경
+      serpApiKey: process.env.SERP_API_KEY,
       brightDataApiKey: process.env.BRIGHT_DATA_API_KEY,
-      brightDataProxy: process.env.BRIGHT_DATA_PROXY_URL || 'http://localhost:3001'
+      brightDataEndpoint: process.env.BRIGHT_DATA_ENDPOINT || 'brd-customer-hl_9f4abeab-zone-datacenter_proxy:8o3rnm1zjkjh@brd.superproxy.io:22225'
     };
 
     // YouTube API 설정 (하위 호환성)
@@ -2592,23 +2594,23 @@ ${categories ? `관심 카테고리: ${categories.join(', ')}` : ''}
       
       console.log(`🔥 트렌드 수집 완료: ${allTrendVideos.length}개 후보 영상`);
 
-          trendWorkflow.workflow_steps.push({
-            step: 5,
-            name: "트렌드 영상 검색",
-            input: trendQueries.length,
-            output: allTrendVideos.length,
-            success: true
-          });
+      trendWorkflow.workflow_steps.push({
+        step: 5,
+        name: "트렌드 영상 검색",
+        input: trendQueries.length,
+        output: allTrendVideos.length,
+        success: true
+      });
 
-          trendWorkflow.workflow_steps.push({
-            step: 6,
-            name: "트렌드 점수 정렬",
-            input: allTrendVideos.length,
+      trendWorkflow.workflow_steps.push({
+        step: 6,
+        name: "트렌드 점수 정렬",
+        input: allTrendVideos.length,
         output: this.deduplicateAndRankVideos(allTrendVideos, expandedTrendKeywords).length,
-            success: true
-          });
+        success: true
+      });
 
-          // 최종 결과 구성
+      // 최종 결과 구성
       trendWorkflow.trending_videos = this.deduplicateAndRankVideos(allTrendVideos, expandedTrendKeywords);
       trendWorkflow.performance = {
         total_time_ms: Date.now() - startTime,
@@ -2924,43 +2926,60 @@ ${context ? `추가 컨텍스트: ${context}` : ''}
    * 📈 Bright Data API를 통한 실시간 트렌드 수집
    */
   async getBrightDataTrends(region, category, limit) {
-    if (!this.config.brightDataApiKey) {
-      // 폴백: 기본 트렌드 데이터
-      console.log('⚠️ Bright Data API 키 없음 - 폴백 트렌드 사용');
-      return [
-        { keyword: '먹방', score: 85, searchVolume: 50000, growthRate: 15, relatedTerms: ['ASMR', '리뷰'] },
-        { keyword: '댄스', score: 80, searchVolume: 45000, growthRate: 12, relatedTerms: ['챌린지', '커버'] },
-        { keyword: '브이로그', score: 75, searchVolume: 40000, growthRate: 10, relatedTerms: ['일상', '여행'] },
-        { keyword: '요리', score: 70, searchVolume: 35000, growthRate: 8, relatedTerms: ['레시피', '홈쿡'] },
-        { keyword: '게임', score: 65, searchVolume: 30000, growthRate: 5, relatedTerms: ['플레이', '리뷰'] }
-      ].slice(0, limit);
-    }
+    console.log(`🔍 실제 트렌드 데이터 수집 시작 (${region}, ${category}, ${limit}개)`);
+    
+    const allTrends = [];
 
     try {
-      // Bright Data 프록시를 통한 트렌드 수집
-      const response = await axios.post(this.config.brightDataProxy, {
-        url: 'https://trends.google.com/trends/api/dailytrends',
-        region: region,
-        category: category,
-        limit: limit
-      }, {
-        headers: {
-          'Authorization': `Bearer ${this.config.brightDataApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 10000
+      // 1. SerpAPI Google Trends 수집
+      console.log('📊 1단계: SerpAPI Google Trends 수집...');
+      const googleTrends = await this.getSerpApiGoogleTrends(region, category, Math.ceil(limit * 0.6));
+      allTrends.push(...googleTrends);
+      console.log(`✅ Google Trends: ${googleTrends.length}개 수집`);
+
+      // 2. YouTube 트렌딩 수집 (Bright Data 또는 API)
+      console.log('📺 2단계: YouTube 트렌딩 수집...');
+      const youtubeTrends = await this.getBrightDataYoutubeTrending(region, Math.ceil(limit * 0.4));
+      allTrends.push(...youtubeTrends);
+      console.log(`✅ YouTube 트렌딩: ${youtubeTrends.length}개 수집`);
+
+      // 3. 중복 제거 및 점수 조정
+      const uniqueTrends = new Map();
+      
+      allTrends.forEach(trend => {
+        const key = trend.keyword.toLowerCase();
+        if (uniqueTrends.has(key)) {
+          // 중복시 점수 합산
+          const existing = uniqueTrends.get(key);
+          existing.score = Math.min(existing.score + trend.score * 0.3, 100);
+          existing.sources = [...(existing.sources || [existing.source]), trend.source];
+        } else {
+          uniqueTrends.set(key, {
+            ...trend,
+            sources: [trend.source]
+          });
+        }
       });
 
-      // 응답 데이터 파싱 및 처리
-      return this.parseTrendData(response.data, limit);
+      // 4. 최종 결과 정렬 및 제한
+      const finalTrends = Array.from(uniqueTrends.values())
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limit)
+        .map((trend, index) => ({
+          ...trend,
+          rank: index + 1,
+          updatedAt: new Date().toISOString()
+        }));
+
+      console.log(`🎉 최종 트렌드 데이터: ${finalTrends.length}개 (중복 제거 완료)`);
+      return finalTrends;
 
     } catch (error) {
-      console.error('❌ Bright Data 트렌드 수집 실패:', error);
-      // 폴백 데이터 반환
-      return [
-        { keyword: '트렌드 키워드 1', score: Math.random() * 100, searchVolume: Math.floor(Math.random() * 10000), growthRate: Math.random() * 50, relatedTerms: ['관련어1', '관련어2'] },
-        { keyword: '트렌드 키워드 2', score: Math.random() * 100, searchVolume: Math.floor(Math.random() * 10000), growthRate: Math.random() * 50, relatedTerms: ['관련어3', '관련어4'] }
-      ].slice(0, limit);
+      console.error('❌ 트렌드 데이터 수집 실패:', error.message);
+      
+      // 최종 폴백: 하드코딩된 데이터
+      console.log('🔄 최종 폴백: 하드코딩된 트렌드 데이터 사용');
+      return this.getFallbackTrends(region);
     }
   }
 
@@ -3016,12 +3035,40 @@ ${context ? `추가 컨텍스트: ${context}` : ''}
   // === 유틸리티 메서드들 ===
 
   parseISO8601Duration(duration) {
-    if (!duration) return 0;
-    const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
-    const hours = (match[1] || '').replace('H', '') || 0;
-    const minutes = (match[2] || '').replace('M', '') || 0;
-    const seconds = (match[3] || '').replace('S', '') || 0;
-    return parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
+    // 입력값 검증
+    if (!duration || typeof duration !== 'string') {
+      console.warn('⚠️ Invalid duration:', duration);
+      return 0;
+    }
+
+    try {
+      // ISO 8601 duration 정규식 매칭
+      const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+      
+      // 매칭 실패 시 안전 처리
+      if (!match) {
+        console.warn('⚠️ Duration parsing failed for:', duration);
+        return 0;
+      }
+
+      // 안전한 값 추출
+      const hours = match[1] ? parseInt(match[1].replace('H', '')) || 0 : 0;
+      const minutes = match[2] ? parseInt(match[2].replace('M', '')) || 0 : 0;
+      const seconds = match[3] ? parseInt(match[3].replace('S', '')) || 0 : 0;
+
+      const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+      
+      // 비정상적인 길이 체크 (24시간 초과는 비정상)
+      if (totalSeconds > 86400) {
+        console.warn('⚠️ Abnormally long duration:', duration, `(${totalSeconds}s)`);
+        return 0;
+      }
+
+      return totalSeconds;
+    } catch (error) {
+      console.error('❌ Duration parsing error:', error, 'for duration:', duration);
+      return 0;
+    }
   }
 
   calculateAPIUnits(resultCount) {
@@ -3372,7 +3419,9 @@ ${context ? `추가 컨텍스트: ${context}` : ''}
    * 🌐 Bright Data로 Google 자동완성 수집
    */
   async getBrightDataAutocomplete(keyword, context) {
-    if (!this.config.brightDataApiKey) {
+    // Railway 환경에서는 Bright Data 비활성화
+    if (!this.config.brightDataApiKey || !this.config.brightDataProxy) {
+      console.log('⚠️ Bright Data 비활성화 - 폴백 사용');
       return [];
     }
 
@@ -3380,7 +3429,7 @@ ${context ? `추가 컨텍스트: ${context}` : ''}
       const searchQuery = context ? `${keyword} ${context}` : keyword;
       
       // Bright Data MCP 호출 시뮬레이션 (실제로는 npx @brightdata/mcp 호출)
-      const response = await axios.post('http://localhost:3001/api/tools/call', {
+      const response = await axios.post(`${this.config.brightDataProxy}/api/tools/call`, {
         name: 'web_scrape',
         arguments: {
           url: `https://www.google.com/complete/search?client=chrome&q=${encodeURIComponent(searchQuery)}`,
@@ -3398,7 +3447,7 @@ ${context ? `추가 컨텍스트: ${context}` : ''}
       return this.parseAutocompleteResponse(response.data);
 
     } catch (error) {
-      console.error('❌ Google 자동완성 수집 실패:', error);
+      console.error('❌ Google 자동완성 수집 실패:', error.message);
       return [];
     }
   }
@@ -3407,13 +3456,15 @@ ${context ? `추가 컨텍스트: ${context}` : ''}
    * 🔗 Bright Data로 관련 키워드 수집
    */
   async getBrightDataRelatedKeywords(keyword, context) {
-    if (!this.config.brightDataApiKey) {
+    // Railway 환경에서는 Bright Data 비활성화
+    if (!this.config.brightDataApiKey || !this.config.brightDataProxy) {
+      console.log('⚠️ Bright Data 비활성화 - 폴백 사용');
       return [];
     }
 
     try {
       // Google Trends 관련 검색어 수집
-      const response = await axios.post('http://localhost:3001/api/tools/call', {
+      const response = await axios.post(`${this.config.brightDataProxy}/api/tools/call`, {
         name: 'web_search',
         arguments: {
           query: `${keyword} 관련 검색어 유튜브`,
@@ -3431,7 +3482,7 @@ ${context ? `추가 컨텍스트: ${context}` : ''}
       return this.parseRelatedKeywordsResponse(response.data);
 
     } catch (error) {
-      console.error('❌ 관련 키워드 수집 실패:', error);
+      console.error('❌ 관련 키워드 수집 실패:', error.message);
       return [];
     }
   }
@@ -3440,12 +3491,14 @@ ${context ? `추가 컨텍스트: ${context}` : ''}
    * 📺 Bright Data로 YouTube 검색 제안 수집
    */
   async getBrightDataYoutubeSuggestions(keyword) {
-    if (!this.config.brightDataApiKey) {
+    // Railway 환경에서는 Bright Data 비활성화
+    if (!this.config.brightDataApiKey || !this.config.brightDataProxy) {
+      console.log('⚠️ Bright Data 비활성화 - 폴백 사용');
       return [];
     }
 
     try {
-      const response = await axios.post('http://localhost:3001/api/tools/call', {
+      const response = await axios.post(`${this.config.brightDataProxy}/api/tools/call`, {
         name: 'browser_action',
         arguments: {
           action: 'navigate',
@@ -3463,7 +3516,7 @@ ${context ? `추가 컨텍스트: ${context}` : ''}
       return this.parseYoutubeSuggestionsResponse(response.data);
 
     } catch (error) {
-      console.error('❌ YouTube 검색 제안 수집 실패:', error);
+      console.error('❌ YouTube 검색 제안 수집 실패:', error.message);
       return [];
     }
   }
@@ -3539,8 +3592,24 @@ ${context ? `추가 컨텍스트: ${context}` : ''}
       return [];
     }
 
+    // Railway 환경에서는 Bright Data 비활성화
+    if (!this.config.brightDataApiKey || !this.config.brightDataProxy) {
+      console.log('⚠️ Bright Data 비활성화 - 폴백 사용');
+      // 폴백 데이터 반환
+      const fallbackKeywords = source === 'naver_trends' 
+        ? ['먹방', '브이로그', '댄스', '요리', 'ASMR']
+        : ['트렌드', '이슈', '인기', '바이럴'];
+      
+      return fallbackKeywords.map(keyword => ({
+        keyword,
+        score: Math.random() * 80 + 20,
+        source: `${source}_fallback`,
+        extractedAt: new Date().toISOString()
+      }));
+    }
+
     try {
-      const response = await axios.post('http://localhost:3001/api/tools/call', {
+      const response = await axios.post(`${this.config.brightDataProxy}/api/tools/call`, {
         name: 'web_scrape',
         arguments: {
           url: sourceUrls[source],
@@ -3558,8 +3627,18 @@ ${context ? `추가 컨텍스트: ${context}` : ''}
       return this.parseTrendSourceResponse(response.data, source);
 
     } catch (error) {
-      console.error(`❌ ${source} 응답 파싱 실패:`, error);
-      return [];
+      console.error(`❌ ${source} 스크래핑 실패:`, error.message);
+      // 폴백 데이터 반환
+      const fallbackKeywords = source === 'naver_trends' 
+        ? ['먹방', '브이로그', '댄스', '요리', 'ASMR']
+        : ['트렌드', '이슈', '인기', '바이럴'];
+      
+      return fallbackKeywords.map(keyword => ({
+        keyword,
+        score: Math.random() * 60 + 10,
+        source: `${source}_error_fallback`,
+        extractedAt: new Date().toISOString()
+      }));
     }
   }
 
@@ -4536,6 +4615,299 @@ JSON 형식으로 응답:
     }
 
     return '전체'; // 기본값
+  }
+
+  /**
+   * 🌐 SerpAPI로 실제 Google Trends 데이터 수집
+   */
+  async getSerpApiGoogleTrends(region = 'KR', category = '', limit = 20) {
+    if (!this.config.serpApiKey) {
+      console.log('⚠️ SerpAPI 키 없음 - 폴백 사용');
+      return this.getFallbackTrends(region);
+    }
+
+    try {
+      const params = new URLSearchParams({
+        engine: 'google_trends_trending_now',
+        api_key: this.config.serpApiKey,
+        geo: region,
+        hl: region === 'KR' ? 'ko' : 'en'
+      });
+
+      if (category) {
+        params.append('cat', category);
+      }
+
+      const response = await axios.get(`https://serpapi.com/search?${params}`, {
+        timeout: 10000
+      });
+
+      if (response.data && response.data.trending_searches) {
+        const trends = response.data.trending_searches.slice(0, limit).map((item, index) => ({
+          keyword: item.query || item.title,
+          score: Math.max(100 - index * 2, 10), // 점수 계산
+          category: category || '일반',
+          source: 'google_trends',
+          traffic: item.traffic || 'Unknown',
+          related_queries: item.related_queries || []
+        }));
+
+        console.log(`✅ SerpAPI Google Trends: ${trends.length}개 트렌드 수집`);
+        return trends;
+      }
+
+      console.warn('⚠️ SerpAPI 응답 형식 이상:', response.data);
+      return this.getFallbackTrends(region);
+
+    } catch (error) {
+      console.error('❌ SerpAPI Google Trends 오류:', error.message);
+      return this.getFallbackTrends(region);
+    }
+  }
+
+  /**
+   * 📺 Bright Data 직접 API로 YouTube 트렌딩 수집
+   */
+  async getBrightDataYoutubeTrending(region = 'KR', limit = 20) {
+    if (!this.config.brightDataApiKey || !this.config.brightDataEndpoint) {
+      console.log('⚠️ Bright Data 설정 없음 - 폴백 사용');
+      return [];
+    }
+
+    try {
+      // YouTube Trending 페이지 스크래핑
+      const proxyUrl = `http://${this.config.brightDataEndpoint}`;
+      const targetUrl = region === 'KR' 
+        ? 'https://www.youtube.com/feed/trending?gl=KR&hl=ko'
+        : 'https://www.youtube.com/feed/trending';
+
+      const response = await axios.get(targetUrl, {
+        proxy: false,
+        httpsAgent: new (require('https').Agent)({
+          rejectUnauthorized: false
+        }),
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': region === 'KR' ? 'ko-KR,ko;q=0.9' : 'en-US,en;q=0.9'
+        },
+        timeout: 15000,
+        // Bright Data 프록시 설정
+        proxy: {
+          protocol: 'http',
+          host: this.config.brightDataEndpoint.split('@')[1].split(':')[0],
+          port: parseInt(this.config.brightDataEndpoint.split(':')[2]),
+          auth: {
+            username: this.config.brightDataEndpoint.split('://')[1].split('@')[0].split(':')[0],
+            password: this.config.brightDataEndpoint.split('://')[1].split('@')[0].split(':')[1]
+          }
+        }
+      });
+
+      // YouTube 페이지에서 트렌딩 키워드 추출
+      const trends = this.parseYoutubeTrendingPage(response.data, limit);
+      
+      console.log(`✅ Bright Data YouTube 트렌딩: ${trends.length}개 수집`);
+      return trends;
+
+    } catch (error) {
+      console.error('❌ Bright Data YouTube 트렌딩 오류:', error.message);
+      // 폴백: YouTube mostPopular API 사용
+      return await this.getYoutubeMostPopularKeywords(region, limit);
+    }
+  }
+
+  /**
+   * 📄 YouTube 트렌딩 페이지 파싱
+   */
+  parseYoutubeTrendingPage(html, limit) {
+    try {
+      // YouTube 페이지에서 비디오 제목 추출 (정규식 사용)
+      const titleRegex = /"title":{"runs":\[{"text":"([^"]+)"/g;
+      const titles = [];
+      let match;
+
+      while ((match = titleRegex.exec(html)) !== null && titles.length < limit * 2) {
+        const title = match[1];
+        if (title && !title.includes('YouTube') && title.length > 3) {
+          titles.push(title);
+        }
+      }
+
+      // 제목에서 키워드 추출
+      const keywords = new Map();
+      
+      titles.forEach(title => {
+        // 한글, 영문 키워드 추출
+        const words = title.split(/[\s,#]+/)
+          .filter(word => word.length > 1)
+          .slice(0, 3); // 제목당 최대 3개 키워드
+
+        words.forEach(word => {
+          const cleaned = word.replace(/[^\w가-힣]/g, '');
+          if (cleaned.length > 1) {
+            keywords.set(cleaned, (keywords.get(cleaned) || 0) + 1);
+          }
+        });
+      });
+
+      // 빈도순 정렬
+      const trends = Array.from(keywords.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limit)
+        .map(([keyword, count], index) => ({
+          keyword,
+          score: Math.max(100 - index * 3, 10),
+          category: 'YouTube 트렌딩',
+          source: 'youtube_trending',
+          frequency: count
+        }));
+
+      return trends;
+
+    } catch (error) {
+      console.error('❌ YouTube 페이지 파싱 오류:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 📺 YouTube mostPopular API로 트렌딩 키워드 추출 (폴백)
+   */
+  async getYoutubeMostPopularKeywords(region = 'KR', limit = 20) {
+    if (!this.config.youtubeApiKey) {
+      console.log('⚠️ YouTube API 키 없음 - 하드코딩 폴백 사용');
+      return this.getFallbackTrends(region);
+    }
+
+    try {
+      const response = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+        params: {
+          part: 'snippet',
+          chart: 'mostPopular',
+          regionCode: region,
+          videoCategoryId: '24', // Entertainment
+          maxResults: 50,
+          key: this.config.youtubeApiKey
+        },
+        timeout: 10000
+      });
+
+      if (!response.data.items) {
+        return this.getFallbackTrends(region);
+      }
+
+      // 인기 영상 제목에서 키워드 추출
+      const keywords = new Map();
+      
+      response.data.items.forEach(video => {
+        const title = video.snippet.title;
+        const tags = video.snippet.tags || [];
+        
+        // 제목에서 키워드 추출
+        const titleWords = title.split(/[\s,#\[\]()]+/)
+          .filter(word => word.length > 1)
+          .slice(0, 3);
+
+        [...titleWords, ...tags.slice(0, 5)].forEach(word => {
+          const cleaned = word.replace(/[^\w가-힣]/g, '');
+          if (cleaned.length > 1) {
+            keywords.set(cleaned, (keywords.get(cleaned) || 0) + 1);
+          }
+        });
+      });
+
+      // 빈도순 정렬하여 트렌딩 키워드 생성
+      const trends = Array.from(keywords.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limit)
+        .map(([keyword, count], index) => ({
+          keyword,
+          score: Math.max(100 - index * 2, 10),
+          category: 'YouTube 인기',
+          source: 'youtube_popular',
+          frequency: count
+        }));
+
+      console.log(`✅ YouTube mostPopular 키워드: ${trends.length}개 추출`);
+      return trends;
+
+    } catch (error) {
+      console.error('❌ YouTube mostPopular API 오류:', error.message);
+      return this.getFallbackTrends(region);
+    }
+  }
+
+  /**
+   * 🔍 SerpAPI로 Google 자동완성 수집 (실제 데이터)
+   */
+  async getBrightDataAutocomplete(keyword, context) {
+    console.log(`🔍 Google 자동완성 수집: "${keyword}" (컨텍스트: ${context})`);
+
+    if (!this.config.serpApiKey) {
+      console.log('⚠️ SerpAPI 키 없음 - 기본 확장 사용');
+      return this.getBasicKeywordExpansion(keyword);
+    }
+
+    try {
+      const searchQuery = context ? `${keyword} ${context}` : keyword;
+      
+      const params = new URLSearchParams({
+        engine: 'google_autocomplete',
+        q: searchQuery,
+        api_key: this.config.serpApiKey,
+        gl: 'kr',
+        hl: 'ko'
+      });
+
+      const response = await axios.get(`https://serpapi.com/search?${params}`, {
+        timeout: 8000
+      });
+
+      if (response.data && response.data.suggestions) {
+        const autocomplete = response.data.suggestions
+          .filter(item => item.value && item.value.length > keyword.length)
+          .slice(0, 10)
+          .map(item => ({
+            keyword: item.value,
+            relevance: item.relevance || 'medium',
+            type: 'autocomplete'
+          }));
+
+        console.log(`✅ Google 자동완성: ${autocomplete.length}개 수집`);
+        return autocomplete;
+      }
+
+      console.warn('⚠️ SerpAPI 자동완성 응답 없음');
+      return this.getBasicKeywordExpansion(keyword);
+
+    } catch (error) {
+      console.error('❌ SerpAPI 자동완성 오류:', error.message);
+      return this.getBasicKeywordExpansion(keyword);
+    }
+  }
+
+  /**
+   * 🔧 기본 키워드 확장 (폴백)
+   */
+  getBasicKeywordExpansion(keyword) {
+    const expansions = {
+      '먹방': ['ASMR', '리뷰', '레시피', '맛집', '요리'],
+      '댄스': ['챌린지', '커버', '안무', '튜토리얼', 'K-POP'],
+      '브이로그': ['일상', '여행', '카페', '쇼핑', '데일리'],
+      '요리': ['레시피', '홈쿡', '간단', '맛있는', '건강'],
+      '게임': ['플레이', '리뷰', '공략', '신작', '모바일'],
+      '운동': ['홈트', '다이어트', '요가', '헬스', '필라테스'],
+      '여행': ['브이로그', '맛집', '관광', '호텔', '비행기'],
+      'ASMR': ['수면', '힐링', '소리', '팅글', '음성']
+    };
+
+    const expanded = expansions[keyword] || ['인기', '추천', '최신', '리뷰', '튜토리얼'];
+    
+    return expanded.map(exp => ({
+      keyword: `${keyword} ${exp}`,
+      relevance: 'high',
+      type: 'basic_expansion'
+    }));
   }
 }
 
