@@ -163,8 +163,8 @@ ${keywordsText}
    - 뉴스의 주요 맥락과 흐름은?
    - 대중의 관심도와 감정은?
 
-2. **YouTube Shorts 맞춤형 키워드 10개** (한국어)
-   - **반드시 "${keyword}"를 포함하여 정확히 3단어로 구성** (예: "${keyword} 화재 현장", "${keyword} 문화재 보호")
+2. **YouTube Shorts 맞춤형 키워드 3개** (한국어)
+   - **정확히 2단어로 구성** (예: "${keyword} 화재", "${keyword} 보호")
    - 검색량이 높을 만한 간결한 키워드
    - 감정적으로 매력적인 키워드
    - 트렌드를 반영한 키워드
@@ -180,14 +180,7 @@ ${keywordsText}
   "youtubeKeywords": [
     "키워드1",
     "키워드2",
-    "키워드3",
-    "키워드4",
-    "키워드5",
-    "키워드6",
-    "키워드7",
-    "키워드8",
-    "키워드9",
-    "키워드10"
+    "키워드3"
   ]
 }`;
 
@@ -216,22 +209,22 @@ ${keywordsText}
       console.log(`   📰 뉴스 맥락: ${claudeAnalysis.trendAnalysis.newsContext}`);
       console.log(`   👥 대중 관심: ${claudeAnalysis.trendAnalysis.publicInterest}`);
       
-      console.log('\n🤖 Claude AI 추천 키워드 (전체):');
+      console.log('\n🤖 Claude AI 추천 키워드 (전체 3개):');
       claudeAnalysis.youtubeKeywords.forEach((keyword, index) => {
         console.log(`   ${index + 1}. "${keyword}"`);
       });
       
-      // 상위 2개만 선택
-      const top2Keywords = claudeAnalysis.youtubeKeywords.slice(0, 2);
-      console.log('\n🔥 선택된 상위 2개 키워드:');
-      top2Keywords.forEach((keyword, index) => {
+      // 3개 모두 선택
+      const selectedKeywords = claudeAnalysis.youtubeKeywords.slice(0, 3);
+      console.log('\n🔥 선택된 키워드 (전체 3개):');
+      selectedKeywords.forEach((keyword, index) => {
         console.log(`   ${index + 1}. "${keyword}" ⭐`);
       });
       
       return {
         trendAnalysis: claudeAnalysis.trendAnalysis,
         allKeywords: claudeAnalysis.youtubeKeywords,
-        selectedKeywords: top2Keywords
+        selectedKeywords: selectedKeywords
       };
       
     } catch (parseError) {
@@ -247,9 +240,12 @@ ${keywordsText}
 
 /**
  * 🌟 최종 키워드 통합 (5개)
+ * - 기본 검색어 1개
+ * - 빈출 키워드 조합 1개  
+ * - AI 추천 키워드 3개
  */
 function generateFinalKeywords(keyword, frequentKeywords, claudeAnalysis) {
-  console.log('\n🌟 ===== 최종 추천 키워드 통합 =====');
+  console.log('\n🌟 ===== 최종 추천 키워드 통합 (1+1+3=5개) =====');
   
   const finalKeywords = [];
   
@@ -261,28 +257,17 @@ function generateFinalKeywords(keyword, frequentKeywords, claudeAnalysis) {
     confidence: 'high'
   });
   
-  // 2. 빈출 키워드 조합 2개
+  // 2. 빈출 키워드 조합 1개
   if (frequentKeywords.length >= 2) {
-    // 첫 번째 빈출 조합
     finalKeywords.push({
       keyword: `${keyword} ${frequentKeywords[1].word}`,
       type: '빈출',
       source: `빈출 조합 (${frequentKeywords[1].count}회)`,
       confidence: 'medium'
     });
-    
-    // 두 번째 빈출 조합 (3번째 키워드 사용)
-    if (frequentKeywords.length >= 3) {
-      finalKeywords.push({
-        keyword: `${keyword} ${frequentKeywords[2].word}`,
-        type: '빈출',
-        source: `빈출 조합 (${frequentKeywords[2].count}회)`,
-        confidence: 'medium'
-      });
-    }
   }
   
-  // 3. AI 추천 키워드 2개
+  // 3. AI 추천 키워드 3개
   if (claudeAnalysis && claudeAnalysis.selectedKeywords) {
     claudeAnalysis.selectedKeywords.forEach(kw => {
       finalKeywords.push({
@@ -296,15 +281,20 @@ function generateFinalKeywords(keyword, frequentKeywords, claudeAnalysis) {
   
   // 5개로 맞추기 (부족한 경우 폴백)
   while (finalKeywords.length < 5) {
+    const fallbackWords = ['현장', '속보', '상황', '이슈', '화제'];
+    const fallbackIndex = finalKeywords.length - 1; // 현재 부족한 개수에 따라 다른 폴백 사용
+    const fallbackWord = fallbackWords[fallbackIndex] || '현장';
+    
     finalKeywords.push({
-      keyword: `${keyword} 현장`,
+      keyword: `${keyword} ${fallbackWord}`,
       type: '폴백',
       source: '폴백 키워드',
       confidence: 'low'
     });
   }
   
-  console.log('🎯 최종 키워드 구성:');
+  console.log('🎯 최종 키워드 구성 (5개):');
+  console.log('   📝 구성: 기본(1) + 빈출(1) + AI(3) = 총 5개');
   finalKeywords.slice(0, 5).forEach((item, index) => {
     const typeIcon = {
       '기본': '🔷',

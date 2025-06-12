@@ -1,8 +1,8 @@
 /**
  * 📊 Video Complete Filter
- * videos.list API 기반 통합 필터링 모듈
- * - 재생 가능성 + 품질 필터링 통합
- * - 배치 처리 및 정렬
+ * YouTube Shorts 재생 가능성 + 품질 필터링 통합 모듈
+ * - 9 units (snippet, contentDetails, status, statistics) 사용
+ * - 재생 가능성 및 품질 기준 필터링
  * - 40개 목표 달성을 위한 효율적 처리
  */
 
@@ -13,17 +13,10 @@ class VideoCompleteFilter {
     this.apiKey = apiKey;
     this.youtubeApiUrl = 'https://www.googleapis.com/youtube/v3';
     
-    // 통계 추적
-    this.stats = {
-      totalProcessed: 0,
-      playableVideos: 0,
-      qualityFiltered: 0,
-      finalResults: 0,
-      apiUnitsUsed: 0
-    };
-
-    // 필수 API parts (총 9 units per batch)
+    // Full 모드 고정 (9 units)
     this.requiredParts = ['snippet', 'contentDetails', 'status', 'statistics'];
+    
+    console.log(`🔧 필터 모드: full (9 units)`);
   }
 
   /**
@@ -39,11 +32,10 @@ class VideoCompleteFilter {
     const filterCriteria = {
       requireEmbeddable: criteria.requireEmbeddable !== false,
       requirePublic: criteria.requirePublic !== false,
-      minDuration: criteria.minDuration || 5,
-      maxDuration: criteria.maxDuration || 60,
-      minViewCount: criteria.minViewCount || 1000,
-      minLikeCount: criteria.minLikeCount || 10,
-      minEngagementRate: criteria.minEngagementRate || 0.01,
+      minDuration: criteria.minDuration || 10,      // 10초 이상 (너무 짧은 영상 제외)
+      maxDuration: criteria.maxDuration || 90,      // 90초 이하 (1분 30초, Shorts+ 기준)
+      minViewCount: criteria.minViewCount || 10000, // 10,000회 이상 (고품질 기준 강화)
+      minEngagementRate: criteria.minEngagementRate || 0.01, // 1% 이상 (현실적 기준)
       sortBy: criteria.sortBy || 'engagement',
       maxResults: criteria.maxResults || 40
     };
@@ -125,85 +117,96 @@ class VideoCompleteFilter {
     
     console.log(`🔍 필터링 실행: ${videos.length}개 영상`);
     
+    // 📊 단계별 필터링 통계
+    const filterStats = {
+      total: videos.length,
+      embeddablePass: 0,
+      publicPass: 0,
+      durationPass: 0,
+      viewCountPass: 0,
+      engagementPass: 0,
+      finalPass: 0
+    };
+
     // 재생 가능성 + 품질 통합 검사
     const validVideos = videos.filter(video => {
-      const playabilityCheck = this.checkVideoPlayability(video, criteria);
-      const qualityCheck = this.checkVideoQuality(video, criteria);
-      
-      return playabilityCheck.isPlayable && qualityCheck.isQuality;
+      // 1. 임베드 가능성 확인
+      if (criteria.requireEmbeddable && !video.status?.embeddable) {
+        return false;
+      }
+      filterStats.embeddablePass++;
+
+      // 2. 공개 상태 확인
+      if (criteria.requirePublic && video.status?.privacyStatus !== 'public') {
+        return false;
+      }
+      filterStats.publicPass++;
+
+      // 3. Shorts 길이 확인
+      const duration = this.parseISO8601Duration(video.contentDetails?.duration);
+      if (duration < criteria.minDuration || duration > criteria.maxDuration) {
+        return false;
+      }
+      filterStats.durationPass++;
+
+      // 4. 품질 필터링 (조회수)
+      const stats = video.statistics;
+      if (!stats) return false;
+
+      const viewCount = parseInt(stats.viewCount) || 0;
+      if (viewCount < criteria.minViewCount) {
+        return false;
+      }
+      filterStats.viewCountPass++;
+
+      // 5. 참여도 필터링
+      const engagementRate = this.calculateEngagementRate(video);
+      if (engagementRate < criteria.minEngagementRate) {
+        return false;
+      }
+      filterStats.engagementPass++;
+
+      filterStats.finalPass++;
+      return true;
     });
 
-    console.log(`  ✅ 필터링 완료: ${validVideos.length}개 통과`);
+    // 📊 필터링 통계 출력
+    this.printFilteringStats(filterStats);
 
     return {
       validVideos,
       playableCount: validVideos.length,
-      qualityCount: validVideos.length
+      qualityCount: validVideos.length,
+      filterStats
     };
   }
 
   /**
-   * ✅ 재생 가능성 검사
+   * 📊 필터링 단계별 통계 출력
    */
-  checkVideoPlayability(video, criteria) {
-    try {
-      // 임베드 가능 여부
-      if (criteria.requireEmbeddable && !video.status?.embeddable) {
-        return { isPlayable: false, reason: 'not_embeddable' };
-      }
-
-      // 공개 상태
-      if (criteria.requirePublic && video.status?.privacyStatus !== 'public') {
-        return { isPlayable: false, reason: 'not_public' };
-      }
-
-      // Shorts 길이 확인 (5-60초)
-      const duration = this.parseISO8601Duration(video.contentDetails?.duration);
-      if (duration < criteria.minDuration || duration > criteria.maxDuration) {
-        return { isPlayable: false, reason: 'invalid_duration' };
-      }
-
-      return { isPlayable: true, reason: 'playable' };
-
-    } catch (error) {
-      return { isPlayable: false, reason: 'check_error' };
-    }
-  }
-
-  /**
-   * 📊 품질 검사
-   */
-  checkVideoQuality(video, criteria) {
-    try {
-      const stats = video.statistics;
-      if (!stats) {
-        return { isQuality: false, reason: 'no_statistics' };
-      }
-
-      const viewCount = parseInt(stats.viewCount) || 0;
-      const likeCount = parseInt(stats.likeCount) || 0;
-      
-      // 최소 조회수
-      if (viewCount < criteria.minViewCount) {
-        return { isQuality: false, reason: 'low_views' };
-      }
-
-      // 최소 좋아요
-      if (likeCount < criteria.minLikeCount) {
-        return { isQuality: false, reason: 'low_likes' };
-      }
-
-      // 참여도
-      const engagementRate = this.calculateEngagementRate(video);
-      if (engagementRate < criteria.minEngagementRate) {
-        return { isQuality: false, reason: 'low_engagement' };
-      }
-
-      return { isQuality: true, reason: 'quality_passed' };
-
-    } catch (error) {
-      return { isQuality: false, reason: 'quality_check_error' };
-    }
+  printFilteringStats(stats) {
+    console.log(`  📊 필터링 단계별 통계:`);
+    console.log(`    🎬 전체 영상: ${stats.total}개`);
+    console.log(`    ✅ 임베드 가능: ${stats.embeddablePass}개 (${(stats.embeddablePass/stats.total*100).toFixed(1)}%)`);
+    console.log(`    🔓 공개 영상: ${stats.publicPass}개 (${(stats.publicPass/stats.total*100).toFixed(1)}%)`);
+    console.log(`    ⏱️ Shorts 길이: ${stats.durationPass}개 (${(stats.durationPass/stats.total*100).toFixed(1)}%)`);
+    console.log(`    👀 조회수 기준: ${stats.viewCountPass}개 (${(stats.viewCountPass/stats.total*100).toFixed(1)}%)`);
+    console.log(`    💝 참여도 기준: ${stats.engagementPass}개 (${(stats.engagementPass/stats.total*100).toFixed(1)}%)`);
+    console.log(`    🎯 최종 통과: ${stats.finalPass}개 (${(stats.finalPass/stats.total*100).toFixed(1)}%)`);
+    
+    // 각 단계별 필터링 효과
+    const embeddableFilter = stats.total - stats.embeddablePass;
+    const publicFilter = stats.embeddablePass - stats.publicPass;
+    const durationFilter = stats.publicPass - stats.durationPass;
+    const viewCountFilter = stats.durationPass - stats.viewCountPass;
+    const engagementFilter = stats.viewCountPass - stats.engagementPass;
+    
+    console.log(`  🔍 단계별 필터링 효과:`);
+    console.log(`    ❌ 임베드 불가: ${embeddableFilter}개 제거`);
+    console.log(`    ❌ 비공개: ${publicFilter}개 제거`);
+    console.log(`    ❌ 길이 부적합: ${durationFilter}개 제거`);
+    console.log(`    ❌ 조회수 부족: ${viewCountFilter}개 제거`);
+    console.log(`    ❌ 참여도 부족: ${engagementFilter}개 제거`);
   }
 
   /**

@@ -1,6 +1,18 @@
 /**
- * 🎯 YouTube Shorts 지능형 쿼리 빌더 (LLM 기반)
- * 하이브리드 키워드와 맥락을 분석하여 최적의 YouTube API 쿼리 생성
+ * 🎯 YouTube Shorts 지능형 쿼리 빌더 (LLM 기반) - 향후 사용 예정
+ * 
+ * ⚠️ 현재 비활성화된 기능들 (API 할당량 절약을 위해):
+ * - 고급 쿼리 분석 및 생성
+ * - 카테고리별 최적화
+ * - 시간 필터링
+ * - 정렬 최적화
+ * 
+ * 📝 향후 프리미엄 기능으로 활용 예정:
+ * - AI 기반 고급 쿼리 최적화
+ * - 컨텍스트 인식 검색
+ * - 사용자 맞춤 쿼리 전략
+ * 
+ * 🚀 현재는 기본 OR 쿼리만 지원 (search-engine에서 단순화)
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -26,22 +38,10 @@ class IntelligentYouTubeQueryBuilder {
       avgProcessingTime: 0
     };
 
-    // 고정 파라미터 (고품질 영상 우선)
-    this.fixedParams = {
-      part: 'snippet',         // 기본 정보 포함
-      videoDuration: 'short',  // 4분 미만 (Shorts)
-      maxResults: 50,          // 최대 결과 수
-      type: 'video',           // 비디오만
-      regionCode: 'KR',        // 한국 지역
-      relevanceLanguage: 'ko', // 한국어 관련성
-      safeSearch: 'moderate',  // 균형잡힌 안전 검색
-      videoEmbeddable: 'true', // 임베드 가능한 영상만
-      videoLicense: 'any',     // 모든 라이선스 (YouTube, Creative Commons)
-      videoSyndicated: 'true', // 외부 재생 보장 (필수)
-      videoDefinition: 'high'  // HD 화질만 (고품질)
-    };
+    // 🚫 고정 파라미터는 youtube-search-engine.js로 이동됨 (단순화)
+    // 향후 프리미엄 기능에서 고급 파라미터 최적화 시 다시 활용 예정
 
-    // 🚫 카테고리 매핑은 advanced-query-builder.js로 이동됨
+    // 🚫 카테고리 매핑은 advanced-query-builder.js로 이동됨 (향후 사용)
   }
 
   initializeAPI() {
@@ -107,8 +107,11 @@ class IntelligentYouTubeQueryBuilder {
       //   console.log('📝 기본 쿼리만 사용 (고급 쿼리 불필요)');
       // }
 
-      // ✅ 성능 최적화: 기본 OR 쿼리만 사용
+      // ⚠️ 현재 비활성화: 기본 OR 쿼리만 사용 (API 할당량 절약)
+      // 🚀 추천: youtube-search-engine.js의 searchByKeyword() 사용
       console.log('📝 기본 OR 쿼리만 사용 (고급 쿼리 비활성화)');
+      console.log('🚀 추천: 대신 youtube-search-engine.js의 searchByKeyword() 사용');
+      
       const advancedAnalysis = {
         needsAdvanced: false,
         requiredElements: [],
@@ -116,7 +119,7 @@ class IntelligentYouTubeQueryBuilder {
         needsTimeFilter: false,
         timeFilter: null,
         preferredOrder: 'relevance',
-        reasoning: '성능 최적화를 위해 기본 쿼리만 사용'
+        reasoning: 'API 할당량 절약을 위해 단순화됨 - search-engine 사용 권장'
       };
 
       const processingTime = Date.now() - startTime;
@@ -208,10 +211,11 @@ JSON 배열로 선택된 키워드들만 응답:
   // 향후 필요시 아래와 같이 import 하여 사용:
   // import { analyzeQueryNeeds } from './advanced-query-builder.js';
 
-  /**
-   * 🎯 OR 통합 쿼리 직접 생성
-   */
+  // 🚫 향후 사용 예정: OR 통합 쿼리 직접 생성
+  // 현재는 youtube-search-engine.js의 searchByKeyword()로 단순화됨
   createDirectOrQuery(keywords) {
+    console.warn('⚠️ createDirectOrQuery는 향후 프리미엄 기능에서 사용 예정');
+    
     // "shorts" 중복 방지
     const shortsKeywords = keywords.map(k => {
       const keyword = k.trim();
@@ -220,9 +224,10 @@ JSON 배열로 선택된 키워드들만 응답:
     
     const orQuery = shortsKeywords.join(' | ');
     
+    // 🚫 fixedParams는 search-engine으로 이동됨
     return {
       apiParams: {
-        ...this.fixedParams,
+        // 고정 파라미터는 search-engine에서 처리
         q: orQuery,
         order: 'relevance'
       },
@@ -230,7 +235,7 @@ JSON 배열로 선택된 키워드들만 응답:
       keyword: keywords.join(' | '),
       optimizedQuery: orQuery,
       priority: 1,
-      reasoning: `${keywords.length}개 키워드를 OR로 직접 통합 - 안정적 기본 쿼리`,
+      reasoning: `${keywords.length}개 키워드를 OR로 직접 통합 - 안정적 기본 쿼리 (향후 사용)`,
       type: 'direct_or',
       llmGenerated: false
     };
@@ -240,15 +245,16 @@ JSON 배열로 선택된 키워드들만 응답:
   // 향후 필요시 아래와 같이 import 하여 사용:
   // import { generateAdvanced, createCategoryQuery, createTimeFilterQuery, createSortedQuery } from './advanced-query-builder.js';
 
-  /**
-   * 🔄 폴백 쿼리 생성
-   */
+  // 🚫 향후 사용 예정: 폴백 쿼리 생성
+  // 현재는 youtube-search-engine.js에서 직접 처리
   generateFallbackQueries(keywords) {
+    console.warn('⚠️ generateFallbackQueries는 향후 프리미엄 기능에서 사용 예정');
+    
     const firstKeyword = Array.isArray(keywords) ? keywords[0] : keywords;
     
     return [{
       apiParams: {
-        ...this.fixedParams,
+        // 고정 파라미터는 search-engine에서 처리
         q: `${firstKeyword} shorts`,
         order: 'relevance'
       },
@@ -256,7 +262,7 @@ JSON 배열로 선택된 키워드들만 응답:
       keyword: firstKeyword,
       optimizedQuery: `${firstKeyword} shorts`,
       priority: 99,
-      reasoning: '비상 폴백 쿼리',
+      reasoning: '비상 폴백 쿼리 (향후 사용)',
       type: 'fallback',
       llmGenerated: false
     }];
@@ -325,4 +331,33 @@ export function getQueryBuilderStats() {
   return intelligentQueryBuilder.getStats();
 }
 
-export default intelligentQueryBuilder; 
+export default intelligentQueryBuilder;
+
+/**
+ * 🚀 권장 사용법 (단순화됨)
+ * 
+ * ❌ 기존 방식 (복잡함):
+ * const queryBuilder = new IntelligentYouTubeQueryBuilder();
+ * const result = await queryBuilder.buildQueries(keywords);
+ * const searchResult = await youtubeSearchEngine.searchVideos(result.queries[0].apiParams);
+ * 
+ * ✅ 새로운 방식 (단순함):
+ * import { searchYouTubeShorts } from '../search/modules/youtube-search-engine.js';
+ * const result = await searchYouTubeShorts(apiKey, '힐링 음악');
+ * 
+ * 📊 사용 예시:
+ * 
+ * // 1. 단일 키워드 검색
+ * const result1 = await searchYouTubeShorts(apiKey, '힐링 피아노');
+ * 
+ * // 2. 여러 키워드 검색 
+ * const results = await searchMultipleKeywords(apiKey, ['힐링', 'ASMR', '재즈']);
+ * 
+ * // 3. 커스텀 옵션
+ * const result3 = await searchYouTubeShorts(apiKey, '요리', { maxResults: 25 });
+ * 
+ * 🎯 향후 프리미엄 기능:
+ * - 고급 쿼리 최적화 (현재 비활성화)
+ * - AI 기반 쿼리 분석 (향후 구현)
+ * - 사용자 맞춤 검색 전략 (개인화)
+ */ 
