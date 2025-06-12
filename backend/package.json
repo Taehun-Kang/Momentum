@@ -25,11 +25,12 @@
     "mcp:host": "cd mcp && node railway-mcp-host.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.24.3",
+    "@anthropic-ai/sdk": "^0.53.0",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@supabase/supabase-js": "^2.50.0",
     "axios": "^1.6.2",
     "bcrypt": "^5.1.1",
+    "cheerio": "^1.0.0-rc.12",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
@@ -38,6 +39,7 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "node-cache": "^5.1.2",
+    "puppeteer": "^24.10.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
