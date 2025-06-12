@@ -1,0 +1,480 @@
+/**
+ * 🎬 YouTube 검색 서비스
+ * 
+ * MCP 서버의 모든 YouTube 검색 기능을 완전 구현
+ * - 2단계 필터링 (search.list → videos.list → playability check)
+ * - 스마트 페이지네이션 (30개 미만 시 자동 다음 페이지)
+ * - 정확한 API 사용량 계산
+ * - 엄격한 Shorts 필터링
+ */
+
+import axios from 'axios';
+
+class YouTubeSearch {
+  constructor(apiKey) {
+    this.apiKey = apiKey;
+    this.youtubeApiUrl = 'https://www.googleapis.com/youtube/v3';
+    
+    // 통계 추적
+    this.stats = {
+      totalRequests: 0,
+      successfulRequests: 0,
+      failedRequests: 0,
+      apiUnitsUsed: 0
+    };
+  }
+
+  /**
+   * 🎬 YouTube Data API v3 검색 (2단계 필터링 + 스마트 페이지네이션)
+   * MCP 서버의 searchYouTubeVideos 메서드 완전 구현
+   */
+  async searchYouTubeVideos(params, maxResults, nextPageToken) {
+    if (!this.apiKey) {
+      throw new Error('YouTube API 키가 설정되지 않았습니다.');
+    }
+
+    try {
+      let allPlayableVideos = [];
+      let currentPageToken = nextPageToken;
+      let totalCandidates = 0;
+      let totalApiUnits = 0;
+      let pageCount = 0;
+      const maxPages = 3; // 최대 3페이지까지만 (API 할당량 보호)
+
+      console.log(`🎬 YouTube 검색 시작: "${params.query}" (목표: ${maxResults}개)`);
+
+      // 📄 페이지별 검색 루프
+      while (allPlayableVideos.length < Math.max(maxResults, 30) && pageCount < maxPages) {
+        pageCount++;
+        console.log(`\n📄 페이지 ${pageCount} 검색 중...`);
+
+        // 1단계: search.list로 후보 영상 검색 (기본 필터링 적용)
+        console.log('1️⃣ YouTube 후보 영상 검색 중... (maxResults=50, 기본 필터링 적용)');
+        const searchResponse = await axios.get(`${this.youtubeApiUrl}/search`, {
+          params: {
+            key: this.apiKey,
+            part: 'snippet',
+            q: params.query,
+            type: 'video',
+            videoDuration: 'short', // ⭐ 4분 미만 (Shorts 길이)
+            videoEmbeddable: 'true', // ⭐ 임베드 가능한 영상만 (기본 필터링)
+            maxResults: 50, // 항상 최대 50개로 고정
+            regionCode: 'KR',
+            relevanceLanguage: 'ko',
+            safeSearch: 'moderate',
+            order: params.filters?.order || 'relevance',
+            pageToken: currentPageToken
+          }
+        });
+
+        const searchResults = searchResponse.data.items || [];
+        totalCandidates += searchResults.length;
+        console.log(`📊 search.list 결과: ${searchResults.length}개 후보 영상 (기본 필터링 적용됨)`);
+        
+        if (searchResults.length === 0) {
+          console.log('⚠️ 더 이상 검색 결과가 없습니다.');
+          break;
+        }
+
+        // 2단계: videos.list로 상세 정보 및 재생 가능 여부 확인
+        console.log('2️⃣ 영상 상세 정보 조회 중...');
+        const videoIds = searchResults.map(item => item.id.videoId);
+        const videosResponse = await axios.get(`${this.youtubeApiUrl}/videos`, {
+          params: {
+            key: this.apiKey,
+            part: 'snippet,contentDetails,status,statistics',
+            id: videoIds.join(','),
+            hl: 'ko',
+            regionCode: 'KR'
+          }
+        });
+
+        const detailedVideos = videosResponse.data.items || [];
+
+        // 3단계: 엄격한 재생 가능 Shorts 필터링
+        console.log('3️⃣ 엄격한 재생 가능 영상 필터링 중...');
+        const playableShorts = detailedVideos.filter(video => {
+          // 임베드 가능 여부 (이미 search.list에서 걸렀지만 재확인)
+          if (!video.status.embeddable) return false;
+          
+          // 공개 상태
+          if (video.status.privacyStatus !== 'public') return false;
+          
+          // 지역 차단 확인
+          const restrictions = video.contentDetails.regionRestriction;
+          if (restrictions) {
+            if (restrictions.blocked?.includes('KR')) return false;
+            if (restrictions.allowed && !restrictions.allowed.includes('KR')) return false;
+          }
+          
+          // Shorts 길이 확인 (60초 이하, 5초 이상)
+          const duration = this.parseISO8601Duration(video.contentDetails.duration);
+          if (duration > 60 || duration < 5) return false;
+          
+          // 업로드 라이선스 확인 (선택적)
+          if (video.status.license === 'creativeCommon') {
+            // Creative Commons 라이선스는 허용
+          }
+          
+          return true;
+        });
+
+        const pageFilteringRatio = searchResults.length > 0 ? (playableShorts.length / searchResults.length * 100).toFixed(1) : 0;
+        console.log(`✅ 페이지 ${pageCount} 필터링: ${playableShorts.length}/${searchResults.length} 영상 (${pageFilteringRatio}% 통과)`);
+        
+        // 이 페이지의 재생 가능한 영상들을 전체 목록에 추가
+        allPlayableVideos.push(...playableShorts);
+        
+        // API 사용량 계산
+        const pageApiUnits = this.calculateAPIUnits();
+        totalApiUnits += pageApiUnits.total;
+
+        // 다음 페이지 토큰 확인
+        currentPageToken = searchResponse.data.nextPageToken;
+        
+        console.log(`📈 현재 누적: ${allPlayableVideos.length}개 재생 가능 영상`);
+        
+        // 📋 결과 충분성 검사
+        if (allPlayableVideos.length >= maxResults) {
+          console.log(`🎯 목표 달성: ${maxResults}개 이상 확보`);
+          break;
+        } else if (allPlayableVideos.length >= 30) {
+          console.log(`✅ 최소 요구사항 충족: 30개 이상 확보`);
+          break;
+        } else if (!currentPageToken) {
+          console.log(`⚠️ 더 이상 페이지가 없습니다. (현재: ${allPlayableVideos.length}개)`);
+          break;
+        } else {
+          console.log(`🔄 결과 부족 (${allPlayableVideos.length}개 < 30개), 다음 페이지 검색 계속...`);
+        }
+      }
+
+      // 📊 최종 통계
+      const totalFilteringRatio = totalCandidates > 0 ? (allPlayableVideos.length / totalCandidates * 100).toFixed(1) : 0;
+      console.log(`\n🎊 검색 완료!`);
+      console.log(`  📄 검색된 페이지: ${pageCount}개`);
+      console.log(`  📊 총 후보 영상: ${totalCandidates}개`);
+      console.log(`  ✅ 재생 가능 영상: ${allPlayableVideos.length}개`);
+      console.log(`  📈 전체 필터링 성공률: ${totalFilteringRatio}%`);
+      console.log(`  💰 총 API 사용량: ${totalApiUnits} units`);
+      
+      // 🎯 최종 결과는 요청된 maxResults 수만큼만 반환
+      const finalVideos = allPlayableVideos.slice(0, maxResults);
+      console.log(`🎬 최종 반환: ${finalVideos.length}개 영상`);
+
+      // 통계 업데이트
+      this.stats.totalRequests++;
+      this.stats.successfulRequests++;
+      this.stats.apiUnitsUsed += totalApiUnits;
+
+      return {
+        videos: finalVideos,
+        nextPageToken: allPlayableVideos.length > maxResults ? currentPageToken : null, // 더 많은 결과가 있는 경우만
+        filteringStats: {
+          pagesSearched: pageCount,
+          totalCandidates: totalCandidates,
+          totalPlayable: allPlayableVideos.length,
+          finalReturned: finalVideos.length,
+          overallFilteringRatio: totalFilteringRatio + '%',
+          searchEfficiency: (finalVideos.length / totalApiUnits * 100).toFixed(2) + ' videos/100units'
+        },
+        apiUsage: {
+          totalUnits: totalApiUnits,
+          breakdown: {
+            pagesSearched: pageCount,
+            searchUnits: pageCount * 100,
+            videosUnits: pageCount * 9,
+            avgUnitsPerVideo: (totalApiUnits / Math.max(finalVideos.length, 1)).toFixed(1)
+          }
+        }
+      };
+
+    } catch (error) {
+      console.error('❌ YouTube API 오류:', error);
+      this.stats.failedRequests++;
+      
+      if (error.response?.status === 403) {
+        throw new Error('YouTube API 할당량이 초과되었거나 권한이 없습니다.');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 🔍 기본 YouTube 검색 (단순 버전)
+   */
+  async searchVideos(query, options = {}) {
+    const {
+      maxResults = 20,
+      videoDuration = 'short',
+      regionCode = 'KR',
+      relevanceLanguage = 'ko',
+      order = 'relevance',
+      publishedAfter = null,
+      publishedBefore = null,
+      safeSearch = 'moderate'
+    } = options;
+
+    console.log(`🔍 YouTube 기본 검색: "${query}" (최대 ${maxResults}개)`);
+
+    try {
+      const searchParams = {
+        part: 'snippet',
+        q: query,
+        type: 'video',
+        maxResults,
+        regionCode,
+        relevanceLanguage,
+        order,
+        safeSearch
+      };
+
+      // 선택적 파라미터 추가
+      if (videoDuration) searchParams.videoDuration = videoDuration;
+      if (publishedAfter) searchParams.publishedAfter = publishedAfter;
+      if (publishedBefore) searchParams.publishedBefore = publishedBefore;
+
+      const response = await axios.get(`${this.youtubeApiUrl}/search`, {
+        params: {
+          ...searchParams,
+          key: this.apiKey
+        }
+      });
+
+      const videos = response.data.items || [];
+      console.log(`✅ 검색 완료: ${videos.length}개 영상 발견`);
+
+      // 통계 업데이트
+      this.stats.totalRequests++;
+      this.stats.successfulRequests++;
+      this.stats.apiUnitsUsed += 100; // search.list = 100 units
+
+      return {
+        videos,
+        totalResults: response.data.pageInfo?.totalResults || 0,
+        nextPageToken: response.data.nextPageToken,
+        apiUnitsUsed: 100
+      };
+
+    } catch (error) {
+      console.error('❌ YouTube 기본 검색 실패:', error);
+      this.stats.failedRequests++;
+      throw error;
+    }
+  }
+
+  /**
+   * 🔍 다중 키워드 검색
+   */
+  async searchMultipleKeywords(keywords, options = {}) {
+    const { maxResultsPerKeyword = 10 } = options;
+    
+    console.log(`🔍 다중 키워드 검색: ${keywords.join(', ')}`);
+    
+    const allResults = [];
+    
+    for (const keyword of keywords) {
+      try {
+        const result = await this.searchVideos(keyword, {
+          ...options,
+          maxResults: maxResultsPerKeyword
+        });
+        
+        // 키워드 태그 추가
+        const taggedVideos = result.videos.map(video => ({
+          ...video,
+          searchKeyword: keyword
+        }));
+        
+        allResults.push(...taggedVideos);
+        
+        // API 호출 간격 (Rate Limiting 방지)
+        await this.delay(100);
+        
+      } catch (error) {
+        console.error(`키워드 "${keyword}" 검색 실패:`, error.message);
+      }
+    }
+    
+    console.log(`✅ 다중 검색 완료: 총 ${allResults.length}개 영상`);
+    
+    return {
+      videos: allResults,
+      totalKeywords: keywords.length,
+      successfulKeywords: allResults.length > 0 ? keywords.length : 0
+    };
+  }
+
+  /**
+   * 🎯 고급 쿼리 생성 (OR 연산자 활용)
+   */
+  generateAdvancedQuery(keywords, options = {}) {
+    const { 
+      useOrOperator = true,
+      maxKeywords = 5,
+      addModifiers = true 
+    } = options;
+    
+    const limitedKeywords = keywords.slice(0, maxKeywords);
+    
+    if (useOrOperator && limitedKeywords.length > 1) {
+      // OR 연산자 사용
+      let query = limitedKeywords.join(' OR ');
+      
+      if (addModifiers) {
+        // YouTube Shorts 관련 수식어 추가
+        query += ' shorts OR 쇼츠';
+      }
+      
+      return query;
+    } else {
+      // 단순 키워드 조합
+      return limitedKeywords.join(' ');
+    }
+  }
+
+  /**
+   * ⏱️ ISO 8601 Duration 파싱 (MCP 서버와 동일)
+   */
+  parseISO8601Duration(duration) {
+    // 입력값 검증
+    if (!duration || typeof duration !== 'string') {
+      console.warn('⚠️ Invalid duration:', duration);
+      return 0;
+    }
+
+    try {
+      // ISO 8601 duration 정규식 매칭
+      const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+      
+      // 매칭 실패 시 안전 처리
+      if (!match) {
+        console.warn('⚠️ Duration parsing failed for:', duration);
+        return 0;
+      }
+
+      // 안전한 값 추출
+      const hours = match[1] ? parseInt(match[1].replace('H', '')) || 0 : 0;
+      const minutes = match[2] ? parseInt(match[2].replace('M', '')) || 0 : 0;
+      const seconds = match[3] ? parseInt(match[3].replace('S', '')) || 0 : 0;
+
+      const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+      
+      // 비정상적인 길이 체크 (24시간 초과는 비정상)
+      if (totalSeconds > 86400) {
+        console.warn('⚠️ Abnormally long duration:', duration, `(${totalSeconds}s)`);
+        return 0;
+      }
+
+      return totalSeconds;
+    } catch (error) {
+      console.error('❌ Duration parsing error:', error, 'for duration:', duration);
+      return 0;
+    }
+  }
+
+  /**
+   * 💰 API 사용량 계산 (MCP 서버와 동일)
+   */
+  calculateAPIUnits(resultCount) {
+    // ⭐ 정확한 API 비용 계산
+    // search.list: 항상 100 units (maxResults와 관계없이)
+    // videos.list: 1 unit (기본) + parts별 추가 비용
+    //   - snippet: +2 units
+    //   - contentDetails: +2 units  
+    //   - status: +2 units
+    //   - statistics: +2 units
+    // 총: 1 + (4 parts × 2) = 9 units
+    const searchUnits = 100;
+    const videosUnits = 9; // 1 + (snippet + contentDetails + status + statistics) × 2
+    
+    return {
+      search: searchUnits,
+      videos: videosUnits,
+      total: searchUnits + videosUnits,
+      breakdown: {
+        'search.list': searchUnits,
+        'videos.list (base)': 1,
+        'videos.list (parts)': 8,
+        'videos.list (total)': videosUnits
+      }
+    };
+  }
+
+  /**
+   * 📊 검색 통계 조회
+   */
+  getStats() {
+    return {
+      ...this.stats,
+      averageUnitsPerRequest: this.stats.totalRequests > 0 
+        ? (this.stats.apiUnitsUsed / this.stats.totalRequests).toFixed(1)
+        : 0,
+      successRate: this.stats.totalRequests > 0 
+        ? ((this.stats.successfulRequests / this.stats.totalRequests) * 100).toFixed(1) + '%'
+        : '0%'
+    };
+  }
+
+  /**
+   * 🔄 지연 함수
+   */
+  async delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+}
+
+export default YouTubeSearch;
+
+/**
+ * 🎯 편의 함수들 - 직접 사용 가능
+ */
+
+// 전역 인스턴스 생성 함수
+function createYouTubeSearch() {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  return new YouTubeSearch(apiKey);
+}
+
+/**
+ * 🎬 YouTube 영상 검색 (편의 함수)
+ */
+export async function searchVideos(query, options = {}) {
+  const search = createYouTubeSearch();
+  return await search.searchVideos(query, options);
+}
+
+/**
+ * 🎯 2단계 필터링 YouTube 검색 (편의 함수) - 메인 기능
+ */
+export async function searchVideosWithTwoStageFiltering(query, options = {}) {
+  const search = createYouTubeSearch();
+  return await search.searchYouTubeVideos({
+    query: query,
+    filters: options
+  }, options.maxResults || 20, options.nextPageToken);
+}
+
+/**
+ * 🔍 다중 키워드 검색 (편의 함수)
+ */
+export async function searchMultipleKeywords(keywords, options = {}) {
+  const search = createYouTubeSearch();
+  return await search.searchMultipleKeywords(keywords, options);
+}
+
+/**
+ * 🎯 고급 쿼리 생성 (편의 함수)
+ */
+export function generateAdvancedQuery(keywords, options = {}) {
+  const search = createYouTubeSearch();
+  return search.generateAdvancedQuery(keywords, options);
+}
+
+/**
+ * 📊 YouTube 검색 통계 조회 (편의 함수)
+ */
+export function getYouTubeSearchStats() {
+  const search = createYouTubeSearch();
+  return search.getStats();
+} 

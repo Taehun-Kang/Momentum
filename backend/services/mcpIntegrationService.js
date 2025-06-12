@@ -154,7 +154,7 @@ class MCPIntegrationService {
       protocol: 'REST API',
       retryCount: this.connectionRetries
     };
-
+    
     return {
       initialized: this.isInitialized,
       connected: this.mcpAvailable,
@@ -392,7 +392,7 @@ class MCPIntegrationService {
    */
   async executeAICurationWorkflow(query, userId = null) {
     console.log(`🤖 AI 큐레이션 워크플로우 실행: "${query}"`);
-
+    
     if (!this.mcpAvailable) {
       // MCP 없이 기본 워크플로우
       console.log('⚠️ MCP 비활성화 - 기본 워크플로우 실행');
@@ -400,12 +400,12 @@ class MCPIntegrationService {
       try {
         // 1. 기본 키워드 추출
         const keywords = await this.extractKeywords(query);
-        
+      
         // 2. 기본 검색
         const videos = await this.searchVideos(query, 15);
-        
-        return {
-          success: true,
+      
+      return {
+        success: true,
           data: {
             finalResults: videos.results || [],
             steps: {
@@ -427,13 +427,13 @@ class MCPIntegrationService {
           },
           fallback: true
         };
-      } catch (error) {
+    } catch (error) {
         console.error('기본 워크플로우 실패:', error);
-        return {
-          success: false,
-          error: error.message,
+      return {
+        success: false,
+        error: error.message,
           query,
-          userId,
+        userId,
           fallback: true
         };
       }
@@ -511,14 +511,14 @@ class MCPIntegrationService {
           originalError: error.message
         };
       } catch (fallbackError) {
-        return {
-          success: false,
-          error: error.message,
+      return {
+        success: false,
+        error: error.message,
           query,
           userId,
           fallbackError: fallbackError.message,
-          timestamp: new Date().toISOString()
-        };
+        timestamp: new Date().toISOString()
+      };
       }
     }
   }
@@ -527,14 +527,14 @@ class MCPIntegrationService {
    * 통합 검색 (Railway MCP Service 활용)
    */
   async enhancedSearch(keyword, options = {}) {
-    const {
-      userTier = 'free',
-      userId = null,
-      enableAI = true,
-      maxResults = 20
-    } = options;
+      const {
+        userTier = 'free',
+        userId = null,
+        enableAI = true,
+        maxResults = 20
+      } = options;
 
-    console.log(`🔍 향상된 검색 실행: "${keyword}" (${userTier})`);
+      console.log(`🔍 향상된 검색 실행: "${keyword}" (${userTier})`);
 
     if (!this.mcpAvailable || !enableAI) {
       // MCP 없이 기본 검색
@@ -613,12 +613,12 @@ class MCPIntegrationService {
    */
   async cleanup() {
     try {
-      console.log('🧹 MCP 통합 서비스 정리 중...');
-      
+        console.log('🧹 MCP 통합 서비스 정리 중...');
+        
       this.mcpAvailable = false;
-      this.isInitialized = false;
-      
-      console.log('✅ MCP 통합 서비스 정리 완료');
+        this.isInitialized = false;
+        
+        console.log('✅ MCP 통합 서비스 정리 완료');
     } catch (error) {
       console.error('❌ MCP 통합 서비스 정리 실패:', error);
     }

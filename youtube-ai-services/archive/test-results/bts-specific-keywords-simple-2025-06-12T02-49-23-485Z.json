@@ -1,0 +1,49 @@
+{
+  "testInfo": {
+    "testName": "BTS 특정 키워드 단독 검색 테스트 (기본 엔진)",
+    "purpose": "OR 연산에서 무시된 키워드들의 단독 검색 성능 확인",
+    "engine": "기본 YouTube Search Engine (search.list만 사용)",
+    "totalTests": 2,
+    "successfulTests": 2,
+    "totalVideos": 0,
+    "averageResponseTime": 330,
+    "totalApiCost": 200,
+    "timestamp": "2025-06-12T02:49:23.485Z"
+  },
+  "results": [
+    {
+      "testId": 1,
+      "testName": "BTS 댄스 단독 검색",
+      "query": "BTS 댄스",
+      "category": "dance_specific",
+      "description": "OR 연산에서 무시된 댄스 키워드의 단독 검색 결과",
+      "success": true,
+      "videosFound": 0,
+      "totalResults": 0,
+      "responseTime": 414,
+      "hasNextPage": false,
+      "nextPageToken": null,
+      "apiCost": 100,
+      "timestamp": "2025-06-12T02:49:21.215Z",
+      "videoDetails": [],
+      "sampleTitles": []
+    },
+    {
+      "testId": 2,
+      "testName": "BTS 브이로그 단독 검색",
+      "query": "BTS 브이로그",
+      "category": "vlog_specific",
+      "description": "OR 연산에서 완전히 무시된 브이로그 키워드의 단독 검색 결과",
+      "success": true,
+      "videosFound": 0,
+      "totalResults": 0,
+      "responseTime": 246,
+      "hasNextPage": false,
+      "nextPageToken": null,
+      "apiCost": 100,
+      "timestamp": "2025-06-12T02:49:22.483Z",
+      "videoDetails": [],
+      "sampleTitles": []
+    }
+  ]
+}
