@@ -1,0 +1,281 @@
+/**
+ * 🔘 Button - CSS 스타일
+ * 
+ * 기능:
+ * - 4가지 variant (primary, secondary, ghost, danger)
+ * - 3가지 size (small, medium, large)
+ * - 아이콘 지원, 로딩 상태, 전체 너비
+ * - 글래스모피즘 & 그라디언트 디자인
+ */
+
+/* ========================================
+   기본 버튼 스타일
+======================================== */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  text-decoration: none;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ========================================
+   크기별 스타일
+======================================== */
+
+.button--small {
+  padding: 8px 16px;
+  font-size: 14px;
+  min-height: 36px;
+}
+
+.button--medium {
+  padding: 12px 24px;
+  font-size: 16px;
+  min-height: 44px;
+}
+
+.button--large {
+  padding: 16px 32px;
+  font-size: 18px;
+  min-height: 52px;
+}
+
+.button--full-width {
+  width: 100%;
+}
+
+/* ========================================
+   Variant별 스타일
+======================================== */
+
+/* Primary - 보라색 그라디언트 */
+.button--primary {
+  background: linear-gradient(135deg, #9a78db 0%, #c4b5fd 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(154, 120, 219, 0.4);
+}
+
+.button--primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(154, 120, 219, 0.5);
+}
+
+.button--primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Secondary - 글래스모피즘 */
+.button--secondary {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #1f1f1f;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.button--secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #9a78db;
+  transform: translateY(-2px);
+}
+
+.button--secondary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Ghost - 투명 배경 */
+.button--ghost {
+  background: transparent;
+  border: 1px solid rgba(154, 120, 219, 0.3);
+  color: #9a78db;
+}
+
+.button--ghost:hover:not(:disabled) {
+  background: rgba(154, 120, 219, 0.1);
+  border-color: #9a78db;
+  transform: translateY(-2px);
+}
+
+.button--ghost:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Danger - 빨간색 */
+.button--danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+}
+
+.button--danger:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5);
+}
+
+.button--danger:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* ========================================
+   상태별 스타일
+======================================== */
+
+/* 비활성화 */
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* 로딩 상태 */
+.button--loading {
+  pointer-events: none;
+}
+
+.button--loading .button__text {
+  opacity: 0.7;
+}
+
+/* ========================================
+   아이콘 & 내용
+======================================== */
+
+.button__icon {
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+.button__text {
+  transition: opacity 0.3s ease;
+}
+
+.button__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: button-spin 1s linear infinite;
+}
+
+/* 리플 효과 */
+.button__ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  transform: scale(0);
+  animation: button-ripple 0.6s linear;
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  margin-top: -10px;
+}
+
+@keyframes button-ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================================
+   접근성 & 반응형
+======================================== */
+
+/* 포커스 상태 */
+.button:focus-visible {
+  outline: 2px solid #9a78db;
+  outline-offset: 2px;
+}
+
+/* 터치 디바이스 최적화 */
+@media (hover: none) and (pointer: coarse) {
+  /* 기본 호버 제거 */
+  .button:hover {
+    transform: none;
+  }
+  
+  /* Default: 기본 눌리는 효과 */
+  .button:active:not(:disabled) {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+  }
+  
+  /* Glow: 중요한 버튼용 (확인, 제출 등) */
+  .button--glow:active:not(:disabled) {
+    transform: scale(1.02);
+    filter: brightness(1.1);
+    transition: all 0.15s ease;
+  }
+  
+  /* Shake: 경고/오류용 (삭제, 위험한 액션 등) */
+  .button--shake:active:not(:disabled) {
+    animation: button-shake 0.3s ease;
+  }
+}
+
+/* 쉐이크 애니메이션 */
+@keyframes button-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* 모바일 반응형 */
+@media (max-width: 430px) {
+  .button--small {
+    padding: 6px 12px;
+    font-size: 13px;
+    min-height: 32px;
+  }
+  
+  .button--medium {
+    padding: 10px 20px;
+    font-size: 15px;
+    min-height: 40px;
+  }
+  
+  .button--large {
+    padding: 14px 28px;
+    font-size: 17px;
+    min-height: 48px;
+  }
+}
+
+/* 모션 감소 설정 대응 */
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+  
+  .button:hover {
+    transform: none;
+  }
+  
+  .button__spinner {
+    animation: none;
+  }
+} 

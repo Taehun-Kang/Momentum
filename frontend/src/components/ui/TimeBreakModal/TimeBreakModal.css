@@ -1,0 +1,667 @@
+/**
+ * ⏰ TimeBreakModal - 휴식 알림 모달 컴포넌트 스타일
+ * 홈/채팅 페이지와 유사한 배경 디자인 + 글래스모피즘
+ */
+
+/* ========================================
+   메인 모달 구조
+======================================== */
+
+.time-break-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 1;
+}
+
+.modal-container {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  min-height: 500px;
+  z-index: 2;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+/* ========================================
+   배경 디자인 (홈 페이지 스타일)
+======================================== */
+
+.modal-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.background-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, 
+    var(--bg-gradient-start, #667eea) 0%, 
+    var(--bg-gradient-mid, #764ba2) 50%, 
+    var(--bg-gradient-end, #9a78db) 100%
+  );
+  opacity: 0.95;
+}
+
+.background-pattern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+  background-size: 150px 150px, 200px 200px, 100px 100px;
+  opacity: 0.8;
+  animation: patternFloat 20s ease-in-out infinite;
+}
+
+@keyframes patternFloat {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(10px, -10px) rotate(1deg); }
+}
+
+/* ========================================
+   메인 콘텐츠
+======================================== */
+
+.modal-content {
+  position: relative;
+  padding: 40px 32px 32px;
+  background: var(--glass-bg-card, rgba(255, 255, 255, 0.15));
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ========================================
+   헤더 영역
+======================================== */
+
+.modal-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.time-emoji {
+  font-size: 64px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+  margin-bottom: 8px;
+}
+
+.modal-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  letter-spacing: -0.5px;
+  font-family: var(--font-system, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
+}
+
+.modal-subtitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* ========================================
+   메시지 영역
+======================================== */
+
+.modal-message {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message-text {
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.suggestion-text {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* ========================================
+   시청 통계
+======================================== */
+
+.watch-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 8px 0;
+}
+
+.stats-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.stats-title {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stats-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ========================================
+   액션 버튼들
+======================================== */
+
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  min-height: 56px;
+}
+
+.action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.action-btn:hover::before {
+  left: 100%;
+}
+
+.btn-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.btn-text {
+  font-family: var(--font-system, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
+}
+
+/* 계속 시청하기 버튼 */
+.continue-btn {
+  background: linear-gradient(135deg, var(--primary-color, #9a78db) 0%, var(--secondary-color, #c4b5fd) 100%);
+  color: white;
+  box-shadow: 0 8px 24px rgba(154, 120, 219, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.continue-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(154, 120, 219, 0.5);
+}
+
+.continue-btn:active {
+  transform: translateY(0);
+}
+
+/* 그만보기 버튼 */
+.stop-btn {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.stop-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.stop-btn:active {
+  transform: translateY(0);
+}
+
+/* ========================================
+   하단 팁
+======================================== */
+
+.modal-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: auto;
+}
+
+.tip-icon {
+  font-size: 16px;
+  opacity: 0.8;
+}
+
+.tip-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* ========================================
+   애니메이션
+======================================== */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes slideUpFadeIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.9) translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  }
+}
+
+@keyframes slideDownFadeOut {
+  from { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  }
+  to { 
+    opacity: 0; 
+    transform: scale(0.9) translateY(20px); 
+  }
+}
+
+/* ========================================
+   반응형 디자인
+======================================== */
+
+/* iPhone 14 Pro (430px) 이하 */
+@media (max-width: 430px) {
+  .time-break-modal {
+    padding: 16px;
+  }
+  
+  .modal-container {
+    max-width: 380px;
+    min-height: 480px;
+  }
+  
+  .modal-content {
+    padding: 32px 24px 24px;
+    gap: 20px;
+  }
+  
+  .time-emoji {
+    font-size: 56px;
+  }
+  
+  .modal-title {
+    font-size: 22px;
+  }
+  
+  .modal-subtitle {
+    font-size: 15px;
+  }
+  
+  .message-text {
+    font-size: 14px;
+  }
+  
+  .suggestion-text {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+  
+  .watch-stats {
+    gap: 12px;
+  }
+  
+  .stats-card {
+    padding: 14px;
+  }
+  
+  .stats-value {
+    font-size: 20px;
+  }
+  
+  .action-btn {
+    padding: 14px 20px;
+    font-size: 15px;
+    min-height: 52px;
+  }
+  
+  .btn-icon {
+    font-size: 18px;
+  }
+}
+
+/* iPhone 12/13 mini (375px) 이하 */
+@media (max-width: 375px) {
+  .time-break-modal {
+    padding: 14px;
+  }
+  
+  .modal-container {
+    max-width: 340px;
+    min-height: 460px;
+  }
+  
+  .modal-content {
+    padding: 28px 20px 20px;
+    gap: 18px;
+  }
+  
+  .time-emoji {
+    font-size: 48px;
+  }
+  
+  .modal-title {
+    font-size: 20px;
+  }
+  
+  .modal-subtitle {
+    font-size: 14px;
+  }
+  
+  .message-text {
+    font-size: 13px;
+  }
+  
+  .suggestion-text {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  
+  .watch-stats {
+    gap: 10px;
+  }
+  
+  .stats-card {
+    padding: 12px;
+  }
+  
+  .stats-value {
+    font-size: 18px;
+  }
+  
+  .action-btn {
+    padding: 12px 18px;
+    font-size: 14px;
+    min-height: 48px;
+  }
+  
+  .btn-icon {
+    font-size: 16px;
+  }
+  
+  .tip-text {
+    font-size: 11px;
+  }
+}
+
+/* iPhone SE (320px) 이하 */
+@media (max-width: 320px) {
+  .time-break-modal {
+    padding: 12px;
+  }
+  
+  .modal-container {
+    max-width: 300px;
+    min-height: 440px;
+  }
+  
+  .modal-content {
+    padding: 24px 16px 16px;
+    gap: 16px;
+  }
+  
+  .time-emoji {
+    font-size: 40px;
+  }
+  
+  .modal-title {
+    font-size: 18px;
+  }
+  
+  .modal-subtitle {
+    font-size: 13px;
+  }
+  
+  .watch-stats {
+    gap: 8px;
+  }
+  
+  .stats-card {
+    padding: 10px;
+  }
+  
+  .stats-value {
+    font-size: 16px;
+  }
+  
+  .action-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+}
+
+/* ========================================
+   가로 모드 대응
+======================================== */
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .modal-container {
+    max-width: 90%;
+    min-height: auto;
+    max-height: 90vh;
+  }
+  
+  .modal-content {
+    padding: 20px 24px;
+    gap: 16px;
+    max-height: calc(90vh - 40px);
+    overflow-y: auto;
+  }
+  
+  .time-emoji {
+    font-size: 40px;
+  }
+  
+  .modal-title {
+    font-size: 20px;
+  }
+  
+  .watch-stats {
+    gap: 12px;
+  }
+  
+  .action-btn {
+    min-height: 44px;
+    padding: 12px 20px;
+  }
+}
+
+/* ========================================
+   접근성 대응
+======================================== */
+
+/* 모션 민감도 대응 */
+@media (prefers-reduced-motion: reduce) {
+  .action-btn,
+  .background-pattern {
+    transition: none;
+    animation: none;
+  }
+  
+  .action-btn:hover {
+    transform: none;
+  }
+  
+  .action-btn::before {
+    display: none;
+  }
+  
+  @keyframes patternFloat {
+    from, to { opacity: 1; transform: none; }
+  }
+  
+  @keyframes fadeIn {
+    from, to { opacity: 1; transform: none; }
+  }
+  
+  @keyframes fadeOut {
+    from, to { opacity: 1; transform: none; }
+  }
+  
+  @keyframes slideUpFadeIn {
+    from, to { opacity: 1; transform: none; }
+  }
+  
+  @keyframes slideDownFadeOut {
+    from, to { opacity: 1; transform: none; }
+  }
+}
+
+/* 고대비 모드 대응 */
+@media (prefers-contrast: high) {
+  .modal-content {
+    background: rgba(0, 0, 0, 0.9);
+    border-color: rgba(255, 255, 255, 0.8);
+  }
+  
+  .stats-card,
+  .suggestion-text,
+  .modal-tip {
+    background: rgba(0, 0, 0, 0.8);
+    border-color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .stop-btn {
+    background: rgba(0, 0, 0, 0.8);
+    border-color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* ========================================
+   터치 디바이스 최적화
+======================================== */
+
+@media (hover: none) and (pointer: coarse) {
+  .action-btn:hover {
+    transform: none;
+    box-shadow: 0 8px 24px rgba(154, 120, 219, 0.4);
+  }
+  
+  .stop-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  .action-btn:active {
+    transform: scale(0.98);
+  }
+  
+  .action-btn::before {
+    display: none;
+  }
+} 

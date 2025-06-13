@@ -1,0 +1,449 @@
+/**
+ * 🧭 Navbar - 하단 네비게이션 바 CSS
+ * 
+ * 플로팅 글래스모피즘 디자인, 인터랙티브 효과
+ * 중앙 정렬 + 충분한 좌우 여백으로 최적화
+ */
+
+/* ========================================
+   메인 네비게이션 바 (플로팅 글래스모피즘)
+======================================== */
+
+.navbar-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;  /* 복원: 중앙 정렬 */
+  transform: translateX(-50%); /* 복원: 중앙 정렬 */
+  z-index: 1000;
+  
+  /* 글래스모피즘 효과 */
+  background: rgba(30, 30, 35, 0.75);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 32px;
+  
+  /* 크기 및 레이아웃 - 충분한 여백 확보 */
+  height: 72px;
+  width: calc(100vw - 64px); /* 개선: 32px씩 양쪽 여백 (기존 16px에서 증가) */
+  max-width: 420px;
+  min-width: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 0 16px;
+  
+  /* 멋진 박스 섀도우 */
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.25),
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    
+  /* 부드러운 애니메이션 */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ========================================
+   Video Player 페이지에서 네비바 숨기기
+======================================== */
+
+/* URL 해시가 #/video-player일 때 네비바 완전히 숨김 */
+body[data-current-page="video-player"] .navbar-container,
+body.video-page-active .navbar-container {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  display: none !important;
+  transform: translateX(-50%) translateY(100px) !important; /* 복원: translateX 추가 */
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+/* 더 강력한 선택자로 확실하게 숨기기 */
+.navbar-container.video-hidden {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  display: none !important;
+  transform: translateX(-50%) translateY(100px) !important; /* 복원: translateX 추가 */
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+/* 호버 시 살짝 확대 */
+.navbar-container:hover {
+  transform: translateX(-50%) translateY(-2px) scale(1.01); /* 복원: translateX 추가 */
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.35),
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+/* ========================================
+   네비게이션 버튼 스타일
+======================================== */
+
+.nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 68px;
+  height: 56px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  text-decoration: none;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+
+/* 활성 상태 - 더 명확한 배경 */
+.nav-btn.active {
+  background: rgba(154, 120, 219, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 
+    0 4px 16px rgba(154, 120, 219, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  
+  /* 활성 상태에서도 테두리 유지 */
+  outline: 2px solid rgba(154, 120, 219, 0.8);
+  outline-offset: 2px;
+}
+
+/* 활성 상태 부드러운 반짝임 효과 */
+.nav-btn.active::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+  animation: gentleShimmer 3s infinite;
+  pointer-events: none;
+}
+
+@keyframes gentleShimmer {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+/* ========================================
+   아이콘 및 라벨 스타일
+======================================== */
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 2;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+/* SVG 아이콘 스타일 */
+.nav-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke: rgba(255, 255, 255, 0.8);
+  fill: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-btn.active .nav-icon {
+  transform: scale(1.08);
+  filter: drop-shadow(0 2px 4px rgba(154, 120, 219, 0.4));
+}
+
+.nav-btn.active .nav-icon svg {
+  stroke: rgba(255, 255, 255, 1);
+}
+
+.nav-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  position: relative;
+  z-index: 2;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Noto Sans KR', system-ui, sans-serif;
+  letter-spacing: -0.05px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.nav-btn.active .nav-label {
+  color: rgba(255, 255, 255, 1);
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(154, 120, 219, 0.3);
+}
+
+/* ========================================
+   호버 및 인터랙션 효과
+======================================== */
+
+/* 호버 효과 - 더 부드럽게 */
+.nav-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transform: translateY(-1px);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.nav-btn:hover:not(.active) .nav-icon,
+.nav-btn:hover:not(.active) .nav-label {
+  transform: translateY(-0.5px);
+}
+
+.nav-btn:hover:not(.active) .nav-icon svg {
+  stroke: rgba(255, 255, 255, 0.95);
+}
+
+/* 클릭 효과 */
+.nav-btn:active,
+.nav-btn.clicked {
+  transform: translateY(0) scale(0.96);
+}
+
+.nav-btn:active .nav-icon,
+.nav-btn:active .nav-label,
+.nav-btn.clicked .nav-icon,
+.nav-btn.clicked .nav-label {
+  transform: scale(0.92);
+}
+
+/* ========================================
+   다크 모드 최적화
+======================================== */
+
+@media (prefers-color-scheme: dark) {
+  .navbar-container {
+    background: rgba(20, 20, 25, 0.85);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      0 2px 8px rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+
+  .navbar-container:hover {
+    box-shadow: 
+      0 12px 40px rgba(0, 0, 0, 0.5),
+      0 4px 12px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  }
+
+  .nav-btn.active {
+    background: rgba(154, 120, 219, 0.4);
+  }
+  
+  .nav-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* ========================================
+   Safe Area 지원 (모바일 노치/하단 영역)
+======================================== */
+
+/* iPhone Safe Area 지원 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .navbar-container {
+    bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ========================================
+   모바일 반응형 디자인 (충분한 여백 확보)
+======================================== */
+
+/* 작은 화면 최적화 (430px 이하) */
+@media (max-width: 430px) {
+  .navbar-container {
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    width: calc(100vw - 48px); /* 개선: 24px씩 양쪽 여백 (기존 12px에서 증가) */
+    max-width: 380px;
+    height: 68px;
+    padding: 0 12px;
+  }
+  
+  .nav-btn {
+    width: 64px;
+    height: 52px;
+  }
+
+  .nav-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .nav-label {
+    font-size: 10px;
+  }
+}
+
+/* iPhone 12/13 mini, iPhone SE (375px 이하) */
+@media (max-width: 375px) {
+  .navbar-container {
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    width: calc(100vw - 40px); /* 개선: 20px씩 양쪽 여백 (기존 10px에서 증가) */
+    max-width: 350px;
+    height: 64px;
+  }
+
+  .nav-btn {
+    width: 60px;
+    height: 48px;
+  }
+  
+  .nav-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .nav-label {
+    font-size: 9px;
+  }
+}
+
+/* 초소형 기기 (320px 이하) */
+@media (max-width: 320px) {
+  .navbar-container {
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: calc(100vw - 32px); /* 개선: 16px씩 양쪽 여백 (기존 8px에서 증가) */
+    max-width: 300px;
+    height: 60px;
+    padding: 0 8px;
+  }
+
+  .nav-btn {
+    width: 56px;
+    height: 44px;
+  }
+  
+  .nav-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .nav-label {
+    font-size: 8px;
+  }
+}
+
+/* ========================================
+   가로 모드 최적화
+======================================== */
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .navbar-container {
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    height: 52px;
+    max-width: 300px;
+  }
+  
+  .nav-btn {
+    height: 40px;
+    width: 56px;
+  }
+
+  .nav-label {
+    display: none; /* 가로 모드에서는 라벨 숨김 */
+  }
+
+  .nav-icon {
+    margin-bottom: 0;
+  }
+  
+  .nav-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* ========================================
+   접근성 지원
+======================================== */
+
+/* 포커스 상태 */
+.nav-btn:focus {
+  outline: 2px solid rgba(154, 120, 219, 0.8);
+  outline-offset: 2px;
+  border-radius: 24px;
+}
+
+/* 활성 상태에서 포커스할 때는 더 진한 테두리 */
+.nav-btn.active:focus {
+  outline: 2px solid rgba(154, 120, 219, 1);
+  outline-offset: 3px;
+}
+
+/* 키보드 네비게이션 지원 */
+.nav-btn:focus-visible {
+  outline: 2px solid rgba(154, 120, 219, 1);
+  outline-offset: 3px;
+}
+
+/* 활성 상태에서 키보드 포커스할 때 */
+.nav-btn.active:focus-visible {
+  outline: 3px solid rgba(154, 120, 219, 1);
+  outline-offset: 4px;
+}
+
+/* ========================================
+   터치 디바이스 최적화
+======================================== */
+
+/* 터치 디바이스에서 호버 효과 비활성화 */
+@media (hover: none) and (pointer: coarse) {
+  .navbar-container:hover {
+    transform: translateX(-50%) translateY(0) scale(1); /* 복원: translateX 추가 */
+  }
+
+  .nav-btn:hover:not(.active) {
+    background: none;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .nav-btn:hover:not(.active) .nav-icon,
+  .nav-btn:hover:not(.active) .nav-label {
+    transform: none;
+  }
+  
+  .nav-btn:hover:not(.active) .nav-icon svg {
+    stroke: rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* ========================================
+   애니메이션 감소 지원
+======================================== */
+
+/* 축소된 애니메이션 지원 */
+@media (prefers-reduced-motion: reduce) {
+  .navbar-container,
+  .nav-btn,
+  .nav-icon,
+  .nav-label {
+    transition: none;
+  }
+
+  .nav-btn.active::before {
+    animation: none;
+  }
+  
+  .navbar-container:hover {
+    transform: translateX(-50%); /* 복원: translateX 추가 */
+  }
+} 

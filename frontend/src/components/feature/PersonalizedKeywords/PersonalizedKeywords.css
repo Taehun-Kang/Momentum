@@ -1,0 +1,362 @@
+/**
+ * ✨ PersonalizedKeywords CSS - 기존 feature 디자인과 일관성 있게 (6가지 클릭 애니메이션 테스트)
+ */
+
+/* 컨테이너 - 섹션 슬라이드업 애니메이션 추가 */
+.personalized-keywords {
+  position: relative;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 1px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  
+  /* 초기에 보이도록 설정하고 애니메이션은 추가 효과 */
+  opacity: 1;
+  transform: translateY(0);
+  animation: slideUpSection 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes slideUpSection {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 헤더 */
+.personalized-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary, #1f1f1f);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 새로고침 링크 */
+.refresh-keywords-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary, #666666);
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.refresh-keywords-link:hover {
+  color: var(--primary-color, #9a78db);
+  background: rgba(154, 120, 219, 0.06);
+  transform: translateY(-1px);
+}
+
+.refresh-keywords-link:active {
+  transform: translateY(0) scale(0.95);
+  color: var(--primary-color, #9a78db);
+  background: rgba(154, 120, 219, 0.15);
+}
+
+/* 키워드 그리드 (2x3) */
+.personalized-keywords-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(3, 1fr);
+  gap: 16px;
+  position: relative;
+  z-index: 2;
+}
+
+/* 키워드 버튼 - 순차 등장 애니메이션 + 미니멀 디자인 */
+.personalized-grid-btn {
+  padding: 20px 18px;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.15) 0%, 
+    rgba(154, 120, 219, 0.08) 50%,
+    rgba(196, 181, 253, 0.12) 100%);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(154, 120, 219, 0.2);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 4px 16px rgba(154, 120, 219, 0.08),
+    0 1px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+  text-align: left;
+  min-height: 85px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 8px;
+  /* 초기 상태: 보이지 않게 */
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  transform-style: preserve-3d;
+}
+
+/* 순차 등장 애니메이션 - JavaScript로 추가되는 클래스 */
+.personalized-grid-btn.animate-in {
+  animation: personalizedSlideUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes personalizedSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+
+
+/* Shimmer 효과 */
+.personalized-grid-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, transparent, rgba(154, 120, 219, 0.2), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.8s ease;
+}
+
+.personalized-grid-btn:hover::before {
+  transform: translateX(100%);
+}
+
+/* 호버 효과 - 부드러운 상승 + 그라디언트 변화 */
+.personalized-grid-btn:hover {
+  transform: translateY(-4px) scale(1.02);
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.25) 0%, 
+    rgba(154, 120, 219, 0.15) 50%,
+    rgba(196, 181, 253, 0.2) 100%);
+  box-shadow: 
+    0 8px 32px rgba(154, 120, 219, 0.15),
+    0 2px 12px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  border-color: rgba(154, 120, 219, 0.35);
+}
+
+.personalized-grid-btn:active {
+  transform: scale(0.96) translateY(-1px);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 키워드 텍스트 - 메인 텍스트 */
+.keyword-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary, #1f1f1f);
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+  position: relative;
+  z-index: 2;
+  transition: all 0.2s ease;
+  margin-bottom: 4px;
+}
+
+.personalized-grid-btn:hover .keyword-text {
+  color: var(--primary-color, #9a78db);
+  transform: translateY(-1px);
+}
+
+/* 카테고리 라벨 - 작은 태그 스타일 */
+.keyword-category {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary, #999999);
+  background: linear-gradient(135deg, 
+    rgba(154, 120, 219, 0.1) 0%, 
+    rgba(196, 181, 253, 0.15) 100%);
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(154, 120, 219, 0.2);
+  position: relative;
+  z-index: 2;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  align-self: flex-start;
+}
+
+.personalized-grid-btn:hover .keyword-category {
+  background: linear-gradient(135deg, 
+    rgba(154, 120, 219, 0.2) 0%, 
+    rgba(196, 181, 253, 0.25) 100%);
+  color: var(--primary-color, #9a78db);
+  border-color: rgba(154, 120, 219, 0.4);
+  transform: translateY(-1px);
+}
+
+.personalized-grid-btn:active {
+  transform: scale(0.96) translateY(-1px);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 터치 디바이스 최적화 */
+@media (hover: none) and (pointer: coarse) {
+  .personalized-grid-btn:hover {
+    transform: translateY(-2px) scale(1.01);
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.2) 0%, 
+      rgba(154, 120, 219, 0.12) 50%,
+      rgba(196, 181, 253, 0.15) 100%);
+  }
+  
+  .personalized-grid-btn:active {
+    transform: scale(0.96) translateY(-1px);
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, 
+      rgba(154, 120, 219, 0.25) 0%, 
+      rgba(196, 181, 253, 0.25) 100%) !important;
+    border-color: rgba(154, 120, 219, 0.5) !important;
+  }
+}
+
+/* 반응형 */
+@media (max-width: 430px) {
+  .personalized-keywords {
+    padding: 20px 16px;
+    border-radius: 20px;
+  }
+  
+  .personalized-keywords-grid {
+    gap: 12px;
+  }
+  
+  .personalized-grid-btn {
+    padding: 16px 14px;
+    min-height: 75px;
+    border-radius: 16px;
+    gap: 6px;
+  }
+  
+  .keyword-text {
+    font-size: 15px;
+    margin-bottom: 2px;
+  }
+  
+  .keyword-category {
+    font-size: 10px;
+    padding: 3px 6px;
+    border-radius: 6px;
+  }
+  
+  .section-title {
+    font-size: 16px;
+  }
+  
+  .refresh-keywords-link {
+    font-size: 13px;
+    padding: 3px 6px;
+  }
+}
+
+@media (max-width: 375px) {
+  .personalized-keywords {
+    padding: 18px 14px;
+  }
+  
+  .personalized-grid-btn {
+    padding: 14px 12px;
+    min-height: 70px;
+    gap: 4px;
+  }
+  
+  .keyword-text {
+    font-size: 14px;
+  }
+  
+  .keyword-category {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+  
+  .refresh-keywords-link {
+    font-size: 12px;
+    padding: 2px 5px;
+  }
+}
+
+/* 화이트 테마용 스타일 */
+.personalized-keywords.white-theme {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.personalized-keywords.white-theme .personalized-grid-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.personalized-keywords.white-theme .personalized-grid-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.personalized-keywords.white-theme .personalized-grid-btn:active {
+  background: linear-gradient(135deg, 
+    rgba(154, 120, 219, 0.15) 0%, 
+    rgba(196, 181, 253, 0.15) 100%) !important;
+  border-color: rgba(154, 120, 219, 0.4) !important;
+}
+
+/* 모션 민감도 대응 */
+@media (prefers-reduced-motion: reduce) {
+  .personalized-keywords {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  
+  .personalized-grid-btn {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  
+  /* 클릭 애니메이션도 비활성화 */
+  .personalized-grid-btn.click-ripple::after {
+    animation: none;
+  }
+} 

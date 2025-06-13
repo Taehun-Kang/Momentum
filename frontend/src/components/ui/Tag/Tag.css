@@ -1,0 +1,489 @@
+/**
+ * 🏷️ Tag - 태그 컴포넌트 CSS
+ * 
+ * 4가지 variant, 3가지 size 지원, 글래스모피즘 디자인
+ * 다른 컴포넌트들과 완벽한 일관성
+ */
+
+/* ========================================
+   기본 Tag 스타일
+======================================== */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  background: var(--glass-bg-card, rgba(255, 255, 255, 0.1));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border-dark, rgba(255, 255, 255, 0.2));
+  border-radius: 20px; /* 다른 컴포넌트와 동일 */
+  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', system-ui, sans-serif;
+  font-weight: 500;
+  color: var(--text-primary, rgba(255, 255, 255, 0.95));
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); /* 다른 컴포넌트와 동일 */
+  white-space: nowrap;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.tag-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.tag-text {
+  flex: 1;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  line-height: 1.2;
+}
+
+/* ========================================
+   Size Variants
+======================================== */
+
+/* Small Size */
+.tag--small {
+  padding: 6px 12px;
+  font-size: 12px;
+  height: 28px;
+  border-radius: 16px;
+}
+
+.tag--small .tag-content {
+  gap: 4px;
+}
+
+/* Medium Size (Default) */
+.tag--medium {
+  padding: 8px 16px;
+  font-size: 14px;
+  height: 36px;
+  border-radius: 20px;
+}
+
+/* Large Size */
+.tag--large {
+  padding: 12px 20px;
+  font-size: 16px;
+  height: 44px;
+  border-radius: 24px;
+}
+
+.tag--large .tag-content {
+  gap: 8px;
+}
+
+/* ========================================
+   Variant Styles
+======================================== */
+
+/* Default Variant - 클릭 가능한 기본 태그 */
+.tag--default {
+  /* 기본 스타일 그대로 */
+}
+
+.tag--default:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    0 6px 24px rgba(154, 120, 219, 0.15),
+    0 4px 20px rgba(0, 0, 0, 0.08);
+  border-color: rgba(154, 120, 219, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.tag--default:active {
+  transform: translateY(0) scale(0.98);
+  transition: all 0.1s ease;
+}
+
+/* Selected Variant - 선택된 상태 */
+.tag--selected,
+.tag--default.tag--selected {
+  background: var(--primary-color, #9a78db);
+  border-color: rgba(154, 120, 219, 0.6);
+  color: var(--text-light, rgba(255, 255, 255, 1));
+  box-shadow: 
+    0 4px 16px rgba(154, 120, 219, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.tag--selected:hover,
+.tag--default.tag--selected:hover {
+  background: rgba(154, 120, 219, 0.9);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 
+    0 6px 20px rgba(154, 120, 219, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.tag--selected:active,
+.tag--default.tag--selected:active {
+  transform: translateY(0) scale(0.98);
+  background: var(--primary-color, #9a78db);
+}
+
+/* Removable Variant - 삭제 가능한 태그 */
+.tag--removable {
+  padding-right: 8px; /* 삭제 버튼 공간 확보 */
+}
+
+.tag--removable.tag--small {
+  padding-right: 6px;
+}
+
+.tag--removable.tag--large {
+  padding-right: 12px;
+}
+
+/* Outlined Variant - 아웃라인 스타일 */
+.tag--outlined {
+  background: transparent;
+  border: 2px solid var(--glass-border-dark, rgba(255, 255, 255, 0.3));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.tag--outlined:hover {
+  border-color: rgba(154, 120, 219, 0.6);
+  background: rgba(154, 120, 219, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(154, 120, 219, 0.1);
+}
+
+.tag--outlined:active {
+  transform: translateY(0) scale(0.98);
+  border-color: rgba(154, 120, 219, 0.8);
+  background: rgba(154, 120, 219, 0.15);
+}
+
+/* ========================================
+   삭제 버튼 스타일
+======================================== */
+
+.tag-remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.tag-remove-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 1);
+  transform: scale(1.1);
+}
+
+.tag-remove-btn:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.tag-remove-icon {
+  width: 10px;
+  height: 10px;
+  stroke-width: 2;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Size별 삭제 버튼 조정 */
+.tag--small .tag-remove-btn {
+  width: 16px;
+  height: 16px;
+  margin-left: 2px;
+}
+
+.tag--small .tag-remove-icon {
+  width: 8px;
+  height: 8px;
+}
+
+.tag--large .tag-remove-btn {
+  width: 24px;
+  height: 24px;
+  margin-left: 6px;
+}
+
+.tag--large .tag-remove-icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* ========================================
+   비활성화 상태
+======================================== */
+
+.tag--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.tag--disabled:hover {
+  transform: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* ========================================
+   다크 모드 최적화
+======================================== */
+
+@media (prefers-color-scheme: dark) {
+  .tag {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.98);
+  }
+  
+  .tag--default:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(154, 120, 219, 0.4);
+  }
+  
+  .tag--outlined {
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+  
+  .tag--outlined:hover {
+    border-color: rgba(154, 120, 219, 0.7);
+    background: rgba(154, 120, 219, 0.15);
+  }
+}
+
+/* ========================================
+   모바일 반응형 디자인
+======================================== */
+
+/* 작은 화면 최적화 (430px 이하) */
+@media (max-width: 430px) {
+  .tag--small {
+    padding: 4px 10px;
+    font-size: 11px;
+    height: 26px;
+    border-radius: 14px;
+  }
+  
+  .tag--medium {
+    padding: 6px 14px;
+    font-size: 13px;
+    height: 34px;
+    border-radius: 18px;
+  }
+  
+  .tag--large {
+    padding: 10px 18px;
+    font-size: 15px;
+    height: 42px;
+    border-radius: 22px;
+  }
+  
+  .tag-remove-btn {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .tag-remove-icon {
+    width: 9px;
+    height: 9px;
+  }
+  
+  .tag--small .tag-remove-btn {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .tag--small .tag-remove-icon {
+    width: 7px;
+    height: 7px;
+  }
+  
+  .tag--large .tag-remove-btn {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .tag--large .tag-remove-icon {
+    width: 11px;
+    height: 11px;
+  }
+}
+
+/* iPhone 12/13 mini, iPhone SE (375px 이하) */
+@media (max-width: 375px) {
+  .tag--small {
+    padding: 4px 8px;
+    font-size: 10px;
+    height: 24px;
+    border-radius: 12px;
+  }
+  
+  .tag--medium {
+    padding: 6px 12px;
+    font-size: 12px;
+    height: 32px;
+    border-radius: 16px;
+  }
+  
+  .tag--large {
+    padding: 8px 16px;
+    font-size: 14px;
+    height: 40px;
+    border-radius: 20px;
+  }
+}
+
+/* 초소형 기기 (320px 이하) */
+@media (max-width: 320px) {
+  .tag--small {
+    padding: 3px 6px;
+    font-size: 9px;
+    height: 22px;
+    border-radius: 10px;
+  }
+  
+  .tag--medium {
+    padding: 5px 10px;
+    font-size: 11px;
+    height: 30px;
+    border-radius: 14px;
+  }
+  
+  .tag--large {
+    padding: 7px 14px;
+    font-size: 13px;
+    height: 38px;
+    border-radius: 18px;
+  }
+}
+
+/* ========================================
+   가로 모드 최적화
+======================================== */
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .tag--small {
+    height: 22px;
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+  
+  .tag--medium {
+    height: 30px;
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+  
+  .tag--large {
+    height: 36px;
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+}
+
+/* ========================================
+   접근성 지원
+======================================== */
+
+/* 포커스 상태 */
+.tag:focus {
+  outline: 2px solid rgba(154, 120, 219, 0.8);
+  outline-offset: 2px;
+}
+
+.tag--selected:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+}
+
+/* 키보드 네비게이션 */
+.tag:focus-visible {
+  outline: 3px solid rgba(154, 120, 219, 1);
+  outline-offset: 3px;
+}
+
+.tag-remove-btn:focus {
+  outline: 1px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 1px;
+}
+
+/* ========================================
+   터치 디바이스 최적화
+======================================== */
+
+@media (hover: none) and (pointer: coarse) {
+  .tag:hover {
+    transform: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+  
+  .tag--default:hover {
+    background: var(--glass-bg-card, rgba(255, 255, 255, 0.1));
+    border-color: var(--glass-border-dark, rgba(255, 255, 255, 0.2));
+  }
+  
+  .tag--selected:hover,
+  .tag--default.tag--selected:hover {
+    background: var(--primary-color, #9a78db);
+    transform: none;
+    box-shadow: 
+      0 4px 16px rgba(154, 120, 219, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  
+  .tag--outlined:hover {
+    background: transparent;
+    border-color: var(--glass-border-dark, rgba(255, 255, 255, 0.3));
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .tag-remove-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.7);
+    transform: none;
+  }
+  
+  /* 터치 피드백 */
+  .tag:active {
+    transform: scale(0.95);
+  }
+  
+  .tag-remove-btn:active {
+    transform: scale(0.9);
+  }
+}
+
+/* ========================================
+   애니메이션 감소 지원
+======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .tag,
+  .tag-remove-btn,
+  .tag-remove-icon {
+    transition: none;
+  }
+  
+  .tag:hover,
+  .tag:active,
+  .tag-remove-btn:hover,
+  .tag-remove-btn:active {
+    transform: none;
+  }
+} 

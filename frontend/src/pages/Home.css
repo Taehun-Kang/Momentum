@@ -1,0 +1,363 @@
+/**
+ * 🏠 Home Page Styles
+ * 
+ * 홈 페이지 레이아웃 및 컴포넌트 간격 조정
+ */
+
+.home-page {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  background: var(--bg-gradient-main, linear-gradient(135deg, 
+    rgba(154, 120, 219, 0.1) 0%, 
+    rgba(196, 181, 253, 0.05) 50%, 
+    rgba(255, 255, 255, 0.1) 100%
+  ));
+  overflow-x: hidden;
+}
+
+.home-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* 헤더 컨테이너 */
+#header-container {
+  flex-shrink: 0;
+  width: 100%;
+  z-index: 10;
+}
+
+/* ========================================
+   💬 채팅 지원 섹션
+======================================== */
+
+.chat-support-section {
+  padding: 0 20px 20px 20px;
+  flex-shrink: 0;
+}
+
+.chat-support-button {
+  width: 100%;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.15) 0%, 
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-support-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(154, 120, 219, 0.1) 50%, 
+    transparent 100%
+  );
+  transition: left 0.5s ease;
+}
+
+.chat-support-button:hover::before {
+  left: 100%;
+}
+
+.chat-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #9a78db 0%, #c4b5fd 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(154, 120, 219, 0.3);
+}
+
+.chat-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chat-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #1f1f1f);
+  line-height: 1.3;
+}
+
+.chat-subtitle {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-secondary, #666666);
+  line-height: 1.4;
+}
+
+.chat-arrow {
+  font-size: 18px;
+  color: var(--primary-color, #9a78db);
+  flex-shrink: 0;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 호버 효과 */
+.chat-support-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border-color: rgba(154, 120, 219, 0.3);
+}
+
+.chat-support-button:hover .chat-arrow {
+  transform: translateX(4px);
+}
+
+/* 클릭 효과 */
+.chat-support-button:active {
+  transform: translateY(0) scale(0.98);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 430px) {
+  .chat-support-section {
+    padding: 0 16px 18px 16px;
+  }
+  
+  .chat-support-button {
+    padding: 18px 20px;
+    gap: 14px;
+  }
+  
+  .chat-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+  }
+  
+  .chat-title {
+    font-size: 15px;
+  }
+  
+  .chat-subtitle {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 375px) {
+  .chat-support-section {
+    padding: 0 14px 16px 14px;
+  }
+  
+  .chat-support-button {
+    padding: 16px 18px;
+    gap: 12px;
+  }
+  
+  .chat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+  
+  .chat-title {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 320px) {
+  .chat-support-section {
+    padding: 0 12px 14px 12px;
+  }
+  
+  .chat-support-button {
+    padding: 14px 16px;
+    gap: 10px;
+  }
+}
+
+/* 다크모드 대응 */
+[data-theme="dark"] .chat-support-button {
+  background: linear-gradient(135deg, 
+    rgba(28, 28, 30, 0.8) 0%, 
+    rgba(0, 0, 0, 0.6) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .chat-title {
+  color: var(--text-light, #ffffff);
+}
+
+[data-theme="dark"] .chat-subtitle {
+  color: var(--text-tertiary, #999999);
+}
+
+/* 터치 디바이스 최적화 */
+@media (hover: none) and (pointer: coarse) {
+  .chat-support-button:hover {
+    transform: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .chat-support-button:hover .chat-arrow {
+    transform: none;
+  }
+  
+  .chat-support-button:hover::before {
+    left: -100%;
+  }
+}
+
+/* 메인 콘텐츠 영역 - 간격 줄임 */
+.home-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px; /* 24px에서 16px로 줄임 */
+  padding: 8px 20px 104px 20px; /* 상단 패딩을 16px에서 8px로 줄임, 하단은 16px + 72px + 16px = 104px */
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+/* 개별 컴포넌트 컨테이너 */
+#personalized-container,
+#trending-container,
+#timebased-container {
+  width: 100%;
+  position: relative;
+}
+
+/* TrendingKeywords 컨테이너 */
+#trending-container {
+  order: 1;
+}
+
+/* TimeBasedKeywords 컨테이너 */
+#timebased-container {
+  order: 2;
+}
+
+/* PersonalizedKeywords 컨테이너 */
+#personalized-container {
+  order: 3;
+}
+
+/* 페이지 진입 애니메이션 */
+.home-page {
+  animation: homePageFadeIn 0.6s ease-out forwards;
+}
+
+@keyframes homePageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 반응형 디자인 */
+
+/* iPhone 14 Pro (430px) 이하 */
+@media (max-width: 430px) {
+  .home-content {
+    gap: 14px;
+    padding: 6px 16px 100px 16px; /* 16px + 68px + 16px = 100px */
+  }
+}
+
+/* iPhone 12/13 mini (375px) 이하 */
+@media (max-width: 375px) {
+  .home-content {
+    gap: 12px;
+    padding: 4px 14px 96px 14px; /* 16px + 64px + 16px = 96px */
+  }
+}
+
+/* iPhone SE (320px) 이하 */
+@media (max-width: 320px) {
+  .home-content {
+    gap: 10px;
+    padding: 2px 12px 92px 12px; /* 16px + 60px + 16px = 92px */
+  }
+}
+
+/* 가로 모드 대응 */
+@media (orientation: landscape) and (max-height: 500px) {
+  .home-content {
+    gap: 8px;
+    padding: 4px 16px 84px 16px; /* 16px + 52px + 16px = 84px */
+  }
+}
+
+/* 다크모드 대응 */
+@media (prefers-color-scheme: dark) {
+  .home-page {
+    background: linear-gradient(135deg, 
+      rgba(154, 120, 219, 0.15) 0%, 
+      rgba(28, 28, 30, 0.8) 50%, 
+      rgba(0, 0, 0, 0.9) 100%
+    );
+  }
+}
+
+/* 접근성 - 애니메이션 비활성화 */
+@media (prefers-reduced-motion: reduce) {
+  .home-page {
+    animation: none;
+  }
+  
+  .home-page {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Safe Area 대응 (iPhone X 이후) */
+@supports (padding: max(0px)) {
+  .home-content {
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+}
+
+/* 고대비 모드 지원 */
+@media (prefers-contrast: high) {
+  .home-page {
+    background: #ffffff;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    .home-page {
+      background: #000000;
+    }
+  }
+} 

@@ -1,0 +1,201 @@
+/**
+ * 🎯 Card - 완전히 새로운 간단한 CSS
+ * 
+ * 복잡한 우선순위 없이 직관적인 스타일
+ */
+
+/* 기본 카드 구조 */
+.card {
+  width: 100%;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card__inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 20px;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card__icon {
+  flex-shrink: 0;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.card__title {
+  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f1f1f;
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+}
+
+.card__description {
+  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #666666;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* 테마별 스타일 */
+.card--glass .card__inner {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.card--solid .card__inner {
+  background: white;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card--outline .card__inner {
+  background: transparent;
+  border: 2px solid #e5e7eb;
+}
+
+/* 크기별 스타일 */
+.card--small .card__inner {
+  padding: 12px;
+  gap: 8px;
+}
+
+.card--small .card__icon {
+  font-size: 20px;
+}
+
+.card--small .card__title {
+  font-size: 16px;
+}
+
+.card--small .card__description {
+  font-size: 12px;
+}
+
+.card--large .card__inner {
+  padding: 20px;
+  gap: 16px;
+}
+
+.card--large .card__icon {
+  font-size: 28px;
+}
+
+/* Large 카드의 글씨 크기는 기본값 사용하여 반응형 적용 허용 */
+/* .card--large .card__title, .card--large .card__description 삭제 */
+
+/* 호버 효과 제거 (모바일 우선) */
+.card:hover .card__inner {
+  /* 호버 효과 없음 - 모바일 우선 디자인 */
+}
+
+/* 🎯 클릭 애니메이션 - 더 구체적인 선택자 */
+.card.card--clicking {
+  transform: scale(0.9) !important;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.cards-grid .card.card--clicking {
+  transform: scale(0.9) !important;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* 선택된 상태 시각적 효과 제거됨 */
+/* .card--selected 관련 스타일들 제거 */
+
+/* 선택된 카드 클릭 애니메이션 제거됨 */
+
+/* 색상별 그라디언트 스타일도 제거됨 */
+
+/* 비활성화 */
+.card--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 반응형 */
+@media (max-width: 430px) {
+  .card__inner {
+    padding: 12px;
+    gap: 8px;
+  }
+  
+  .card__icon {
+    font-size: 20px;
+  }
+  
+  .card__title {
+    font-size: 17px; /* 헤더 greeting과 비슷한 크기 */
+  }
+  
+  .card__description {
+    font-size: 13px; /* 헤더 subtitle과 비슷한 크기 */
+  }
+}
+
+/* iPhone 12/13 mini (375px) 이하 */
+@media (max-width: 375px) {
+  .card__title {
+    font-size: 16px; /* 헤더 greeting과 비슷한 크기 */
+  }
+  
+  .card__description {
+    font-size: 12px; /* 헤더 subtitle과 비슷한 크기 */
+  }
+}
+
+/* 터치 디바이스 */
+@media (hover: none) and (pointer: coarse) {
+  .card:hover .card__inner {
+    transform: none;
+  }
+  
+  /* 터치 디바이스에서는 클릭 애니메이션만 유지 */
+  .card--clicking {
+    transform: scale(0.94);
+  }
+}
+
+/* ========================================
+   접근성 및 성능 최적화
+======================================== */
+
+/* 모션 민감도 대응 */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card__inner,
+  .card--clicking {
+    transition: none;
+    animation: none;
+  }
+  
+  .card:hover .card__inner,
+  .card--clicking {
+    transform: none;
+  }
+}
+
+/* 성능 최적화 */
+.card {
+  will-change: transform;
+}
+
+.card--clicking {
+  will-change: transform, box-shadow;
+} 

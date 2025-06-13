@@ -1,0 +1,851 @@
+/**
+ * 🚀 Landing Page - Modern Design
+ * 독립적인 스타일링 (variables.css 미사용)
+ */
+
+/* 기본 폰트 및 리셋 */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+.landing-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+  perspective: 1000px;
+}
+
+/* 📱 반응형 베이스 */
+.landing-page * {
+  box-sizing: border-box;
+}
+
+/* 🌈 배경 및 그라디언트 */
+.landing-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, 
+    #667eea 0%, 
+    #764ba2 25%, 
+    #f093fb 50%, 
+    #f5576c 75%, 
+    #4facfe 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  z-index: -3;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  25% { background-position: 100% 50%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+}
+
+/* ✨ 플로팅 orb 애니메이션 */
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: -2;
+}
+
+.orb-1 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 107, 107, 0.8) 0%, transparent 70%);
+  top: 10%;
+  left: 10%;
+  animation: float1 8s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(102, 126, 234, 0.6) 0%, transparent 70%);
+  top: 60%;
+  right: 15%;
+  animation: float2 10s ease-in-out infinite reverse;
+}
+
+.orb-3 {
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle, rgba(255, 184, 0, 0.7) 0%, transparent 70%);
+  bottom: 20%;
+  left: 20%;
+  animation: float3 12s ease-in-out infinite;
+}
+
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -30px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(-40px, -20px) rotate(180deg); }
+}
+
+@keyframes float3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(20px, -40px) scale(1.2); }
+  75% { transform: translate(-30px, 10px) scale(0.8); }
+}
+
+/* ✨ 현대적 백그라운드 요소들 */
+.modern-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* 🔺 기하학적 도형들 */
+.geometric-shape {
+  position: absolute;
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.geometric-shape.animate {
+  opacity: 1;
+}
+
+/* 🎬 9:16 숏폼 카드들 */
+.shape-1 {
+  width: 60px;
+  height: 107px; /* 9:16 비율 */
+  background: linear-gradient(135deg, 
+    rgba(102, 126, 234, 0.25) 0%, 
+    rgba(118, 75, 162, 0.15) 100%);
+  border-radius: 12px;
+  animation: shortFormFloat1 12s ease-in-out infinite;
+  filter: blur(0.5px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.1);
+}
+
+.shape-2 {
+  width: 50px;
+  height: 89px; /* 9:16 비율 */
+  background: linear-gradient(135deg, 
+    rgba(255, 107, 107, 0.3) 0%, 
+    rgba(238, 90, 36, 0.2) 100%);
+  border-radius: 10px;
+  animation: shortFormFloat2 8s ease-in-out infinite reverse;
+  filter: blur(0.5px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(255, 107, 107, 0.1);
+}
+
+.shape-3 {
+  width: 70px;
+  height: 124px; /* 9:16 비율 */
+  background: linear-gradient(135deg, 
+    rgba(255, 184, 0, 0.25) 0%, 
+    rgba(255, 140, 0, 0.2) 100%);
+  border-radius: 14px;
+  animation: shortFormFloat3 15s ease-in-out infinite;
+  filter: blur(0.5px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(255, 184, 0, 0.1);
+}
+
+.shape-4 {
+  width: 45px;
+  height: 80px; /* 9:16 비율 */
+  background: linear-gradient(135deg, 
+    rgba(0, 180, 219, 0.3) 0%, 
+    rgba(0, 131, 176, 0.2) 100%);
+  border-radius: 9px;
+  animation: shortFormFloat4 10s ease-in-out infinite;
+  filter: blur(0.5px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 180, 219, 0.1);
+}
+
+.shape-5 {
+  width: 55px;
+  height: 98px; /* 9:16 비율 */
+  background: linear-gradient(135deg, 
+    rgba(154, 120, 219, 0.25) 0%, 
+    rgba(102, 126, 234, 0.2) 100%);
+  border-radius: 11px;
+  animation: shortFormFloat5 18s ease-in-out infinite reverse;
+  filter: blur(0.5px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(154, 120, 219, 0.1);
+}
+
+.shape-6 {
+  width: 65px;
+  height: 116px; /* 9:16 비율 */
+  background: linear-gradient(135deg, 
+    rgba(255, 107, 107, 0.2) 0%, 
+    rgba(255, 184, 0, 0.25) 50%,
+    rgba(154, 120, 219, 0.2) 100%);
+  border-radius: 13px;
+  animation: shortFormFloat6 14s ease-in-out infinite;
+  filter: blur(0.5px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(255, 107, 107, 0.08);
+}
+
+/* 🌟 플로팅 도트 네트워크 */
+.dots-network {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.floating-dot {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  opacity: 0;
+  animation: dotFloat var(--duration, 10s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.floating-dot.animate {
+  opacity: 1;
+}
+
+.floating-dot::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  width: 24px;
+  height: 24px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+/* 🫧 모핑 블롭 */
+.morphing-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(30px);
+  opacity: 0.4;
+}
+
+.blob-1 {
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(45deg, 
+    rgba(102, 126, 234, 0.3) 0%, 
+    rgba(118, 75, 162, 0.2) 50%,
+    rgba(255, 107, 107, 0.3) 100%);
+  top: 15%;
+  right: 20%;
+  animation: morphing1 20s ease-in-out infinite;
+}
+
+.blob-2 {
+  width: 150px;
+  height: 150px;
+  background: linear-gradient(135deg, 
+    rgba(255, 184, 0, 0.3) 0%, 
+    rgba(0, 180, 219, 0.2) 50%,
+    rgba(154, 120, 219, 0.3) 100%);
+  bottom: 25%;
+  left: 15%;
+  animation: morphing2 25s ease-in-out infinite reverse;
+}
+
+/* 📱 메인 콘텐츠 */
+.landing-content {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+/* 🏠 히어로 섹션 */
+.hero-section {
+  margin-bottom: 60px;
+}
+
+.app-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 40px;
+  opacity: 0;
+  animation: slideUp 0.8s ease-out 0.2s forwards;
+}
+
+.logo-icon {
+  font-size: 32px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.logo-text {
+  font-size: 28px;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: -0.5px;
+}
+
+.hero-title {
+  margin-bottom: 40px;
+}
+
+.main-title {
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: white;
+  margin: 0 0 20px 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  letter-spacing: -1px;
+  opacity: 0;
+  animation: slideUp 0.8s ease-out 0.4s forwards;
+}
+
+.highlight {
+  color: white;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sub-title {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  opacity: 0;
+  animation: slideUp 0.8s ease-out 0.6s forwards;
+}
+
+/* ✨ 기능 미리보기 */
+.features-preview {
+  display: flex;
+  gap: 32px;
+  margin-top: 20px;
+  opacity: 0;
+  animation: slideUp 0.8s ease-out 0.8s forwards;
+}
+
+.feature-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  flex: 1;
+  min-width: 0;
+  width: 120px;
+  text-align: center;
+}
+
+.feature-item:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon {
+  font-size: 20px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.feature-item span {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+}
+
+/* 🚀 CTA 섹션 */
+.cta-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  opacity: 0;
+  animation: slideUp 0.8s ease-out 1s forwards;
+}
+
+.start-button {
+  position: relative;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 16px;
+  padding: 18px 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 8px 24px rgba(102, 126, 234, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 16px;
+  margin: 0 auto 16px auto;
+}
+
+.start-button:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 12px 32px rgba(102, 126, 234, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.start-button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  letter-spacing: -0.2px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.btn-arrow {
+  width: 20px;
+  height: 20px;
+  color: white;
+  transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.start-button:hover .btn-arrow {
+  transform: translateX(4px);
+}
+
+.btn-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(0);
+  pointer-events: none;
+}
+
+.btn-ripple.animate {
+  animation: ripple 0.6s ease-out;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.cta-subtitle {
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* 🎬 애니메이션 키프레임 */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 🎬 숏폼 카드 플로팅 애니메이션 */
+@keyframes shortFormFloat1 {
+  0%, 100% { 
+    transform: translate(-50%, -50%) translateY(0px) translateX(0px) rotate(0deg) scale(1);
+    opacity: 0.8;
+  }
+  25% { 
+    transform: translate(-50%, -50%) translateY(-20px) translateX(10px) rotate(2deg) scale(1.05);
+    opacity: 0.9;
+  }
+  50% { 
+    transform: translate(-50%, -50%) translateY(-35px) translateX(-5px) rotate(-1deg) scale(0.95);
+    opacity: 1;
+  }
+  75% { 
+    transform: translate(-50%, -50%) translateY(-15px) translateX(8px) rotate(1deg) scale(1.02);
+    opacity: 0.85;
+  }
+}
+
+@keyframes shortFormFloat2 {
+  0%, 100% { 
+    transform: translate(-50%, -50%) translateY(0px) translateX(0px) rotate(0deg) scale(1);
+    opacity: 0.7;
+  }
+  20% { 
+    transform: translate(-50%, -50%) translateY(-15px) translateX(-8px) rotate(-2deg) scale(1.08);
+    opacity: 0.9;
+  }
+  40% { 
+    transform: translate(-50%, -50%) translateY(-30px) translateX(5px) rotate(1deg) scale(0.92);
+    opacity: 0.95;
+  }
+  60% { 
+    transform: translate(-50%, -50%) translateY(-25px) translateX(-3px) rotate(-1deg) scale(1.03);
+    opacity: 1;
+  }
+  80% { 
+    transform: translate(-50%, -50%) translateY(-10px) translateX(6px) rotate(2deg) scale(0.97);
+    opacity: 0.8;
+  }
+}
+
+@keyframes shortFormFloat3 {
+  0%, 100% { 
+    transform: translate(-50%, -50%) translateY(0px) translateX(0px) rotate(0deg) scale(1);
+    opacity: 0.75;
+  }
+  33% { 
+    transform: translate(-50%, -50%) translateY(-25px) translateX(12px) rotate(3deg) scale(1.1);
+    opacity: 0.95;
+  }
+  66% { 
+    transform: translate(-50%, -50%) translateY(-40px) translateX(-7px) rotate(-2deg) scale(0.9);
+    opacity: 1;
+  }
+}
+
+@keyframes shortFormFloat4 {
+  0%, 100% { 
+    transform: translate(-50%, -50%) translateY(0px) translateX(0px) rotate(0deg) scale(1);
+    opacity: 0.8;
+  }
+  30% { 
+    transform: translate(-50%, -50%) translateY(-18px) translateX(-10px) rotate(-3deg) scale(1.12);
+    opacity: 0.9;
+  }
+  70% { 
+    transform: translate(-50%, -50%) translateY(-32px) translateX(8px) rotate(2deg) scale(0.88);
+    opacity: 1;
+  }
+}
+
+@keyframes shortFormFloat5 {
+  0%, 100% { 
+    transform: translate(-50%, -50%) translateY(0px) translateX(0px) rotate(0deg) scale(1);
+    opacity: 0.7;
+  }
+  40% { 
+    transform: translate(-50%, -50%) translateY(-22px) translateX(15px) rotate(4deg) scale(1.06);
+    opacity: 0.85;
+  }
+  80% { 
+    transform: translate(-50%, -50%) translateY(-38px) translateX(-12px) rotate(-3deg) scale(0.94);
+    opacity: 1;
+  }
+}
+
+@keyframes shortFormFloat6 {
+  0%, 100% { 
+    transform: translate(-50%, -50%) translateY(0px) translateX(0px) rotate(0deg) scale(1);
+    opacity: 0.75;
+  }
+  25% { 
+    transform: translate(-50%, -50%) translateY(-16px) translateX(-6px) rotate(-1deg) scale(1.04);
+    opacity: 0.9;
+  }
+  50% { 
+    transform: translate(-50%, -50%) translateY(-28px) translateX(9px) rotate(2deg) scale(0.96);
+    opacity: 1;
+  }
+  75% { 
+    transform: translate(-50%, -50%) translateY(-20px) translateX(-4px) rotate(-2deg) scale(1.02);
+    opacity: 0.85;
+  }
+}
+
+@keyframes dotFloat {
+  0%, 100% { 
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.3;
+  }
+  25% { 
+    transform: translateY(-15px) translateX(10px);
+    opacity: 0.8;
+  }
+  50% { 
+    transform: translateY(-25px) translateX(-5px);
+    opacity: 1;
+  }
+  75% { 
+    transform: translateY(-10px) translateX(15px);
+    opacity: 0.6;
+  }
+}
+
+/* 🫧 모핑 블롭 애니메이션 */
+@keyframes morphing1 {
+  0%, 100% { 
+    border-radius: 50% 50% 50% 50%;
+    transform: scale(1) rotate(0deg);
+  }
+  25% { 
+    border-radius: 60% 40% 30% 70%;
+    transform: scale(1.1) rotate(90deg);
+  }
+  50% { 
+    border-radius: 30% 70% 60% 40%;
+    transform: scale(0.9) rotate(180deg);
+  }
+  75% { 
+    border-radius: 70% 30% 40% 60%;
+    transform: scale(1.05) rotate(270deg);
+  }
+}
+
+@keyframes morphing2 {
+  0%, 100% { 
+    border-radius: 40% 60% 50% 50%;
+    transform: scale(1) rotate(0deg);
+  }
+  20% { 
+    border-radius: 50% 50% 30% 70%;
+    transform: scale(1.2) rotate(72deg);
+  }
+  40% { 
+    border-radius: 70% 30% 60% 40%;
+    transform: scale(0.8) rotate(144deg);
+  }
+  60% { 
+    border-radius: 30% 70% 40% 60%;
+    transform: scale(1.1) rotate(216deg);
+  }
+  80% { 
+    border-radius: 60% 40% 70% 30%;
+    transform: scale(0.95) rotate(288deg);
+  }
+}
+
+/* 📱 반응형 디자인 */
+@media (max-width: 480px) {
+  .landing-content {
+    padding: 20px 16px;
+  }
+  
+  .main-title {
+    font-size: 32px;
+    line-height: 1.3;
+  }
+  
+  .sub-title {
+    font-size: 16px;
+  }
+  
+  .logo-text {
+    font-size: 24px;
+  }
+  
+  .logo-icon {
+    font-size: 28px;
+  }
+  
+  .features-preview {
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  
+  .feature-item {
+    padding: 12px 8px;
+    width: 90px;
+    min-width: 90px;
+    flex: 1;
+  }
+  
+  .feature-item span {
+    font-size: 11px;
+  }
+  
+  .start-button {
+    padding: 16px 28px;
+    gap: 10px;
+  }
+  
+  .btn-text {
+    font-size: 15px;
+  }
+  
+  .btn-arrow {
+    width: 18px;
+    height: 18px;
+  }
+  
+     /* 숏폼 카드 모바일 최적화 */
+   .geometric-shape {
+     transform: scale(0.8) !important;
+   }
+  
+  .morphing-blob {
+    transform: scale(0.7);
+  }
+  
+  .floating-dot {
+    width: 3px;
+    height: 3px;
+  }
+  
+  .hero-section {
+    margin-bottom: 40px;
+  }
+}
+
+@media (max-width: 375px) {
+  .main-title {
+    font-size: 28px;
+  }
+  
+  .sub-title {
+    font-size: 15px;
+  }
+  
+  .features-preview {
+    gap: 16px;
+  }
+  
+  .feature-item {
+    padding: 10px 6px;
+    width: 80px;
+    min-width: 80px;
+    flex: 1;
+  }
+  
+  .start-button {
+    padding: 14px 24px;
+    gap: 8px;
+  }
+  
+  .btn-text {
+    font-size: 14px;
+  }
+  
+  .btn-arrow {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .geometric-shape {
+    transform: scale(0.6) !important;
+  }
+  
+  .morphing-blob {
+    transform: scale(0.5);
+  }
+  
+  .floating-dot {
+    width: 2px;
+    height: 2px;
+  }
+}
+
+/* 🌙 다크 모드 개선 */
+@media (prefers-color-scheme: dark) {
+  .geometric-shape {
+    filter: blur(2px) brightness(1.2);
+  }
+  
+  .morphing-blob {
+    opacity: 0.6;
+    filter: blur(40px) brightness(1.1);
+  }
+  
+  .floating-dot {
+    background: rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* 🎯 성능 최적화 */
+.geometric-shape {
+  will-change: transform;
+}
+
+.morphing-blob {
+  will-change: transform, border-radius;
+}
+
+.floating-dot {
+  will-change: transform, opacity;
+}
+
+.gradient-orb {
+  will-change: transform;
+}
+
+.start-button {
+  will-change: transform;
+}
+
+/* 접근성 개선 */
+@media (prefers-reduced-motion: reduce) {
+  .geometric-shape,
+  .floating-dot,
+  .morphing-blob,
+  .gradient-orb,
+  .landing-background {
+    animation: none;
+  }
+  
+  .geometric-shape,
+  .floating-dot {
+    opacity: 0.4;
+  }
+}
+
+/* 🏗️ 레이아웃 안정성 */
+.landing-page {
+  contain: layout style paint;
+} 

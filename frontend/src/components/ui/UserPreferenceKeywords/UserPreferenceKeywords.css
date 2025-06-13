@@ -1,0 +1,341 @@
+@import url('../../../styles/variables.css');
+
+/**
+ * 🏷️ UserPreferenceKeywords CSS - 사용자 선호 키워드 관리
+ */
+
+/* ========== 컨테이너 ========== */
+.user-preference-keywords {
+  position: relative;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 1px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  
+  opacity: 1;
+  transform: translateY(0);
+  animation: slideUpSection 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes slideUpSection {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========== 헤더 ========== */
+.preference-header {
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary, #1f1f1f);
+}
+
+
+
+/* ========== 키워드 그리드 (2x3) ========== */
+.preference-keywords-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(3, 1fr);
+  gap: 16px;
+  position: relative;
+  z-index: 2;
+}
+
+/* ========== 키워드 버튼 ========== */
+.preference-keyword-btn {
+  padding: 18px 16px;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.12) 0%, 
+    rgba(154, 120, 219, 0.06) 50%,
+    rgba(196, 181, 253, 0.1) 100%);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(154, 120, 219, 0.15);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 4px 16px rgba(154, 120, 219, 0.06),
+    0 1px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+  text-align: left;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  /* 초기 상태: 보이지 않게 */
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  transform-style: preserve-3d;
+}
+
+/* ========== 순차 등장 애니메이션 ========== */
+.preference-keyword-btn.animate-in {
+  animation: preferenceSlideUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes preferenceSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ========== 키워드 콘텐츠 ========== */
+.keyword-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.keyword-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #1f1f1f);
+  line-height: 1.3;
+  letter-spacing: -0.2px;
+  transition: all 0.2s ease;
+}
+
+.keyword-category {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary, #999);
+  background: linear-gradient(135deg, 
+    rgba(154, 120, 219, 0.08) 0%, 
+    rgba(196, 181, 253, 0.12) 100%);
+  padding: 3px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(154, 120, 219, 0.15);
+  align-self: flex-start;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+}
+
+
+
+
+
+
+
+/* ========== 호버 효과 ========== */
+.preference-keyword-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.2) 0%, 
+    rgba(154, 120, 219, 0.12) 50%,
+    rgba(196, 181, 253, 0.18) 100%);
+  box-shadow: 
+    0 8px 32px rgba(154, 120, 219, 0.12),
+    0 2px 12px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  border-color: rgba(154, 120, 219, 0.3);
+}
+
+.preference-keyword-btn:hover .keyword-text {
+  color: var(--primary-color, #9a78db);
+  transform: translateY(-1px);
+}
+
+.preference-keyword-btn:hover .keyword-category {
+  background: linear-gradient(135deg, 
+    rgba(154, 120, 219, 0.15) 0%, 
+    rgba(196, 181, 253, 0.2) 100%);
+  color: var(--primary-color, #9a78db);
+  border-color: rgba(154, 120, 219, 0.3);
+}
+
+.preference-keyword-btn:active {
+  transform: scale(0.96) translateY(-1px);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ========== 빈 상태 ========== */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary, #666);
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #1f1f1f);
+  margin-bottom: 8px;
+}
+
+.empty-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary, #666);
+  opacity: 0.8;
+}
+
+/* ========== 다크 테마 ========== */
+[data-theme="dark"] .user-preference-keywords {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .preference-keyword-btn {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.06) 0%, 
+    rgba(154, 120, 219, 0.08) 50%,
+    rgba(196, 181, 253, 0.06) 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .keyword-text {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .keyword-category {
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(154, 120, 219, 0.1);
+}
+
+[data-theme="dark"] .empty-title {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .empty-subtitle {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ========== 반응형 디자인 ========== */
+@media (max-width: 430px) {
+  .user-preference-keywords {
+    padding: 20px 16px;
+    border-radius: 20px;
+  }
+  
+  .preference-keywords-grid {
+    gap: 12px;
+  }
+  
+  .preference-keyword-btn {
+    padding: 14px 12px;
+    min-height: 70px;
+    border-radius: 16px;
+  }
+  
+  .keyword-text {
+    font-size: 14px;
+  }
+  
+  .keyword-category {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+  
+  .section-title {
+    font-size: 16px;
+  }
+  
+  .add-keyword-btn {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  
+  .empty-state {
+    padding: 30px 15px;
+  }
+  
+  .empty-icon {
+    font-size: 40px;
+  }
+}
+
+@media (max-width: 375px) {
+  .user-preference-keywords {
+    padding: 18px 14px;
+  }
+  
+  .preference-keyword-btn {
+    padding: 12px 10px;
+    min-height: 65px;
+  }
+  
+  .keyword-text {
+    font-size: 13px;
+  }
+  
+  .keyword-category {
+    font-size: 8px;
+    padding: 2px 4px;
+  }
+  
+  .add-keyword-btn {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+}
+
+/* ========== 터치 디바이스 최적화 ========== */
+@media (hover: none) and (pointer: coarse) {
+  .preference-keyword-btn:hover {
+    transform: translateY(-2px) scale(1.01);
+  }
+  
+  .preference-keyword-btn:active {
+    transform: scale(0.95);
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* ========== 접근성 ========== */
+@media (prefers-reduced-motion: reduce) {
+  .preference-keyword-btn,
+  .preference-keyword-btn.animate-in,
+  .user-preference-keywords {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ========== 고대비 지원 ========== */
+@media (prefers-contrast: high) {
+  .preference-keyword-btn {
+    border-width: 2px;
+    border-color: var(--primary-color, #9a78db);
+  }
+  
+  .preference-keyword-btn.selected {
+    background: var(--primary-color, #9a78db);
+    color: white;
+  }
+} 

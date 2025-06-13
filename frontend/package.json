@@ -1,0 +1,33 @@
+{
+  "name": "youtube-shorts-ai-frontend",
+  "version": "1.0.0",
+  "description": "YouTube Shorts AI Curation Service - Frontend",
+  "type": "module",
+  "scripts": {
+    "start": "npx parcel index.html --port 3000",
+    "dev": "npx parcel index.html --port 3000",
+    "build": "npx parcel build index.html --dist-dir dist",
+    "serve": "npx parcel serve dist/index.html",
+    "clean": "rm -rf dist .parcel-cache"
+  },
+  "keywords": [
+    "youtube",
+    "shorts",
+    "ai",
+    "curation",
+    "vanilla-js",
+    "spa",
+    "glassmorphism",
+    "mobile-first"
+  ],
+  "author": "Frontend Team",
+  "license": "MIT",
+  "devDependencies": {
+    "parcel": "^2.8.0"
+  },
+  "browserslist": [
+    "defaults",
+    "not IE 11",
+    "not op_mini all"
+  ]
+} 

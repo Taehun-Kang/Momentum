@@ -1,0 +1,244 @@
+@import url('../../../styles/variables.css');
+
+/* ========== VideoCard Component ========== */
+
+.video-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.video-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(154, 120, 219, 0.15);
+  border-color: rgba(154, 120, 219, 0.3);
+}
+
+.video-card:active {
+  transform: translateY(-2px) scale(0.98);
+}
+
+/* ========== 카드 크기 (9:16 비율) ========== */
+.video-card {
+  height: 284px;  /* 160 * 16/9 = 284px */
+  width: 160px;
+  min-width: 160px;
+}
+
+/* ========== 썸네일 영역 ========== */
+.video-thumbnail {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+.video-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.video-card:hover .video-image {
+  transform: scale(1.05);
+}
+
+/* video-duration 및 play-overlay 제거됨 */
+
+/* ========== 비디오 정보 오버레이 ========== */
+.video-info-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(
+    transparent 0%,
+    rgba(0, 0, 0, 0.3) 20%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 20px 12px 12px;
+  color: white;
+  z-index: 3;
+}
+
+.video-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  margin-bottom: 8px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.video-channel {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* ========== 상태 변형 ========== */
+.video-card.selected {
+  border-color: var(--primary-color, #9a78db);
+  background: rgba(154, 120, 219, 0.15);
+  box-shadow: 0 0 0 2px rgba(154, 120, 219, 0.3);
+}
+
+.video-card.selected .video-title {
+  color: var(--primary-color, #9a78db);
+}
+
+.video-card.loading {
+  pointer-events: none;
+}
+
+.video-card.loading .video-image {
+  filter: blur(2px);
+  opacity: 0.7;
+}
+
+.video-card.loading .video-thumbnail::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.2) 50%, 
+    transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  z-index: 2;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.video-card.loading .video-info-overlay {
+  opacity: 0.6;
+}
+
+/* ========== 다크 테마 ========== */
+[data-theme="dark"] .video-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .video-card:hover {
+  border-color: rgba(154, 120, 219, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .video-info-overlay {
+  background: linear-gradient(
+    transparent 0%,
+    rgba(0, 0, 0, 0.4) 20%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+}
+
+[data-theme="dark"] .video-title {
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .video-channel {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ========== 반응형 디자인 ========== */
+@media (max-width: 480px) {
+  .video-card {
+    height: 267px;  /* 150 * 16/9 = 267px */
+    width: 150px;
+    min-width: 150px;
+  }
+  
+  .video-info-overlay {
+    padding: 16px 10px 10px;
+  }
+  
+  .video-title {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  
+  .video-channel {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 360px) {
+  .video-card {
+    height: 249px;  /* 140 * 16/9 = 249px */
+    width: 140px;
+    min-width: 140px;
+  }
+  
+  .video-info-overlay {
+    padding: 12px 8px 8px;
+  }
+  
+  .video-title {
+    font-size: 12px;
+  }
+  
+  .video-channel {
+    font-size: 10px;
+  }
+}
+
+/* ========== 접근성 ========== */
+@media (prefers-reduced-motion: reduce) {
+  .video-card,
+  .video-card.loading .video-thumbnail {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ========== 터치 디바이스 최적화 ========== */
+@media (hover: none) and (pointer: coarse) {
+  .video-card:hover {
+    transform: none;
+  }
+  
+  .video-card:active {
+    transform: scale(0.95);
+  }
+}
+
+/* ========== 고대비 지원 ========== */
+@media (prefers-contrast: high) {
+  .video-card {
+    border-width: 2px;
+    border-color: var(--primary-color, #9a78db);
+  }
+} 

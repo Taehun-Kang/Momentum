@@ -1,0 +1,575 @@
+/**
+ * 🔔 Toast Component Styles
+ * 글래스모피즘 디자인, 4가지 variant, 스택 관리
+ */
+
+/* ===== 기본 변수 ===== */
+:root {
+  --toast-success-color: #10b981;
+  --toast-success-bg: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.15) 100%);
+  --toast-success-border: rgba(16, 185, 129, 0.4);
+  
+  --toast-error-color: #ef4444;
+  --toast-error-bg: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.15) 100%);
+  --toast-error-border: rgba(239, 68, 68, 0.4);
+  
+  --toast-warning-color: #f59e0b;
+  --toast-warning-bg: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.15) 100%);
+  --toast-warning-border: rgba(245, 158, 11, 0.4);
+  
+  --toast-info-color: #9a78db;
+  --toast-info-bg: linear-gradient(135deg, rgba(154, 120, 219, 0.2) 0%, rgba(124, 58, 237, 0.15) 100%);
+  --toast-info-border: rgba(154, 120, 219, 0.4);
+  
+  --toast-glass-bg: rgba(255, 255, 255, 0.95);
+  --toast-glass-border: rgba(255, 255, 255, 0.4);
+  --toast-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+  --toast-radius: 16px;
+  
+  --toast-text-primary: #111827;
+  --toast-text-secondary: #374151;
+  --toast-white: #ffffff;
+}
+
+/* ===== Toast 컨테이너들 ===== */
+.toast-container {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  
+  /* 기본 간격 */
+  --container-gap: 16px;
+}
+
+/* 위치별 컨테이너 스타일 */
+.toast-container--top-right {
+  top: var(--container-gap);
+  right: var(--container-gap);
+}
+
+.toast-container--top-center {
+  top: var(--container-gap);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.toast-container--top-left {
+  top: var(--container-gap);
+  left: var(--container-gap);
+}
+
+.toast-container--bottom-right {
+  bottom: var(--container-gap);
+  right: var(--container-gap);
+}
+
+.toast-container--bottom-center {
+  bottom: var(--container-gap);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.toast-container--bottom-left {
+  bottom: var(--container-gap);
+  left: var(--container-gap);
+}
+
+/* ===== 기본 Toast 스타일 ===== */
+.toast {
+  display: block;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  margin-bottom: 12px;
+  
+  /* 글래스모피즘 기본 - 가독성 개선 */
+  background: var(--toast-glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--toast-glass-border);
+  border-radius: var(--toast-radius);
+  box-shadow: var(--toast-shadow);
+  
+  /* 애니메이션 초기 상태 */
+  opacity: 0;
+  transform: translateX(100%) scale(0.9);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* 포인터 이벤트 활성화 */
+  pointer-events: auto;
+  
+  /* 레이아웃 */
+  overflow: hidden;
+  position: relative;
+}
+
+/* 표시 상태 */
+.toast--visible {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+/* 왼쪽 위치의 경우 반대 방향 슬라이드 */
+.toast-container--top-left .toast,
+.toast-container--bottom-left .toast {
+  transform: translateX(-100%) scale(0.9);
+}
+
+.toast-container--top-left .toast--visible,
+.toast-container--bottom-left .toast--visible {
+  transform: translateX(0) scale(1);
+}
+
+/* 중앙 위치의 경우 아래/위 슬라이드 */
+.toast-container--top-center .toast {
+  transform: translateY(-100%) scale(0.9);
+}
+
+.toast-container--top-center .toast--visible {
+  transform: translateY(0) scale(1);
+}
+
+.toast-container--bottom-center .toast {
+  transform: translateY(100%) scale(0.9);
+}
+
+.toast-container--bottom-center .toast--visible {
+  transform: translateY(0) scale(1);
+}
+
+/* ===== Toast 내부 컨테이너 ===== */
+.toast__container {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  position: relative;
+}
+
+/* ===== 아이콘 ===== */
+.toast__icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+}
+
+.toast__icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== 콘텐츠 ===== */
+.toast__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast__title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: 4px;
+  color: var(--toast-text-primary);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.toast__message {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--toast-text-secondary);
+  word-wrap: break-word;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+/* ===== 액션 버튼 ===== */
+.toast__action {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 1px;
+  
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--toast-text-primary);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.toast__action:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toast__action:active {
+  transform: translateY(0);
+}
+
+/* ===== 닫기 버튼 ===== */
+.toast__close {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 4px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--toast-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: -2px;
+  margin-right: -4px;
+}
+
+.toast__close:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--toast-text-primary);
+}
+
+.toast__close:active {
+  transform: scale(0.95);
+}
+
+.toast__close svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== 진행률 바 ===== */
+.toast__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border-radius: 0 0 var(--toast-radius) var(--toast-radius);
+}
+
+.toast__progress-bar {
+  height: 100%;
+  width: 100%;
+  background: currentColor;
+  transform: translateX(-100%);
+  opacity: 0.9;
+}
+
+/* 진행률 애니메이션 */
+@keyframes toast-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0%);
+  }
+}
+
+/* ===== Variant별 스타일 ===== */
+
+/* Success */
+.toast--success {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.95) 0%, 
+    rgba(240, 253, 244, 0.95) 100%
+  );
+  border-color: var(--toast-success-border);
+  color: var(--toast-success-color);
+}
+
+.toast--success .toast__progress-bar {
+  background: var(--toast-success-color);
+}
+
+.toast--success .toast__action {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--toast-success-color);
+  border-color: var(--toast-success-border);
+}
+
+.toast--success .toast__action:hover {
+  background: rgba(16, 185, 129, 0.25);
+}
+
+/* Error */
+.toast--error {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.95) 0%, 
+    rgba(254, 242, 242, 0.95) 100%
+  );
+  border-color: var(--toast-error-border);
+  color: var(--toast-error-color);
+}
+
+.toast--error .toast__progress-bar {
+  background: var(--toast-error-color);
+}
+
+.toast--error .toast__action {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--toast-error-color);
+  border-color: var(--toast-error-border);
+}
+
+.toast--error .toast__action:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+/* Warning */
+.toast--warning {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.95) 0%, 
+    rgba(255, 251, 235, 0.95) 100%
+  );
+  border-color: var(--toast-warning-border);
+  color: var(--toast-warning-color);
+}
+
+.toast--warning .toast__progress-bar {
+  background: var(--toast-warning-color);
+}
+
+.toast--warning .toast__action {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--toast-warning-color);
+  border-color: var(--toast-warning-border);
+}
+
+.toast--warning .toast__action:hover {
+  background: rgba(245, 158, 11, 0.25);
+}
+
+/* Info */
+.toast--info {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.95) 0%, 
+    rgba(248, 250, 252, 0.95) 100%
+  );
+  border-color: var(--toast-info-border);
+  color: var(--toast-info-color);
+}
+
+.toast--info .toast__progress-bar {
+  background: var(--toast-info-color);
+}
+
+.toast--info .toast__action {
+  background: rgba(154, 120, 219, 0.15);
+  color: var(--toast-info-color);
+  border-color: var(--toast-info-border);
+}
+
+.toast--info .toast__action:hover {
+  background: rgba(154, 120, 219, 0.25);
+}
+
+/* ===== 호버 효과 ===== */
+.toast:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+}
+
+.toast--visible:hover {
+  transform: translateX(0) translateY(-2px) scale(1.02);
+}
+
+/* 왼쪽 컨테이너의 호버 효과 */
+.toast-container--top-left .toast--visible:hover,
+.toast-container--bottom-left .toast--visible:hover {
+  transform: translateX(0) translateY(-2px) scale(1.02);
+}
+
+/* 중앙 컨테이너의 호버 효과 */
+.toast-container--top-center .toast--visible:hover {
+  transform: translateY(-2px) scale(1.02);
+}
+
+.toast-container--bottom-center .toast--visible:hover {
+  transform: translateY(2px) scale(1.02);
+}
+
+/* ===== 다크 모드 지원 ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --toast-glass-bg: rgba(17, 24, 39, 0.95);
+    --toast-glass-border: rgba(255, 255, 255, 0.15);
+    --toast-text-primary: #f9fafb;
+    --toast-text-secondary: #d1d5db;
+    
+    --toast-success-bg: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.2) 100%);
+    --toast-error-bg: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.2) 100%);
+    --toast-warning-bg: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.2) 100%);
+    --toast-info-bg: linear-gradient(135deg, rgba(154, 120, 219, 0.25) 0%, rgba(124, 58, 237, 0.2) 100%);
+  }
+  
+  .toast--success {
+    background: linear-gradient(135deg, 
+      rgba(17, 24, 39, 0.95) 0%, 
+      rgba(6, 78, 59, 0.3) 100%
+    );
+  }
+  
+  .toast--error {
+    background: linear-gradient(135deg, 
+      rgba(17, 24, 39, 0.95) 0%, 
+      rgba(127, 29, 29, 0.3) 100%
+    );
+  }
+  
+  .toast--warning {
+    background: linear-gradient(135deg, 
+      rgba(17, 24, 39, 0.95) 0%, 
+      rgba(120, 53, 15, 0.3) 100%
+    );
+  }
+  
+  .toast--info {
+    background: linear-gradient(135deg, 
+      rgba(17, 24, 39, 0.95) 0%, 
+      rgba(88, 28, 135, 0.3) 100%
+    );
+  }
+  
+  .toast__title {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+  
+  .toast__message {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+  
+  .toast__action {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--toast-text-primary);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+  
+  .toast__action:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+  
+  .toast__close:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* ===== 모바일 최적화 ===== */
+@media (max-width: 480px) {
+  .toast-container {
+    --container-gap: 12px;
+  }
+  
+  .toast {
+    width: calc(100vw - 24px);
+    max-width: none;
+    margin-bottom: 8px;
+  }
+  
+  .toast__container {
+    padding: 14px;
+    gap: 10px;
+  }
+  
+  .toast__title {
+    font-size: 13px;
+  }
+  
+  .toast__message {
+    font-size: 12px;
+  }
+  
+  .toast__action {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+  
+  /* 모바일에서는 호버 효과 제거 */
+  .toast:hover {
+    transform: none;
+    box-shadow: var(--toast-shadow);
+  }
+  
+  .toast--visible:hover {
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* ===== 접근성 ===== */
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    transition: none;
+  }
+  
+  .toast__progress-bar {
+    animation: none !important;
+  }
+  
+  .toast:hover {
+    transform: none;
+  }
+}
+
+/* ===== 터치 디바이스 최적화 ===== */
+@media (hover: none) and (pointer: coarse) {
+  .toast:hover {
+    transform: none;
+    box-shadow: var(--toast-shadow);
+  }
+  
+  .toast--visible:hover {
+    transform: translateX(0) scale(1);
+  }
+  
+  .toast__action:hover {
+    transform: none;
+  }
+  
+  .toast__close:hover {
+    background: transparent;
+  }
+  
+  /* 터치 피드백 */
+  .toast__action:active {
+    transform: scale(0.95);
+    background: rgba(0, 0, 0, 0.1);
+  }
+  
+  .toast__close:active {
+    background: rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* ===== 고대비 모드 지원 ===== */
+@media (prefers-contrast: high) {
+  .toast {
+    border-width: 2px;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--toast-white);
+  }
+  
+  .toast--success {
+    background: #f0fdf4;
+    border-color: var(--toast-success-color);
+  }
+  
+  .toast--error {
+    background: #fef2f2;
+    border-color: var(--toast-error-color);
+  }
+  
+  .toast--warning {
+    background: #fffbeb;
+    border-color: var(--toast-warning-color);
+  }
+  
+  .toast--info {
+    background: #f8fafc;
+    border-color: var(--toast-info-color);
+  }
+} 

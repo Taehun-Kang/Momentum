@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="theme-color" content="#9a78db" />
+    <title>YouTube Shorts AI 큐레이션</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;800&family=Roboto:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* 기본 CSS 변수 및 리셋 */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        /* Primary Colors */
+        --primary-color: #9a78db;
+        --primary-light: #c4b5fd;
+        --primary-dark: #7c3aed;
+
+        /* Glass Background */
+        --glass-bg: rgba(255, 255, 255, 0.1);
+        --glass-bg-card: rgba(255, 255, 255, 0.12);
+        --glass-border: rgba(255, 255, 255, 0.15);
+        --glass-border-dark: rgba(255, 255, 255, 0.08);
+
+        /* Text Colors */
+        --text-primary: #1f1f1f;
+        --text-secondary: #666666;
+        --text-tertiary: #999999;
+        --text-light: #ffffff;
+
+        /* Background */
+        --bg-gradient-main: linear-gradient(
+          135deg,
+          rgba(154, 120, 219, 0.1) 0%,
+          rgba(196, 181, 253, 0.05) 50%,
+          rgba(255, 255, 255, 0.1) 100%
+        );
+
+        /* Gradients */
+        --gradient-purple: linear-gradient(135deg, #9a78db 0%, #c4b5fd 100%);
+        --gradient-text: linear-gradient(
+          135deg,
+          var(--text-primary) 0%,
+          var(--primary-color) 100%
+        );
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+          "Oxygen", "Ubuntu", "Cantarell", "Noto Sans KR", sans-serif;
+        background: var(--bg-gradient-main);
+        color: var(--text-primary);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden;
+        min-height: 100vh;
+
+        /* 스크롤바 숨기기 (앱 스타일) */
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE, Edge */
+
+        /* 초기 스크롤 위치 강제 고정 */
+        scroll-behavior: auto; /* 부드러운 스크롤 비활성화 */
+
+        /* 오버스크롤 bounce 효과 완전 차단 (iOS Safari 포함) */
+        overscroll-behavior: none;
+        overscroll-behavior-y: none;
+        overscroll-behavior-x: none;
+        -webkit-overscroll-behavior: none;
+        -webkit-overscroll-behavior-y: none;
+        -webkit-overscroll-behavior-x: none;
+      }
+
+      /* WebKit 브라우저 (Chrome, Safari) 스크롤바 숨기기 - 모든 요소에 적용 */
+      body::-webkit-scrollbar,
+      html::-webkit-scrollbar,
+      *::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+
+      /* 전역 스크롤바 숨기기 강화 */
+      html {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        scroll-behavior: auto; /* 부드러운 스크롤 비활성화 */
+
+        /* 오버스크롤 bounce 효과 완전 차단 (iOS Safari 포함) */
+        overscroll-behavior: none;
+        overscroll-behavior-y: none;
+        overscroll-behavior-x: none;
+        -webkit-overscroll-behavior: none;
+        -webkit-overscroll-behavior-y: none;
+        -webkit-overscroll-behavior-x: none;
+      }
+
+      #root {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+
+      #root::-webkit-scrollbar {
+        display: none !important;
+      }
+
+      #root {
+        width: 100%;
+        min-height: 100vh;
+        position: relative;
+
+        /* 오버스크롤 bounce 효과 완전 차단 */
+        overscroll-behavior: none;
+        overscroll-behavior-y: none;
+        overscroll-behavior-x: none;
+        -webkit-overscroll-behavior: none;
+        -webkit-overscroll-behavior-y: none;
+        -webkit-overscroll-behavior-x: none;
+      }
+
+      /* 로딩 상태 */
+      .app-loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        font-size: 18px;
+        color: var(--text-secondary);
+      }
+
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--glass-border);
+        border-top: 3px solid var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 12px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* 에러 상태 */
+      .app-error {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+        text-align: center;
+      }
+
+      .app-error h2 {
+        color: #ef4444;
+        margin-bottom: 12px;
+        font-size: 20px;
+      }
+
+      .app-error p {
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      /* 반응형 */
+      @media (max-width: 430px) {
+        body {
+          font-size: 14px;
+        }
+      }
+
+      @media (max-width: 375px) {
+        body {
+          font-size: 13px;
+        }
+      }
+
+      /* 다크모드 */
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --text-primary: #ffffff;
+          --text-secondary: #a1a1aa;
+          --text-tertiary: #71717a;
+          --bg-gradient-main: linear-gradient(
+            135deg,
+            rgba(154, 120, 219, 0.15) 0%,
+            rgba(28, 28, 30, 0.8) 50%,
+            rgba(0, 0, 0, 0.9) 100%
+          );
+        }
+      }
+
+      /* 접근성 */
+      @media (prefers-reduced-motion: reduce) {
+        .loading-spinner {
+          animation: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="app-loading">
+        <div class="loading-spinner"></div>
+        <span>앱 로딩 중...</span>
+      </div>
+    </div>
+
+    <!-- 즉시 스크롤 리셋 (페이지 로드 최우선) -->
+    <script>
+      // 페이지 로드 즉시 스크롤 리셋
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+
+      // 브라우저 스크롤 복원 비활성화
+      if ("scrollRestoration" in history) {
+        history.scrollRestoration = "manual";
+      }
+
+      // DOM 로드 완료 시에도 한번 더
+      document.addEventListener("DOMContentLoaded", function () {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      });
+
+      // 윈도우 로드 완료 시에도 한번 더
+      window.addEventListener("load", function () {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      });
+    </script>
+
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>

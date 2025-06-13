@@ -1,0 +1,171 @@
+@import url('../../../styles/variables.css');
+
+/* ========== Bar Chart Component ========== */
+
+.bar-chart {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 5px 8px 8px;
+  position: relative;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.chart-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 48px;
+  position: relative;
+}
+
+.chart-bar {
+  width: 24px;
+  background: linear-gradient(to top, var(--primary-color, #9a78db), #c4b5fd);
+  border-radius: 4px 4px 0 0;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(154, 120, 219, 0.2);
+  position: relative;
+  min-height: 8px;
+}
+
+.chart-bar:hover {
+  transform: scaleY(1.05) scaleX(1.1);
+  filter: brightness(1.1);
+  box-shadow: 0 4px 16px rgba(154, 120, 219, 0.3);
+}
+
+.chart-bar:active {
+  transform: scaleY(1.02) scaleX(1.05);
+}
+
+.chart-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary, #666);
+  margin-top: 4px;
+  user-select: none;
+}
+
+/* ========== Tooltip ========== */
+.chart-tooltip {
+  position: absolute;
+  top: -36px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.chart-tooltip.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.chart-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.85);
+}
+
+/* ========== Responsive Design ========== */
+@media (max-width: 480px) {
+  .bar-chart {
+    padding: 5px 4px 6px;
+    gap: 2px;
+  }
+  
+  .chart-column {
+    max-width: 40px;
+    min-width: 28px;
+  }
+  
+  .chart-bar {
+    width: 20px;
+  }
+  
+  .chart-label {
+    font-size: 11px;
+  }
+  
+  .chart-tooltip {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .bar-chart {
+    padding: 5px 2px 4px;
+    gap: 1px;
+  }
+  
+  .chart-column {
+    max-width: 36px;
+    min-width: 24px;
+  }
+  
+  .chart-bar {
+    width: 18px;
+  }
+  
+  .chart-label {
+    font-size: 10px;
+  }
+}
+
+/* ========== Dark Theme ========== */
+[data-theme="dark"] .chart-label {
+  color: var(--text-secondary-dark, #999);
+}
+
+/* ========== Accessibility ========== */
+@media (prefers-reduced-motion: reduce) {
+  .chart-bar,
+  .chart-tooltip {
+    transition: none !important;
+  }
+}
+
+/* ========== Touch Devices ========== */
+@media (hover: none) and (pointer: coarse) {
+  .chart-bar:hover {
+    transform: none;
+  }
+  
+  .chart-bar:active {
+    transform: scale(0.95);
+  }
+}
+
+/* ========== High Contrast Support ========== */
+@media (prefers-contrast: high) {
+  .chart-bar {
+    border: 2px solid var(--primary-color, #9a78db);
+  }
+  
+  .chart-tooltip {
+    background: var(--text-primary, #000);
+    border: 1px solid var(--primary-color, #9a78db);
+  }
+} 

@@ -1,0 +1,1230 @@
+/* ========== 새로운 비디오 페이지 스타일 ========== */
+/* 깔끔하고 모던한 숏폼 비디오 디자인 */
+
+/* ========== 기본 구조 ========== */
+.video-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  overflow: hidden;
+  z-index: 1000;
+}
+
+/* 네비게이션 바 완전 숨김 */
+body.video-page-active .navbar {
+  display: none !important;
+}
+
+body.video-page-active {
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* ========== 스와이퍼 컨테이너 ========== */
+.shortform-swiper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+.shortform-track {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.shortform-slide {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  flex-shrink: 0;
+  background: #000;
+}
+
+/* ========== 뒤로가기 버튼 ========== */
+.video-back-btn {
+  position: fixed;
+  top: 24px;
+  left: 20px;
+  z-index: 100;
+  width: 44px;
+  height: 44px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(20px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.video-back-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.05);
+}
+
+.back-btn-icon {
+  font-size: 20px;
+  font-weight: bold;
+  color: white;
+  user-select: none;
+}
+
+/* ========== 비디오 컨테이너 ========== */
+.video-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.video-background {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: #000;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 2;
+}
+
+/* 터치 가능한 오버레이 영역 */
+.video-background::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  pointer-events: auto;
+  background: transparent;
+}
+
+.video-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+/* ========== YouTube iframe 플레이어 ========== */
+.youtube-player {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  border: none;
+  outline: none;
+  pointer-events: none;
+  opacity: 1;
+  background: transparent;
+}
+
+/* YouTube iframe 요소 - 완전히 화면 밖으로 숨김 */
+.youtube-player iframe {
+  width: 1px !important;
+  height: 1px !important;
+  border: none !important;
+  outline: none !important;
+  position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  pointer-events: none !important;
+  background: transparent !important;
+  z-index: -1 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transform: scale(0.001) !important;
+}
+
+/* YouTube UI 완전 차단 - 강력한 블랙 오버레이 */
+.youtube-player::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000 !important;
+  z-index: 999 !important;
+  pointer-events: none;
+}
+
+/* 추가 보안 오버레이 */
+.youtube-player::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95) !important;
+  z-index: 1000 !important;
+  pointer-events: none;
+}
+
+/* 커스텀 썸네일이 항상 위에 표시되도록 */
+.video-thumbnail {
+  position: relative !important;
+  z-index: 1001 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  background: #000 !important;
+}
+
+/* YouTube 컨트롤 UI 강제 숨김 */
+.youtube-player .ytp-chrome-top,
+.youtube-player .ytp-chrome-bottom,
+.youtube-player .ytp-watermark,
+.youtube-player .ytp-gradient-top,
+.youtube-player .ytp-gradient-bottom,
+.youtube-player .ytp-show-cards-title,
+.youtube-player .ytp-pause-overlay,
+.youtube-player .ytp-play-button,
+.youtube-player .html5-video-player,
+.youtube-player .ytp-cued-thumbnail-overlay,
+.youtube-player .ytp-large-play-button {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* YouTube iframe 내부 요소들 강제 숨김 */
+.youtube-player iframe[src*="youtube.com"] {
+  filter: contrast(0) brightness(0) !important;
+  opacity: 0.001 !important;
+}
+
+/* YouTube 플레이어 내부 모든 UI 요소 강제 숨김 */
+.youtube-player * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  pointer-events: none !important;
+}
+
+/* YouTube 컨트롤 바 완전 제거 */
+.youtube-player .ytp-chrome-controls,
+.youtube-player .ytp-progress-bar-container,
+.youtube-player .ytp-control-bar,
+.youtube-player .ytp-chrome-bottom,
+.youtube-player .ytp-chrome-top {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  display: none !important;
+  height: 0 !important;
+  width: 0 !important;
+}
+
+/* YouTube 로딩 스피너 숨김 */
+.youtube-player .ytp-spinner,
+.youtube-player .ytp-loading-animation {
+  display: none !important;
+}
+
+/* YouTube 플레이어 로딩 상태 */
+.youtube-player.loading {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.youtube-player.loading::before {
+  content: '🎬';
+  font-size: 48px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* YouTube 플레이어 오류 상태 */
+.youtube-player.error {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  text-align: center;
+  padding: 20px;
+}
+
+.youtube-player.error::before {
+  content: '⚠️ 비디오를 로드할 수 없습니다';
+  display: block;
+}
+
+/* YouTube 에러 오버레이 (기존 - 폴백용) */
+.video-error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  backdrop-filter: blur(10px);
+}
+
+.error-message {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 16px;
+  color: white;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  max-width: 200px;
+}
+
+/* ========== 확장된 비디오 오류 모달 ========== */
+.video-error-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 55;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+}
+
+.error-modal-content {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  padding: 32px 24px;
+  max-width: 320px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 2px 8px rgba(255, 193, 7, 0.3));
+}
+
+.error-title {
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  letter-spacing: -0.5px;
+}
+
+.error-description {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 15px;
+  line-height: 1.5;
+  margin-bottom: 24px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.error-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* YouTube 보기 버튼 (주요 액션) */
+.youtube-watch-btn {
+  background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  padding: 14px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(255, 71, 87, 0.4);
+  letter-spacing: -0.3px;
+}
+
+.youtube-watch-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 71, 87, 0.5);
+  background: linear-gradient(135deg, #ff5722 0%, #ff4757 100%);
+}
+
+.youtube-watch-btn:active {
+  transform: scale(0.95);
+}
+
+.youtube-watch-btn svg {
+  color: white;
+  flex-shrink: 0;
+}
+
+/* 다음 영상으로 버튼 (보조 액션) */
+.dismiss-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.dismiss-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.dismiss-btn:active {
+  transform: scale(0.95);
+}
+
+/* 오류 모달 표시 시 액션 버튼들 비활성화 */
+.video-error-modal ~ .video-actions,
+.video-actions.disabled {
+  opacity: 0.3;
+  pointer-events: none;
+  filter: grayscale(50%);
+  transition: all 0.3s ease;
+}
+
+.video-error-modal ~ .video-actions .action-btn,
+.video-actions.disabled .action-btn {
+  transform: none !important;
+  cursor: not-allowed;
+  box-shadow: none !important;
+}
+
+.video-actions.disabled .action-btn:hover,
+.video-actions.disabled .action-btn:active {
+  transform: none !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* YouTube 플레이어 버퍼링 상태 */
+.youtube-player.buffering {
+  position: relative;
+}
+
+.youtube-player.buffering::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  z-index: 10;
+}
+
+@keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ========== 재생/정지 인디케이터 ========== */
+.play-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.play-icon {
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+}
+
+.play-icon svg {
+  width: 48px;
+  height: 48px;
+  color: white;
+  fill: currentColor;
+}
+
+/* ========== 액션 버튼들 ========== */
+.video-actions {
+  position: absolute;
+  right: 20px;
+  bottom: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  z-index: 50;
+}
+
+.action-btn {
+  width: 60px;
+  height: 60px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.action-btn:active {
+  transform: scale(0.95);
+}
+
+.action-icon {
+  color: white;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* SVG 아이콘 공통 스타일 */
+
+.action-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.action-icon svg {
+  width: 100%;
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+.action-icon.active {
+  color: var(--primary-color);
+}
+
+.like-btn .action-icon.active {
+  color: #4CAF50;
+  filter: drop-shadow(0 0 16px rgba(76, 175, 80, 0.8));
+}
+
+.dislike-btn .action-icon.active {
+  color: #f44336;
+  filter: drop-shadow(0 0 16px rgba(244, 67, 54, 0.6));
+}
+
+.share-btn .action-icon.active {
+  color: #2196F3;
+  filter: drop-shadow(0 0 16px rgba(33, 150, 243, 0.6));
+}
+
+/* 유튜브 버튼 스타일 */
+.youtube-btn {
+  background: rgba(255, 0, 0, 0.8);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.youtube-btn:hover {
+  background: rgba(255, 0, 0, 0.9);
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* ========== 하단 정보 영역 ========== */
+.video-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 32px 20px 40px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.6) 70%, transparent 100%);
+  z-index: 40;
+}
+
+/* 새로운 YouTube 스타일 레이아웃 */
+.content-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.creator-avatar-large {
+  width: 64px;
+  height: 64px;
+  background: var(--gradient-purple);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 24px rgba(154, 120, 219, 0.4);
+}
+
+.creator-avatar-large .avatar-icon {
+  font-size: 24px;
+  color: white;
+}
+
+.content-details {
+  flex: 1;
+  min-width: 0; /* 텍스트 오버플로우 처리 */
+}
+
+/* 기존 스타일들 (호환성 유지) */
+.creator-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-right: 100px; /* 버튼 영역 확보 */
+}
+
+.creator-avatar {
+  width: 48px;
+  height: 48px;
+  background: var(--gradient-purple);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(154, 120, 219, 0.3);
+}
+
+.avatar-icon {
+  font-size: 20px;
+  color: white;
+}
+
+.creator-details {
+  flex: 1;
+}
+
+.creator-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+.video-description {
+  padding-right: 100px; /* 버튼 영역 확보 */
+}
+
+.video-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: white;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  margin-bottom: 4px;
+}
+
+.video-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ========== 진행바 ========== */
+.video-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  z-index: 60;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  width: 0%;
+  transition: width 100ms linear;
+  box-shadow: 0 0 10px rgba(154, 120, 219, 0.6);
+  position: relative;
+}
+
+/* 진행바 글로우 효과 */
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.8) 100%);
+  filter: blur(2px);
+}
+
+/* ========== 휴식 슬라이드 ========== */
+.break-slide {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.break-container {
+  max-width: 360px;
+  width: 100%;
+}
+
+.break-content {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(30px);
+  border-radius: 24px;
+  padding: 40px 32px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.break-emoji {
+  font-size: 64px;
+  margin-bottom: 24px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.break-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.break-subtitle {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.break-description {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+/* ========== 시청 통계 ========== */
+.watch-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 24px 0;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #4FC3F7;
+  margin-bottom: 4px;
+  text-shadow: 0 0 20px rgba(79, 195, 247, 0.5);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ========== 휴식 버튼 ========== */
+.break-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.break-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 24px;
+  border-radius: 16px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(20px);
+}
+
+.rest-btn {
+  background: linear-gradient(135deg, #4FC3F7 0%, #667eea 100%);
+  color: white;
+  box-shadow: 0 4px 20px rgba(79, 195, 247, 0.4);
+}
+
+.rest-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(79, 195, 247, 0.6);
+}
+
+.continue-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.continue-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.break-tip {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  margin-top: 20px;
+  line-height: 1.5;
+}
+
+/* ========== 휴식 타이머 ========== */
+.rest-timer {
+  text-align: center;
+  margin: 24px 0;
+}
+
+.timer-circle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: conic-gradient(#4FC3F7 0deg, rgba(79, 195, 247, 0.2) 0deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  position: relative;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+}
+
+.timer-circle::before {
+  content: '';
+  position: absolute;
+  inset: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+}
+
+.timer-text {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timer-minutes {
+  font-size: 36px;
+  font-weight: 700;
+  color: #4FC3F7;
+  line-height: 1;
+  text-shadow: 0 0 20px rgba(79, 195, 247, 0.8);
+}
+
+.timer-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.timer-message {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.timer-skip-btn {
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 12px 24px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.timer-skip-btn:hover {
+  border-color: #4FC3F7;
+  color: #4FC3F7;
+  background: rgba(79, 195, 247, 0.1);
+}
+
+/* ========== 반응형 디자인 ========== */
+@media (max-width: 430px) {
+  .video-back-btn {
+    top: 20px;
+    left: 16px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .back-btn-icon {
+    font-size: 18px;
+  }
+
+  .video-info {
+    padding: 20px 16px 28px;
+  }
+
+  .creator-section {
+    padding-right: 80px; /* 모바일에서 버튼 영역 축소 */
+  }
+
+  .content-section {
+    gap: 12px;
+  }
+
+  .creator-avatar-large {
+    width: 56px;
+    height: 56px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .creator-avatar-large .avatar-icon {
+    font-size: 22px;
+  }
+
+  .video-title {
+    font-size: 16px;
+  }
+
+  .creator-name {
+    font-size: 14px;
+  }
+
+  .video-description {
+    padding-right: 80px;
+  }
+
+  .video-actions {
+    right: 16px;
+    bottom: 100px;
+    gap: 16px;
+  }
+
+  .action-btn {
+    width: 52px;
+    height: 52px;
+  }
+
+  .action-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* 오류 모달 반응형 */
+  .error-modal-content {
+    max-width: 280px;
+    padding: 28px 20px;
+  }
+
+  .error-icon {
+    font-size: 42px;
+    margin-bottom: 14px;
+  }
+
+  .error-title {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  .error-description {
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .youtube-watch-btn {
+    padding: 12px 18px;
+    font-size: 15px;
+  }
+
+  .youtube-watch-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .dismiss-btn {
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+
+  .break-content {
+    padding: 32px 24px;
+  }
+
+  .break-title {
+    font-size: 24px;
+  }
+
+  .timer-circle {
+    width: 120px;
+    height: 120px;
+  }
+
+  .timer-minutes {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 375px) {
+  .video-back-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .back-btn-icon {
+    font-size: 16px;
+  }
+
+  .video-info {
+    padding: 16px 12px 24px;
+  }
+
+  .creator-section {
+    padding-right: 70px;
+  }
+
+  .content-section {
+    gap: 10px;
+  }
+
+  .creator-avatar-large {
+    width: 52px;
+    height: 52px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .creator-avatar-large .avatar-icon {
+    font-size: 20px;
+  }
+
+  .video-title {
+    font-size: 15px;
+  }
+
+  .creator-name {
+    font-size: 13px;
+  }
+
+  .video-description {
+    padding-right: 70px;
+  }
+
+  .video-actions {
+    right: 12px;
+    bottom: 80px;
+    gap: 12px;
+  }
+
+  .action-btn {
+    width: 48px;
+    height: 48px;
+  }
+
+  .action-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* 오류 모달 반응형 (소형 모바일) */
+  .error-modal-content {
+    max-width: 260px;
+    padding: 24px 18px;
+  }
+
+  .error-icon {
+    font-size: 38px;
+    margin-bottom: 12px;
+  }
+
+  .error-title {
+    font-size: 17px;
+    margin-bottom: 8px;
+  }
+
+  .error-description {
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+
+  .youtube-watch-btn {
+    padding: 11px 16px;
+    font-size: 14px;
+  }
+
+  .youtube-watch-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .dismiss-btn {
+    padding: 9px 16px;
+    font-size: 13px;
+  }
+
+  .break-content {
+    padding: 24px 20px;
+  }
+
+  .break-title {
+    font-size: 22px;
+  }
+
+  .timer-circle {
+    width: 100px;
+    height: 100px;
+  }
+
+  .timer-minutes {
+    font-size: 24px;
+  }
+}
+
+/* ========== 접근성 & 최적화 ========== */
+@media (prefers-reduced-motion: reduce) {
+  .shortform-track,
+  .action-btn,
+  .break-btn,
+  .follow-btn,
+  .video-back-btn,
+  .video-play-icon {
+    transition: none !important;
+  }
+
+  .break-emoji {
+    animation: none !important;
+  }
+}
+
+/* 터치 디바이스 최적화 */
+@media (hover: none) and (pointer: coarse) {
+  .action-btn:hover,
+  .break-btn:hover,
+  .timer-skip-btn:hover,
+  .video-back-btn:hover {
+    transform: none;
+  }
+  
+  .action-btn:active {
+    transform: scale(0.95);
+  }
+  
+  .youtube-btn:active {
+    transform: scale(0.95);
+  }
+}
+
+.share-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+} 

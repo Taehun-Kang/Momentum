@@ -1,0 +1,578 @@
+/**
+ * 🔐 Login Page - Modern Design
+ * 독립적인 스타일링 (variables.css 미사용)
+ */
+
+/* 기본 폰트 및 리셋 */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+.login-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+  perspective: 1000px;
+}
+
+/* 📱 반응형 베이스 */
+.login-page * {
+  box-sizing: border-box;
+}
+
+/* 🌈 배경 및 그라디언트 */
+.login-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, 
+    #667eea 0%, 
+    #764ba2 25%, 
+    #9b59b6 50%, 
+    #8e44ad 75%, 
+    #667eea 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 20s ease infinite;
+  z-index: -3;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  25% { background-position: 100% 50%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+}
+
+/* ✨ 플로팅 orb 애니메이션 */
+.floating-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: -2;
+}
+
+.orb-1 {
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+  top: 20%;
+  left: 10%;
+  animation: float1 15s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  top: 60%;
+  right: 15%;
+  animation: float2 18s ease-in-out infinite reverse;
+}
+
+.orb-3 {
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.25) 0%, transparent 70%);
+  bottom: 30%;
+  left: 30%;
+  animation: float3 12s ease-in-out infinite;
+}
+
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(20px, -15px) scale(1.1); }
+  66% { transform: translate(-15px, 10px) scale(0.9); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(-25px, -15px) rotate(180deg); }
+}
+
+@keyframes float3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(15px, -20px) scale(1.2); }
+}
+
+/* 🔹 기하학적 패턴 */
+.geometric-pattern {
+  position: absolute;
+  opacity: 0.1;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.pattern-1 {
+  width: 100px;
+  height: 100px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  top: 15%;
+  right: 20%;
+  animation: rotate 20s linear infinite;
+}
+
+.pattern-2 {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  bottom: 20%;
+  right: 30%;
+  animation: rotate 25s linear infinite reverse;
+}
+
+.pattern-3 {
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.18);
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  top: 70%;
+  left: 15%;
+  animation: float1 18s ease-in-out infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 📱 메인 콘텐츠 */
+.login-content {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+/* 🏠 헤더 섹션 */
+.login-header {
+  margin-bottom: 40px;
+  opacity: 0;
+  animation: slideUp 0.8s ease-out 0.3s forwards;
+}
+
+.app-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+.logo-icon {
+  font-size: 28px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.logo-text {
+  font-size: 24px;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: -0.5px;
+}
+
+.login-title {
+  margin-bottom: 20px;
+}
+
+.main-title {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: white;
+  margin: 0 0 12px 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  letter-spacing: -0.5px;
+}
+
+.sub-title {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+/* 📝 로그인 폼 */
+.login-form-container {
+  width: 100%;
+  max-width: 400px;
+  opacity: 0;
+  animation: slideUp 0.8s ease-out 0.5s forwards;
+}
+
+.login-form {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  padding: 32px 28px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    0 1px 4px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.input-group {
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.input-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 8px;
+  letter-spacing: -0.2px;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.form-input {
+  width: 100%;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 400;
+  color: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+}
+
+.form-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.form-input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+.input-focus-border {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 1px;
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.input-wrapper.focused .input-focus-border {
+  transform: scaleX(1);
+}
+
+/* 📋 폼 옵션 */
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  font-size: 14px;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.checkbox-input {
+  display: none;
+}
+
+.checkbox-custom {
+  width: 18px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.checkbox-input:checked + .checkbox-custom {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-color: transparent;
+}
+
+.checkbox-input:checked + .checkbox-custom::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.checkbox-text {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 400;
+}
+
+.forgot-password-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.forgot-password-btn:hover {
+  color: white;
+}
+
+/* 🚀 로그인 버튼 */
+.login-button {
+  position: relative;
+  width: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 16px;
+  padding: 18px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 8px 24px rgba(102, 126, 234, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 12px 32px rgba(102, 126, 234, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+.login-button.loading .btn-text {
+  opacity: 0;
+}
+
+.login-button.loading .btn-loader {
+  opacity: 1;
+}
+
+.btn-loader {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.loader-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.btn-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(0);
+  pointer-events: none;
+}
+
+.btn-ripple.animate {
+  animation: ripple 0.6s ease-out;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* 👥 푸터 섹션 */
+.login-footer {
+  margin-top: 32px;
+  opacity: 0;
+  animation: slideUp 0.8s ease-out 0.7s forwards;
+}
+
+.signup-prompt {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+.signup-link {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.signup-link:hover {
+  color: #667eea;
+}
+
+/* 🎬 애니메이션 키프레임 */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 📱 반응형 디자인 */
+@media (max-width: 480px) {
+  .login-content {
+    padding: 20px 16px;
+  }
+  
+  .main-title {
+    font-size: 24px;
+  }
+  
+  .sub-title {
+    font-size: 15px;
+  }
+  
+  .login-form {
+    padding: 24px 20px;
+    border-radius: 20px;
+  }
+  
+  .form-input {
+    padding: 14px 16px;
+    font-size: 16px; /* iOS zoom prevention */
+  }
+  
+  .login-button {
+    padding: 16px 20px;
+    font-size: 15px;
+  }
+  
+  .app-logo {
+    margin-bottom: 24px;
+  }
+  
+  .logo-text {
+    font-size: 20px;
+  }
+  
+  .logo-icon {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 375px) {
+  .login-content {
+    padding: 16px 12px;
+  }
+  
+  .main-title {
+    font-size: 22px;
+  }
+  
+  .login-form {
+    padding: 20px 16px;
+  }
+  
+  .form-input {
+    padding: 12px 14px;
+  }
+  
+  .login-button {
+    padding: 14px 18px;
+  }
+}
+
+/* 🌙 다크 모드 개선 */
+@media (prefers-color-scheme: dark) {
+  .login-form {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .form-input {
+    background: rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* 🎯 성능 최적화 */
+.floating-orb {
+  will-change: transform;
+}
+
+.geometric-pattern {
+  will-change: transform;
+}
+
+.login-button {
+  will-change: transform;
+}
+
+/* 접근성 개선 */
+@media (prefers-reduced-motion: reduce) {
+  .floating-orb,
+  .geometric-pattern,
+  .login-background {
+    animation: none;
+  }
+}
+
+/* 🏗️ 레이아웃 안정성 */
+.login-page {
+  contain: layout style paint;
+} 

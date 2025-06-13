@@ -1,0 +1,685 @@
+/**
+ * 🎭 Modal - 세련된 미니멀 디자인
+ * 
+ * 4가지 variant, 3가지 size 지원
+ * 깔끔하고 세련된 미니멀 디자인
+ */
+
+/* ========================================
+   CSS 변수 정의 (미니멀 색상 팔레트)
+======================================== */
+
+:root {
+  --modal-overlay: rgba(15, 16, 20, 0.7);
+  --modal-bg: rgba(255, 255, 255, 0.98);
+  --modal-shadow: 
+    0 32px 80px rgba(0, 0, 0, 0.16),
+    0 16px 32px rgba(0, 0, 0, 0.08),
+    0 8px 16px rgba(0, 0, 0, 0.04);
+  --modal-text-primary: #1a1a1a;
+  --modal-text-secondary: #6b7280;
+  --modal-close-bg: rgba(0, 0, 0, 0.05);
+  --modal-close-hover: rgba(0, 0, 0, 0.1);
+  
+  /* 다크 모드 */
+  --modal-dark-bg: rgba(26, 27, 31, 0.98);
+  --modal-dark-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.5),
+    0 16px 32px rgba(0, 0, 0, 0.3),
+    0 8px 16px rgba(0, 0, 0, 0.2);
+  --modal-dark-text-primary: #f9fafb;
+  --modal-dark-text-secondary: #9ca3af;
+  --modal-dark-close-bg: rgba(255, 255, 255, 0.1);
+  --modal-dark-close-hover: rgba(255, 255, 255, 0.15);
+}
+
+/* ========================================
+   기본 Modal Wrapper
+======================================== */
+
+.modal-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  
+  /* 초기 상태 */
+  opacity: 0;
+  
+  /* 부드러운 전환 */
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.modal-wrapper.modal--open {
+  opacity: 1;
+}
+
+.modal-wrapper.modal--closing {
+  opacity: 0;
+}
+
+/* ========================================
+   Modal Overlay (미니멀 블러)
+======================================== */
+
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--modal-overlay);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  cursor: pointer;
+}
+
+/* ========================================
+   Modal Container (깔끔한 카드)
+======================================== */
+
+.modal-container {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  
+  /* 미니멀 배경 */
+  background: var(--modal-bg);
+  
+  /* 세련된 그림자만으로 깊이감 표현 */
+  border-radius: 24px;
+  box-shadow: var(--modal-shadow);
+  
+  /* 부드러운 전환 */
+  transform: scale(0.96) translateY(8px);
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  
+  outline: none;
+  overflow: hidden;
+  
+  /* 베젤 효과 */
+  background-clip: padding-box;
+}
+
+.modal-wrapper.modal--open .modal-container {
+  transform: scale(1) translateY(0);
+}
+
+.modal-wrapper.modal--closing .modal-container {
+  transform: scale(0.96) translateY(8px);
+}
+
+/* ========================================
+   Modal Content
+======================================== */
+
+.modal-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  color: var(--modal-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ========================================
+   Size Variants (개선된 비율)
+======================================== */
+
+.modal--small .modal-container {
+  width: 360px;
+  min-height: 200px;
+}
+
+.modal--medium .modal-container {
+  width: 520px;
+  min-height: 280px;
+}
+
+.modal--large .modal-container {
+  width: 680px;
+  min-height: 360px;
+}
+
+/* ========================================
+   Close Button (미니멀 디자인)
+======================================== */
+
+.modal-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  
+  /* 미니멀 스타일 */
+  border: none;
+  background: var(--modal-close-bg);
+  border-radius: 12px;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  
+  /* 부드러운 전환 */
+  transition: all 0.15s ease;
+  
+  z-index: 10;
+  color: var(--modal-text-secondary);
+}
+
+.modal-close-btn:hover {
+  background: var(--modal-close-hover);
+  color: var(--modal-text-primary);
+  transform: scale(1.05);
+}
+
+.modal-close-btn:active {
+  transform: scale(0.98);
+}
+
+.modal-close-icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
+}
+
+/* ========================================
+   Modal Body (세련된 여백)
+======================================== */
+
+.modal-body {
+  padding: 40px;
+  text-align: center;
+}
+
+.modal-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--modal-text-primary);
+  margin-bottom: 12px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.modal-message {
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--modal-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 0;
+  white-space: pre-line;
+}
+
+.modal-content-area {
+  text-align: left;
+  color: var(--modal-text-primary);
+  line-height: 1.6;
+}
+
+/* ========================================
+   Modal Footer (완벽한 Button 배치)
+======================================== */
+
+.modal-footer {
+  padding: 0 40px 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px; /* Button 최소 높이 보장 */
+}
+
+/* Alert 모달: 단일 확인 버튼 중앙 배치 */
+.modal--alert .modal-footer {
+  justify-content: center;
+}
+
+.modal--alert .modal-confirm-btn-container {
+  width: 180px; /* 적절한 고정 너비 */
+  flex: none;
+}
+
+/* Confirm 모달: 두 버튼 적절한 간격 */
+.modal--confirm .modal-footer {
+  justify-content: center;
+  gap: 16px;
+}
+
+.modal--confirm .modal-cancel-btn-container,
+.modal--confirm .modal-confirm-btn-container {
+  width: 140px; /* 적절한 고정 너비 */
+  flex: none;
+}
+
+/* Button 컨테이너 기본 스타일 */
+.modal-confirm-btn-container,
+.modal-cancel-btn-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ========================================
+   Variant 스타일 (최적화된 여백)
+======================================== */
+
+/* Alert Variant */
+.modal--alert .modal-body {
+  padding: 40px 40px 24px;
+}
+
+.modal--alert .modal-footer {
+  padding-top: 0;
+}
+
+.modal--alert .modal-title {
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+
+/* Confirm Variant */
+.modal--confirm .modal-body {
+  padding: 40px 40px 24px;
+}
+
+.modal--confirm .modal-footer {
+  padding-top: 0;
+}
+
+.modal--confirm .modal-title {
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+
+/* Content Variant */
+.modal--content .modal-body {
+  text-align: left;
+}
+
+/* Bottom Sheet Variant (모바일 최적화) */
+.modal--bottom-sheet {
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.modal--bottom-sheet .modal-container {
+  width: 100%;
+  max-width: 430px;
+  max-height: 85vh;
+  margin: 0;
+  border-radius: 24px 24px 0 0;
+  
+  transform: translateY(100%);
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.modal--bottom-sheet.modal--open .modal-container {
+  transform: translateY(0);
+}
+
+.modal--bottom-sheet.modal--closing .modal-container {
+  transform: translateY(100%);
+}
+
+/* Bottom Sheet Handle (미니멀 디자인) */
+.modal-handle {
+  width: 48px;
+  height: 5px;
+  background: var(--modal-text-secondary);
+  border-radius: 3px;
+  margin: 16px auto 0;
+  opacity: 0.4;
+  cursor: grab;
+  transition: all 0.15s ease;
+}
+
+.modal-handle:hover {
+  opacity: 0.6;
+}
+
+.modal-handle:active {
+  cursor: grabbing;
+  opacity: 0.8;
+}
+
+/* ========================================
+   다크 모드 (시스템 대응)
+======================================== */
+
+@media (prefers-color-scheme: dark) {
+  .modal-overlay {
+    background: rgba(0, 0, 0, 0.8);
+  }
+  
+  .modal-container {
+    background: var(--modal-dark-bg);
+    box-shadow: var(--modal-dark-shadow);
+  }
+  
+  .modal-container:focus {
+    box-shadow: 
+      var(--modal-dark-shadow),
+      0 0 0 4px rgba(255, 255, 255, 0.1);
+  }
+  
+  .modal-content {
+    color: var(--modal-dark-text-primary);
+  }
+  
+  .modal-title {
+    color: var(--modal-dark-text-primary);
+  }
+  
+  .modal-message {
+    color: var(--modal-dark-text-secondary);
+  }
+  
+  .modal-content-area {
+    color: var(--modal-dark-text-primary);
+  }
+  
+  .modal-close-btn {
+    background: var(--modal-dark-close-bg);
+    color: var(--modal-dark-text-secondary);
+  }
+  
+  .modal-close-btn:hover {
+    background: var(--modal-dark-close-hover);
+    color: var(--modal-dark-text-primary);
+  }
+  
+  .modal-close-btn:focus {
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
+  }
+  
+  .modal-close-btn:focus-visible {
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
+  }
+  
+  .modal-handle {
+    background: var(--modal-dark-text-secondary);
+  }
+}
+
+/* ========================================
+   반응형 디자인 (4단계)
+======================================== */
+
+/* 1단계: iPhone 14 Pro Max (430px 이하) */
+@media (max-width: 430px) {
+  .modal-footer {
+    padding: 0 24px 32px;
+    gap: 10px;
+  }
+  
+  /* Alert 모달 */
+  .modal--alert .modal-confirm-btn-container {
+    width: 160px;
+  }
+  
+  /* Confirm 모달 */
+  .modal--confirm .modal-cancel-btn-container,
+  .modal--confirm .modal-confirm-btn-container {
+    width: 120px;
+  }
+}
+
+/* 2단계: iPhone 12/13 (375px 이하) */
+@media (max-width: 375px) {
+  .modal-footer {
+    padding: 0 20px 28px;
+    gap: 8px;
+  }
+  
+  /* Alert 모달 */
+  .modal--alert .modal-confirm-btn-container {
+    width: 140px;
+  }
+  
+  /* Confirm 모달 */
+  .modal--confirm .modal-cancel-btn-container,
+  .modal--confirm .modal-confirm-btn-container {
+    width: 100px;
+  }
+  
+  /* ⚠️ 제거: Button 컴포넌트는 자체 반응형 처리 */
+}
+
+/* 3단계: iPhone SE (320px 이하) */
+@media (max-width: 320px) {
+  .modal-footer {
+    padding: 0 16px 24px;
+    gap: 6px;
+  }
+  
+  /* Alert 모달 */
+  .modal--alert .modal-confirm-btn-container {
+    width: 120px;
+  }
+  
+  /* Confirm 모달 */
+  .modal--confirm .modal-cancel-btn-container,
+  .modal--confirm .modal-confirm-btn-container {
+    width: 90px;
+  }
+  
+  /* ⚠️ 제거: Button 컴포넌트는 자체 반응형 처리 */
+}
+
+/* ========================================
+   가로 모드 최적화
+======================================== */
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .modal-container {
+    max-height: 85vh;
+  }
+  
+  .modal-body {
+    padding: 24px 40px 16px;
+  }
+  
+  .modal-footer {
+    padding: 0 40px 24px;
+    gap: 12px;
+  }
+  
+  /* 가로 모드에서 버튼 크기 조정 */
+  .modal--alert .modal-confirm-btn-container {
+    width: 160px;
+  }
+  
+  .modal--confirm .modal-cancel-btn-container,
+  .modal--confirm .modal-confirm-btn-container {
+    width: 120px;
+  }
+  
+  /* ⚠️ 제거: Button 컴포넌트는 자체 반응형 처리 
+  .modal-confirm-btn-container .button,
+  .modal-cancel-btn-container .button {
+    min-height: 44px;
+    font-size: 15px;
+  }
+  */
+  
+  .modal-title {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+  
+  .modal-message {
+    font-size: 15px;
+  }
+  
+  /* Bottom Sheet를 가로모드에서는 일반 모달로 */
+  .modal--bottom-sheet {
+    align-items: center;
+  }
+  
+  .modal--bottom-sheet .modal-container {
+    width: 520px;
+    max-height: 75vh;
+    border-radius: 24px;
+    transform: scale(0.96) translateY(8px);
+  }
+  
+  .modal--bottom-sheet.modal--open .modal-container {
+    transform: scale(1) translateY(0);
+  }
+  
+  .modal--bottom-sheet.modal--closing .modal-container {
+    transform: scale(0.96) translateY(8px);
+  }
+  
+  .modal-handle {
+    display: none;
+  }
+}
+
+/* ========================================
+   접근성 (포커스 및 키보드)
+======================================== */
+
+.modal-container:focus {
+  outline: none;
+  box-shadow: 
+    var(--modal-shadow),
+    0 0 0 4px rgba(0, 0, 0, 0.08);
+}
+
+.modal-close-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.modal-close-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.15);
+}
+
+/* 고대비 모드 */
+@media (prefers-contrast: high) {
+  .modal-container {
+    box-shadow: 
+      var(--modal-shadow),
+      0 0 0 2px rgba(0, 0, 0, 0.8);
+  }
+  
+  .modal-container:focus {
+    box-shadow: 
+      var(--modal-shadow),
+      0 0 0 4px rgba(0, 0, 0, 0.8);
+  }
+  
+  /* Button 컴포넌트는 자체적으로 고대비 지원 */
+}
+
+/* ========================================
+   터치 디바이스 최적화
+======================================== */
+
+@media (hover: none) and (pointer: coarse) {
+  .modal-close-btn:hover {
+    transform: none;
+    background: var(--modal-close-bg);
+  }
+  
+  /* 터치 피드백 강화 */
+  .modal-close-btn:active {
+    transform: scale(0.92);
+  }
+  
+  /* 터치 영역 최적화 */
+  .modal-close-btn {
+    width: 44px;
+    height: 44px;
+    top: 12px;
+    right: 12px;
+  }
+  
+  /* ⚠️ 제거: Button 컴포넌트는 자체 터치 최적화 처리
+  .modal-confirm-btn-container .button,
+  .modal-cancel-btn-container .button {
+    min-height: 48px;
+    padding: 12px 20px;
+  }
+  */
+  
+  /* 터치 시 피드백 효과는 Button 컴포넌트에서 처리됨 */
+}
+
+/* ========================================
+   애니메이션 감소 지원
+======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-wrapper,
+  .modal-container,
+  .modal-overlay,
+  .modal-close-btn,
+  .modal-handle {
+    transition: none;
+  }
+  
+  .modal-wrapper.modal--open {
+    opacity: 1;
+  }
+  
+  .modal-container {
+    transform: none;
+  }
+  
+  .modal--bottom-sheet .modal-container {
+    transform: none;
+  }
+  
+  /* Button 컴포넌트는 자체적으로 애니메이션 감소 지원 */
+}
+
+/* ========================================
+   스크롤 최적화
+======================================== */
+
+.modal-content-area {
+  max-height: 50vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.modal-content-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-content-area::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.modal-content-area::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+  .modal-content-area {
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  }
+  
+  .modal-content-area::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+  }
+  
+  .modal-content-area::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+  }
+} 

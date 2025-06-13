@@ -1,0 +1,446 @@
+/**
+ * ⏳ Loading Component Styles
+ * 글래스모피즘 디자인, 4가지 애니메이션 타입
+ */
+
+/* ===== 기본 변수 ===== */
+:root {
+  --loading-primary-color: #9a78db;
+  --loading-secondary-color: #c4b5fd;
+  --loading-glass-bg: rgba(255, 255, 255, 0.25);
+  --loading-glass-border: rgba(255, 255, 255, 0.3);
+  --loading-backdrop: rgba(0, 0, 0, 0.6);
+  --loading-white: #ffffff;
+  --loading-dark: #2d3748;
+  --loading-radius: 20px;
+  --loading-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== 기본 스타일 ===== */
+.loading {
+  /* 기본 위치 설정 */
+  position: relative;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  
+  /* 애니메이션 */
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.loading--visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ===== 오버레이 모드 ===== */
+.loading--overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: var(--loading-backdrop);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto; /* 확실한 포인터 이벤트 제어 */
+}
+
+.loading--transparent {
+  background: transparent;
+}
+
+/* 숨김 상태에서는 완전히 제거 */
+.loading--overlay:not(.loading--visible) {
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ===== 위치 옵션 ===== */
+.loading--top {
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 10vh;
+}
+
+.loading--bottom {
+  justify-content: center;
+  align-items: flex-end;
+  padding-bottom: 10vh;
+}
+
+.loading--center {
+  justify-content: center;
+  align-items: center;
+}
+
+/* ===== 컨테이너 ===== */
+.loading__container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  
+  /* 글래스모피즘 */
+  background: var(--loading-glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--loading-glass-border);
+  border-radius: var(--loading-radius);
+  box-shadow: var(--loading-shadow);
+  
+  /* 최소 크기 */
+  min-width: 120px;
+  min-height: 120px;
+}
+
+/* ===== 메시지 ===== */
+.loading__message {
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.4;
+  max-width: 200px;
+  margin-top: 8px;
+}
+
+/* ===== 크기 옵션 ===== */
+.loading--small .loading__container {
+  padding: 16px;
+  min-width: 80px;
+  min-height: 80px;
+  gap: 12px;
+}
+
+.loading--small .loading__message {
+  font-size: 12px;
+  max-width: 150px;
+}
+
+.loading--large .loading__container {
+  padding: 32px;
+  min-width: 160px;
+  min-height: 160px;
+  gap: 20px;
+}
+
+.loading--large .loading__message {
+  font-size: 16px;
+  max-width: 250px;
+}
+
+/* ===== 색상 테마 ===== */
+.loading--primary {
+  color: var(--loading-primary-color);
+}
+
+.loading--white {
+  color: var(--loading-white);
+}
+
+.loading--dark {
+  color: var(--loading-dark);
+}
+
+/* ===== 애니메이션 공통 컨테이너 ===== */
+.loading__animation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+}
+
+.loading--small .loading__animation {
+  width: 24px;
+  height: 24px;
+}
+
+.loading--large .loading__animation {
+  width: 56px;
+  height: 56px;
+}
+
+/* ===== 스피너 애니메이션 ===== */
+.loading-spinner {
+  width: 100%;
+  height: 100%;
+  animation: loading-spin 1s linear infinite;
+}
+
+.loading-spinner__svg {
+  width: 100%;
+  height: 100%;
+  transform-origin: center;
+}
+
+.loading-spinner__circle {
+  animation: loading-dash 1.5s ease-in-out infinite;
+}
+
+@keyframes loading-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loading-dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
+}
+
+/* ===== 점 애니메이션 ===== */
+.loading-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+}
+
+.loading-dots__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: loading-dots-bounce 1.4s ease-in-out infinite both;
+}
+
+.loading--small .loading-dots {
+  gap: 4px;
+}
+
+.loading--small .loading-dots__dot {
+  width: 5px;
+  height: 5px;
+}
+
+.loading--large .loading-dots {
+  gap: 8px;
+}
+
+.loading--large .loading-dots__dot {
+  width: 12px;
+  height: 12px;
+}
+
+.loading-dots__dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots__dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.loading-dots__dot:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes loading-dots-bounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* ===== 펄스 애니메이션 ===== */
+.loading-pulse {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-pulse__circle {
+  position: absolute;
+  width: 60%;
+  height: 60%;
+  border-radius: 50%;
+  background: currentColor;
+  animation: loading-pulse-scale 2s ease-in-out infinite;
+}
+
+.loading-pulse__circle--1 {
+  animation-delay: 0s;
+}
+
+.loading-pulse__circle--2 {
+  animation-delay: 0.4s;
+}
+
+.loading-pulse__circle--3 {
+  animation-delay: 0.8s;
+}
+
+@keyframes loading-pulse-scale {
+  0% {
+    transform: scale(0);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(0.5);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* ===== 스켈레톤 애니메이션 ===== */
+.loading-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 120px;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading--small .loading-skeleton {
+  width: 80px;
+  gap: 6px;
+}
+
+.loading--large .loading-skeleton {
+  width: 160px;
+  gap: 12px;
+}
+
+.loading-skeleton__line {
+  height: 12px;
+  border-radius: 6px;
+  background: currentColor;
+  opacity: 0.2;
+  animation: loading-skeleton-shimmer 1.5s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.loading--small .loading-skeleton__line {
+  height: 8px;
+  border-radius: 4px;
+}
+
+.loading--large .loading-skeleton__line {
+  height: 16px;
+  border-radius: 8px;
+}
+
+.loading-skeleton__line--long {
+  width: 100%;
+}
+
+.loading-skeleton__line--medium {
+  width: 75%;
+}
+
+.loading-skeleton__line--short {
+  width: 50%;
+}
+
+.loading-skeleton__line::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  animation: loading-skeleton-slide 1.5s ease-in-out infinite;
+}
+
+@keyframes loading-skeleton-shimmer {
+  0%, 100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes loading-skeleton-slide {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* ===== 다크 모드 지원 ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --loading-glass-bg: rgba(0, 0, 0, 0.4);
+    --loading-glass-border: rgba(255, 255, 255, 0.15);
+    --loading-backdrop: rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* ===== 모바일 최적화 ===== */
+@media (max-width: 480px) {
+  .loading__container {
+    padding: 20px;
+    min-width: 100px;
+    min-height: 100px;
+  }
+  
+  .loading__message {
+    font-size: 13px;
+    max-width: 180px;
+  }
+  
+  .loading--overlay {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+}
+
+/* ===== 접근성 ===== */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner,
+  .loading-dots__dot,
+  .loading-pulse__circle,
+  .loading-skeleton__line,
+  .loading-skeleton__line::before {
+    animation-duration: 3s;
+  }
+}
+
+/* ===== 터치 디바이스 최적화 ===== */
+@media (hover: none) and (pointer: coarse) {
+  .loading__container {
+    /* 터치 디바이스에서 약간 더 큰 크기 */
+    min-width: 130px;
+    min-height: 130px;
+  }
+} 

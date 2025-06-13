@@ -1,0 +1,427 @@
+/**
+ * ⏰ TimeBasedKeywords CSS
+ */
+
+/* 컨테이너 - 기본 스타일 */
+.time-based-keywords {
+  position: relative;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 1px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  animation: containerFadeIn 0.6s ease-out forwards;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* 시간대별 섹션 배경 색상 */
+
+/* 🌅 아침 (6-12시): 골든/오렌지 계열 */
+.time-based-keywords[data-time-slot="morning"] {
+  background: linear-gradient(135deg, 
+    rgba(255, 184, 0, 0.12) 0%, 
+    rgba(255, 140, 0, 0.08) 50%,
+    rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 184, 0, 0.15);
+  box-shadow: 
+    0 8px 32px rgba(255, 184, 0, 0.1),
+    0 1px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* ☀️ 점심 (12-18시): 스카이블루/청록 계열 */
+.time-based-keywords[data-time-slot="afternoon"] {
+  background: linear-gradient(135deg, 
+    rgba(0, 180, 219, 0.12) 0%, 
+    rgba(0, 131, 176, 0.08) 50%,
+    rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(0, 180, 219, 0.15);
+  box-shadow: 
+    0 8px 32px rgba(0, 180, 219, 0.1),
+    0 1px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* 🌆 저녁 (18-22시): 선셋 오렌지/핑크 계열 */
+.time-based-keywords[data-time-slot="evening"] {
+  background: linear-gradient(135deg, 
+    rgba(255, 107, 107, 0.12) 0%, 
+    rgba(238, 90, 36, 0.08) 50%,
+    rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 107, 107, 0.15);
+  box-shadow: 
+    0 8px 32px rgba(255, 107, 107, 0.1),
+    0 1px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* 🌙 밤 (22-6시): 딥퍼플/인디고 계열 */
+.time-based-keywords[data-time-slot="night"] {
+  background: linear-gradient(135deg, 
+    rgba(102, 126, 234, 0.12) 0%, 
+    rgba(118, 75, 162, 0.08) 50%,
+    rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(102, 126, 234, 0.15);
+  box-shadow: 
+    0 8px 32px rgba(102, 126, 234, 0.1),
+    0 1px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+@keyframes containerFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 헤더 */
+.time-header {
+  margin-bottom: 20px;
+}
+
+.time-header .section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary, #1f1f1f);
+  margin-bottom: 0;
+}
+
+/* 시간대별 키워드 (세로 배치) */
+.time-keywords-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  z-index: 2;
+  overflow: visible;
+  transition: height 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* 시간대별 키워드 버튼 - 중성적인 스타일 */
+.time-vertical-btn {
+  /* 브라우저 기본 스타일 완전 제거 */
+  background: none;
+  border: none;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  
+  /* 커스텀 스타일 - 중성적인 색상 */
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 18px;
+  padding: 16px 20px;
+  min-height: 56px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform-style: preserve-3d;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 순차 등장 애니메이션 (JavaScript에서 직접 제어) */
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Shimmer 효과 */
+.time-vertical-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.4) 50%, 
+    transparent 100%);
+  transform: translateX(-100%);
+  transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.time-vertical-btn:hover::before {
+  transform: translateX(100%);
+}
+
+/* 호버 효과 - 중성적인 스타일 */
+.time-vertical-btn:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.time-vertical-btn:active {
+  transform: scale(0.96) translateY(-1px);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 시간대별 아이콘 스타일 */
+.time-icon {
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.time-vertical-btn:hover .time-icon {
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+/* 텍스트 */
+.time-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #1f1f1f);
+  flex: 1;
+  text-align: left;
+  z-index: 1;
+  text-shadow: none;
+  transition: all 0.3s ease;
+}
+
+.time-vertical-btn:hover .time-text {
+  font-weight: 700;
+  transform: none;
+}
+
+/* 시간대별 버튼 색상은 제거 - 섹션 배경만으로 충분 */
+
+/* 터치 디바이스 최적화 */
+@media (hover: none) and (pointer: coarse) {
+  .time-vertical-btn:hover {
+    transform: translateY(-1px) scale(1.01);
+    background: rgba(255, 255, 255, 0.75);
+  }
+  
+  .time-vertical-btn:active {
+    transform: scale(0.96) translateY(-1px);
+    background: rgba(255, 255, 255, 0.9);
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .time-vertical-btn:hover .time-icon {
+    transform: scale(1.05);
+  }
+  
+  .time-vertical-btn:hover .time-text {
+    transform: none;
+  }
+}
+
+/* 반응형 */
+@media (max-width: 430px) {
+  .time-keywords-vertical {
+    gap: 12px;
+  }
+  
+  .time-vertical-btn {
+    padding: 14px 16px;
+    min-height: 50px;
+    border-radius: 16px;
+    gap: 12px;
+  }
+  
+  .time-icon {
+    font-size: 16px;
+  }
+  
+  .time-text {
+    font-size: 13px;
+  }
+  
+  .time-header .section-title {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 375px) {
+  .time-vertical-btn {
+    padding: 12px 14px;
+    min-height: 46px;
+    gap: 10px;
+  }
+  
+  .time-text {
+    font-size: 12px;
+  }
+  
+  .time-icon {
+    font-size: 15px;
+  }
+}
+
+/* 화이트 테마용 스타일 */
+.time-based-keywords.white-theme {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  animation: containerFadeIn 0.6s ease-out forwards;
+}
+
+.time-based-keywords.white-theme .time-vertical-btn {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  min-height: 56px;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.04),
+    0 1px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.time-based-keywords.white-theme .time-vertical-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(154, 120, 219, 0.2);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 8px 24px rgba(154, 120, 219, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.time-based-keywords.white-theme .time-vertical-btn:active {
+  transform: scale(0.96) translateY(-1px);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.time-based-keywords.white-theme .time-text {
+  color: var(--text-primary, #1f1f1f);
+  text-shadow: none;
+}
+
+/* 화이트 테마 - 시간대별 색상 */
+
+/* 🌅 아침 (화이트 테마) */
+.time-based-keywords.white-theme[data-time-slot="morning"] .time-vertical-btn {
+  background: linear-gradient(135deg, rgba(255, 184, 0, 0.08) 0%, rgba(255, 140, 0, 0.08) 100%);
+  border: 1px solid rgba(255, 184, 0, 0.2);
+  box-shadow: 
+    0 4px 16px rgba(255, 184, 0, 0.1),
+    0 1px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.time-based-keywords.white-theme[data-time-slot="morning"] .time-vertical-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 184, 0, 0.15) 0%, rgba(255, 140, 0, 0.15) 100%);
+  border-color: rgba(255, 184, 0, 0.3);
+  box-shadow: 
+    0 8px 24px rgba(255, 184, 0, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* ☀️ 점심 (화이트 테마) */
+.time-based-keywords.white-theme[data-time-slot="afternoon"] .time-vertical-btn {
+  background: linear-gradient(135deg, rgba(0, 180, 219, 0.08) 0%, rgba(0, 131, 176, 0.08) 100%);
+  border: 1px solid rgba(0, 180, 219, 0.2);
+  box-shadow: 
+    0 4px 16px rgba(0, 180, 219, 0.1),
+    0 1px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.time-based-keywords.white-theme[data-time-slot="afternoon"] .time-vertical-btn:hover {
+  background: linear-gradient(135deg, rgba(0, 180, 219, 0.15) 0%, rgba(0, 131, 176, 0.15) 100%);
+  border-color: rgba(0, 180, 219, 0.3);
+  box-shadow: 
+    0 8px 24px rgba(0, 180, 219, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* 🌆 저녁 (화이트 테마) */
+.time-based-keywords.white-theme[data-time-slot="evening"] .time-vertical-btn {
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.08) 0%, rgba(238, 90, 36, 0.08) 100%);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  box-shadow: 
+    0 4px 16px rgba(255, 107, 107, 0.1),
+    0 1px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.time-based-keywords.white-theme[data-time-slot="evening"] .time-vertical-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.15) 0%, rgba(238, 90, 36, 0.15) 100%);
+  border-color: rgba(255, 107, 107, 0.3);
+  box-shadow: 
+    0 8px 24px rgba(255, 107, 107, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* 🌙 밤 (화이트 테마) */
+.time-based-keywords.white-theme[data-time-slot="night"] .time-vertical-btn {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  box-shadow: 
+    0 4px 16px rgba(102, 126, 234, 0.1),
+    0 1px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.time-based-keywords.white-theme[data-time-slot="night"] .time-vertical-btn:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow: 
+    0 8px 24px rgba(102, 126, 234, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+} 

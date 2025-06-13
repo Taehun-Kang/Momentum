@@ -1,0 +1,477 @@
+@import url('../styles/variables.css');
+
+/**
+ * 📱 MyPage - 마이페이지 스타일
+ * 
+ * 기존 컴포넌트들을 활용한 깔끔한 레이아웃
+ */
+
+/* ========== 페이지 컨테이너 ========== */
+.mypage {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  background: var(--bg-gradient-main, linear-gradient(135deg, 
+    rgba(154, 120, 219, 0.1) 0%, 
+    rgba(196, 181, 253, 0.05) 50%, 
+    rgba(255, 255, 255, 0.1) 100%
+  ));
+  color: var(--text-primary, #1f1f1f);
+  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  overflow-x: hidden;
+  animation: mypagePageFadeIn 0.6s ease-out forwards;
+}
+
+/* 페이지 진입 애니메이션 */
+@keyframes mypagePageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mypage-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  position: relative;
+}
+
+
+
+/* ========== 헤더 컨테이너 ========== */
+#header-container {
+  flex-shrink: 0;
+  width: 100%;
+  z-index: 10;
+}
+
+/* ========== 메인 콘텐츠 영역 ========== */
+.mypage-main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 20px 104px 20px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+/* ========== 공통 섹션 스타일 ========== */
+.mypage-section {
+  position: relative;
+  width: 100%;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: sectionFadeIn 0.6s ease-out forwards;
+}
+
+.mypage-section:nth-child(1) { animation-delay: 0.1s; }
+.mypage-section:nth-child(2) { animation-delay: 0.2s; }
+.mypage-section:nth-child(3) { animation-delay: 0.3s; }
+.mypage-section:nth-child(4) { animation-delay: 0.4s; }
+.mypage-section:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes sectionFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========== 섹션 헤더 ========== */
+.section-header {
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary, #1f1f1f);
+  margin-bottom: 0;
+  line-height: 1.3;
+}
+
+
+
+/* ========== 차트 섹션 ========== */
+.chart-container {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.chart-container .section-header {
+  margin-bottom: 0;
+}
+
+.chart-container .section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary, #1f1f1f);
+  margin-bottom: 0;
+  line-height: 1.3;
+}
+
+.chart-info {
+  font-size: 14px;
+  color: var(--text-secondary, #666);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.chart-info strong {
+  color: var(--text-primary, #1f1f1f);
+  font-weight: 600;
+}
+
+#weekly-chart {
+  flex: 1;
+  width: 100%;
+  min-height: 180px;
+}
+
+.chart-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.summary-text {
+  font-size: 14px;
+  color: var(--text-secondary, #666);
+  font-weight: 500;
+}
+
+.summary-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary-color, #9a78db);
+}
+
+/* ========== 비디오 히스토리 컨테이너 ========== */
+.video-history-container {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.video-history-container .section-header {
+  margin-bottom: 0;
+}
+
+.section-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.section-text {
+  flex: 1;
+}
+
+.video-history-container .section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary, #1f1f1f);
+  margin-bottom: 0;
+  line-height: 1.3;
+}
+
+.view-more-link {
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary, #666);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+
+.view-more-link:hover {
+  background: rgba(102, 102, 102, 0.1);
+  color: var(--text-primary, #1f1f1f);
+}
+
+.view-more-link:active {
+  transform: scale(0.95);
+}
+
+/* ========== 비디오 그리드 (가로 스크롤) ========== */
+.video-grid {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  flex-wrap: nowrap;
+}
+
+.video-grid::-webkit-scrollbar {
+  display: none;
+}
+
+.video-card-container {
+  flex: 0 0 auto;
+}
+
+
+
+/* ========== 로그아웃 섹션 ========== */
+.logout-section {
+  text-align: center;
+  padding: 24px 0;
+}
+
+.logout-btn {
+  background: rgba(255, 107, 107, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 16px;
+  padding: 16px 24px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ff6b6b;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 auto 12px auto;
+  min-width: 160px;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 107, 107, 0.15);
+  border-color: rgba(255, 107, 107, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.2);
+}
+
+.logout-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.logout-icon {
+  font-size: 18px;
+}
+
+.logout-info {
+  font-size: 13px;
+  color: var(--text-secondary, #666);
+  opacity: 0.7;
+  line-height: 1.4;
+}
+
+/* ========== 다크 테마 ========== */
+[data-theme="dark"] .mypage {
+  background: linear-gradient(135deg, 
+    rgba(154, 120, 219, 0.15) 0%, 
+    rgba(28, 28, 30, 0.8) 50%, 
+    rgba(0, 0, 0, 0.9) 100%
+  );
+  color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .chart-info {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="dark"] .chart-info strong {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .chart-container {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .chart-container .section-title {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="dark"] .video-history-container {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .video-history-container .section-title {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="dark"] .view-more-link {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="dark"] .view-more-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .section-title {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="dark"] .summary-text {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+
+
+[data-theme="dark"] .logout-info {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ========== 반응형 디자인 ========== */
+@media (max-width: 430px) {
+  .mypage-main-content {
+    gap: 14px;
+    padding: 6px 16px 100px 16px;
+  }
+  
+  .video-grid {
+    gap: 10px;
+    padding: 6px 0;
+  }
+  
+  .video-card-container {
+    /* VideoCard 컴포넌트가 자체 크기 관리 */
+  }
+}
+
+@media (max-width: 375px) {
+  .mypage-main-content {
+    gap: 12px;
+    padding: 4px 14px 96px 14px;
+  }
+  
+  .chart-container {
+    padding: 16px;
+    border-radius: 16px;
+  }
+  
+  .section-title {
+    font-size: 16px;
+  }
+  
+  .video-grid {
+    gap: 8px;
+  }
+  
+  .view-more-link {
+    font-size: 13px;
+    padding: 3px 6px;
+  }
+  
+  .video-card-container {
+    /* VideoCard 컴포넌트가 자체 크기 관리 */
+  }
+  
+
+  
+  .logout-btn {
+    padding: 14px 20px;
+    font-size: 15px;
+  }
+}
+
+/* ========== 가로 모드 대응 ========== */
+@media (orientation: landscape) and (max-height: 500px) {
+  .mypage-main-content {
+    gap: 8px;
+    padding: 4px 16px 84px 16px;
+  }
+  
+  .video-grid {
+    gap: 12px;
+  }
+  
+  .video-card-container {
+    /* VideoCard 컴포넌트가 자체 크기 관리 */
+  }
+}
+
+/* ========== 접근성 ========== */
+@media (prefers-reduced-motion: reduce) {
+  .mypage,
+  .mypage-section,
+  .logout-btn,
+  .view-more-link {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  .mypage {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ========== 터치 디바이스 최적화 ========== */
+@media (hover: none) and (pointer: coarse) {
+  .logout-btn:hover {
+    transform: none;
+  }
+  
+  .logout-btn:active {
+    transform: scale(0.95);
+  }
+  
+  .view-more-link:hover {
+    background: none;
+  }
+  
+  .view-more-link:active {
+    transform: scale(0.95);
+  }
+} 
