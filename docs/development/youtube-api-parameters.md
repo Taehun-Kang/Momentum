@@ -4,10 +4,11 @@
 
 ## 📊 API 할당량 정보
 
-| 엔드포인트  | 할당량 비용 | 일일 할당량 기준 최대 호출 |
-| ----------- | ----------- | -------------------------- |
-| search.list | 100 units   | 100회                      |
-| videos.list | 1 unit      | 10,000회                   |
+| 엔드포인트    | 할당량 비용 | 일일 할당량 기준 최대 호출 |
+| ------------- | ----------- | -------------------------- |
+| search.list   | 100 units   | 100회                      |
+| videos.list   | 1 unit      | 10,000회                   |
+| channels.list | 1 unit      | 10,000회                   |
 
 **일일 할당량**: 10,000 units
 
@@ -364,7 +365,195 @@ GET https://www.googleapis.com/youtube/v3/videos
 }
 ```
 
-## 3. 프로젝트 활용 전략
+## 3. channels.list API
+
+> 채널의 상세 정보를 가져옵니다. 채널 아이콘(썸네일)과 메타데이터 조회에 사용됩니다.
+
+### 🔗 엔드포인트
+
+```
+GET https://www.googleapis.com/youtube/v3/channels
+```
+
+### ✅ 필수 매개변수
+
+| 매개변수 | 타입   | 설명                           | 예시                                |
+| -------- | ------ | ------------------------------ | ----------------------------------- |
+| **part** | string | 포함할 리소스 속성 (쉼표 구분) | `snippet,statistics,contentDetails` |
+| **key**  | string | API 키                         | `YOUR_API_KEY`                      |
+
+### 🔍 필터 (최소 1개 필수)
+
+| 매개변수        | 타입   | 설명                      | 예시                |
+| --------------- | ------ | ------------------------- | ------------------- |
+| **id**          | string | 채널 ID (쉼표로 여러 개)  | `UCxxxxxx,UCyyyyyy` |
+| **forUsername** | string | 사용자명으로 채널 검색    | `username`          |
+| **managedByMe** | bool   | 내가 관리하는 채널 (인증) | `true`              |
+| **mine**        | bool   | 내 채널 (인증 필요)       | `true`              |
+
+### 📋 선택적 매개변수
+
+| 매개변수                   | 타입    | 설명                | 예시     |
+| -------------------------- | ------- | ------------------- | -------- |
+| **hl**                     | string  | 텍스트 값의 언어    | `ko`     |
+| **maxResults**             | integer | 최대 결과 수 (0-50) | `50`     |
+| **onBehalfOfContentOwner** | string  | 콘텐츠 소유자 ID    | -        |
+| **pageToken**              | string  | 페이지 토큰         | `CAUQAA` |
+
+### 🧩 part 매개변수 상세
+
+| Part                    | 설명                        | 할당량 비용 | 포함 정보                         |
+| ----------------------- | --------------------------- | ----------- | --------------------------------- |
+| **snippet**             | 제목, 설명, 썸네일, 국가 등 | +2          | 제목, 설명, **채널 아이콘**, 국가 |
+| **contentDetails**      | 연관 재생목록               | +2          | 업로드, 좋아요, 즐겨찾기 목록     |
+| **statistics**          | 통계 정보                   | +2          | 구독자 수, 조회수, 영상 수        |
+| **topicDetails**        | 주제 정보                   | +2          | Freebase 주제 ID                  |
+| **status**              | 상태 정보                   | +2          | 공개 상태, 연결 상태              |
+| **brandingSettings**    | 브랜딩 설정                 | +2          | 채널 키워드, 배경색 등            |
+| **auditDetails**        | 감사 정보 (소유자만)        | +2          | 커뮤니티 가이드라인 상태          |
+| **contentOwnerDetails** | 콘텐츠 소유자 정보          | +2          | 소유자 ID, 연결 시간              |
+| **localizations**       | 현지화 정보                 | +2          | 다국어 제목/설명                  |
+
+### 💡 채널 아이콘 조회를 위한 최적 설정
+
+```javascript
+const channelParams = {
+  part: "snippet,statistics", // 아이콘 + 기본 통계
+  id: "UCxxxxxx,UCyyyyyy", // 여러 채널 ID 동시 조회
+  hl: "ko", // 한국어 현지화
+};
+
+// 비용: 1 (기본) + 2 (snippet) + 2 (statistics) = 5 units
+```
+
+### 📋 channels.list 응답 구조
+
+```json
+{
+  "kind": "youtube#channelListResponse",
+  "etag": "etag",
+  "nextPageToken": "CAUQAA",
+  "prevPageToken": "CBQQAQ",
+  "pageInfo": {
+    "totalResults": 2,
+    "resultsPerPage": 50
+  },
+  "items": [
+    {
+      "kind": "youtube#channel",
+      "etag": "etag",
+      "id": "UCxxxxxx",
+      "snippet": {
+        "title": "채널명",
+        "description": "채널 설명 (최대 1,000자)",
+        "customUrl": "@channelname",
+        "publishedAt": "2020-01-01T00:00:00Z",
+        "thumbnails": {
+          "default": { "url": "https://...", "width": 88, "height": 88 },
+          "medium": { "url": "https://...", "width": 240, "height": 240 },
+          "high": { "url": "https://...", "width": 800, "height": 800 }
+        },
+        "defaultLanguage": "ko",
+        "localized": {
+          "title": "현지화된 채널명",
+          "description": "현지화된 채널 설명"
+        },
+        "country": "KR"
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "likes": "PLxxxxxx", // 좋아요 재생목록
+          "favorites": "PLyyyyyy", // 즐겨찾기 재생목록
+          "uploads": "UUzzzzzz" // 업로드 재생목록 (UC → UU)
+        }
+      },
+      "statistics": {
+        "viewCount": "12345678", // 총 조회수
+        "subscriberCount": "123456", // 구독자 수 (3자리로 반올림)
+        "hiddenSubscriberCount": false, // 구독자 수 숨김 여부
+        "videoCount": "1234" // 영상 수
+      },
+      "topicDetails": {
+        "topicIds": ["/m/04rlf", "/m/02mscn"],
+        "topicCategories": [
+          "https://en.wikipedia.org/wiki/Music",
+          "https://en.wikipedia.org/wiki/Entertainment"
+        ]
+      },
+      "status": {
+        "privacyStatus": "public", // 공개 상태
+        "isLinked": true, // Google 계정 연결 여부
+        "longUploadsStatus": "allowed", // 긴 영상 업로드 상태
+        "madeForKids": false, // 아동용 콘텐츠 여부
+        "selfDeclaredMadeForKids": false
+      },
+      "brandingSettings": {
+        "channel": {
+          "title": "채널명",
+          "description": "채널 설명",
+          "keywords": "키워드1 키워드2",
+          "trackingAnalyticsAccountId": "UA-xxxxxxx-x",
+          "unsubscribedTrailer": "dQw4w9WgXcQ", // 미구독자용 트레일러
+          "defaultLanguage": "ko",
+          "country": "KR"
+        },
+        "watch": {
+          "textColor": "#000000", // 텍스트 색상
+          "backgroundColor": "#ffffff", // 배경 색상
+          "featuredPlaylistId": "PLxxxxxx" // 추천 재생목록
+        }
+      },
+      "auditDetails": {
+        "overallGoodStanding": true, // 전체 상태 양호
+        "communityGuidelinesGoodStanding": true, // 커뮤니티 가이드라인 준수
+        "copyrightStrikesGoodStanding": true, // 저작권 신고 상태 양호
+        "contentIdClaimsGoodStanding": true // 소유권 주장 상태 양호
+      },
+      "contentOwnerDetails": {
+        "contentOwner": "xxxxxxxxx", // 콘텐츠 소유자 ID
+        "timeLinked": "2020-01-01T00:00:00Z" // 연결 시간
+      },
+      "localizations": {
+        "ko": {
+          "title": "한국어 채널명",
+          "description": "한국어 채널 설명"
+        },
+        "en": {
+          "title": "English Channel Name",
+          "description": "English Channel Description"
+        }
+      }
+    }
+  ]
+}
+```
+
+### 🎯 채널 아이콘 추출 예시
+
+```javascript
+// 채널 ID들로부터 아이콘 정보 추출
+async function getChannelIcons(channelIds) {
+  const response = await youtube.channels.list({
+    part: "snippet",
+    id: channelIds.join(","),
+    hl: "ko",
+  });
+
+  return response.data.items.map((channel) => ({
+    channelId: channel.id,
+    channelTitle: channel.snippet.title,
+    channelIcon:
+      channel.snippet.thumbnails.high?.url ||
+      channel.snippet.thumbnails.medium?.url ||
+      channel.snippet.thumbnails.default?.url,
+    customUrl: channel.snippet.customUrl,
+    subscriberCount: channel.statistics?.subscriberCount,
+    videoCount: channel.statistics?.videoCount,
+  }));
+}
+```
+
+## 4. 프로젝트 활용 전략
 
 ### 🎯 YouTube Shorts 필터링 워크플로우
 
@@ -408,7 +597,7 @@ async function filterTrueShorts(videoIds) {
 }
 ```
 
-## 4. 에러 처리
+## 5. 에러 처리
 
 ### 🚨 search.list 에러
 
@@ -431,7 +620,7 @@ async function filterTrueShorts(videoIds) {
 | 403       | forbidden         | 접근 권한 없음      | 공개 영상인지 확인           |
 | 404       | videoNotFound     | 영상을 찾을 수 없음 | 삭제되거나 비공개 영상       |
 
-## 5. 카테고리 ID 참조
+## 6. 카테고리 ID 참조
 
 | ID  | 카테고리           | 영어명               | Shorts 관련도 |
 | --- | ------------------ | -------------------- | ------------- |
@@ -450,7 +639,7 @@ async function filterTrueShorts(videoIds) {
 | 27  | 교육               | Education            | ⭐⭐⭐        |
 | 28  | 과학 기술          | Science & Technology | ⭐⭐⭐        |
 
-## 6. ISO 8601 Duration 파싱
+## 7. ISO 8601 Duration 파싱
 
 ```javascript
 // YouTube API의 duration 형식 파싱

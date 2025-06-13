@@ -22,7 +22,7 @@ class VideoCompleteFilter {
   /**
    * 📊 통합 필터링 메인 함수
    */
-  async filterAndAnalyzeVideos(videoIds, criteria = {}) {
+  async filterAndAnalyzeVideos(videoIds, searchItems = null, criteria = {}) {
     if (!videoIds || videoIds.length === 0) {
       return this.getEmptyResult();
     }
@@ -47,8 +47,12 @@ class VideoCompleteFilter {
       // 통합 필터링 실행
       const filterResults = this.executeIntegratedFiltering(detailedVideos, filterCriteria);
       
-      // 최종 처리
-      const finalVideos = this.finalizeResults(filterResults.validVideos, filterCriteria);
+      // 최종 처리 (search.list 정보 병합)
+      const finalVideos = this.finalizeResults(
+        filterResults.validVideos, 
+        filterCriteria, 
+        searchItems // 🎯 search.list items 전달
+      );
 
       console.log(`✅ 통합 필터링 완료: ${finalVideos.length}/${videoIds.length}개`);
 
@@ -210,33 +214,150 @@ class VideoCompleteFilter {
   }
 
   /**
-   * 🔧 최종 결과 처리
+   * 🔧 최종 결과 처리 - search.list와 videos.list 데이터 병합
    */
-  finalizeResults(videos, criteria) {
+  finalizeResults(videos, criteria, searchItems) {
     // 정렬
     const sortedVideos = this.sortVideos(videos, criteria.sortBy);
     
     // 최대 결과 수 제한
     const finalVideos = sortedVideos.slice(0, criteria.maxResults);
 
-    // 데이터 정제
-    return finalVideos.map(video => ({
-      id: video.id,
-      title: video.snippet?.title || 'No Title',
-      channelTitle: video.snippet?.channelTitle || 'Unknown Channel',
-      channelId: video.snippet?.channelId,
-      publishedAt: video.snippet?.publishedAt,
-      duration: this.parseISO8601Duration(video.contentDetails?.duration),
-      viewCount: parseInt(video.statistics?.viewCount) || 0,
-      likeCount: parseInt(video.statistics?.likeCount) || 0,
-      commentCount: parseInt(video.statistics?.commentCount) || 0,
-      engagement: this.calculateEngagementRate(video),
-      isPlayable: true,
-      quality: {
-        embeddable: video.status?.embeddable || false,
-        processed: video.status?.uploadStatus === 'processed'
-      }
-    }));
+    // 🎯 search.list items를 Map으로 변환 (빠른 검색)
+    const searchMap = new Map();
+    if (searchItems && Array.isArray(searchItems)) {
+      searchItems.forEach(item => {
+        if (item.id?.videoId) {
+          searchMap.set(item.id.videoId, item);
+        }
+      });
+    }
+
+    // 🎯 완전한 데이터 병합
+    return finalVideos.map(video => {
+      const searchData = searchMap.get(video.id);
+      
+      return {
+        // 📋 기본 정보 (videos.list 우선)
+        id: video.id,
+        title: video.snippet?.title || searchData?.snippet?.title || 'No Title',
+        description: searchData?.snippet?.description || video.snippet?.description || '', // search.list 우선!
+        
+        // 🖼️ 썸네일 정보 (search.list에서, 필수!)
+        thumbnails: searchData?.snippet?.thumbnails || video.snippet?.thumbnails || {
+          default: { url: '', width: 120, height: 90 },
+          medium: { url: '', width: 320, height: 180 },
+          high: { url: '', width: 480, height: 360 }
+        },
+        
+        // 📺 채널 정보
+        channelTitle: video.snippet?.channelTitle || searchData?.snippet?.channelTitle || 'Unknown Channel',
+        channelId: video.snippet?.channelId || searchData?.snippet?.channelId || '',
+        
+        // 📅 날짜 정보
+        publishedAt: video.snippet?.publishedAt || searchData?.snippet?.publishedAt || '',
+        
+        // ⏱️ 영상 상세 정보 (videos.list에서)
+        duration: this.parseISO8601Duration(video.contentDetails?.duration),
+        durationFormatted: this.formatDuration(this.parseISO8601Duration(video.contentDetails?.duration)),
+        
+        // 📊 통계 정보 (videos.list에서)
+        viewCount: parseInt(video.statistics?.viewCount) || 0,
+        likeCount: parseInt(video.statistics?.likeCount) || 0,
+        commentCount: parseInt(video.statistics?.commentCount) || 0,
+        engagement: this.calculateEngagementRate(video),
+        engagementFormatted: (this.calculateEngagementRate(video) * 100).toFixed(2) + '%',
+        
+        // 🎯 재생 가능성 정보
+        isPlayable: true, // 필터링을 통과했으므로 재생 가능
+        quality: {
+          embeddable: video.status?.embeddable || false,
+          processed: video.status?.uploadStatus === 'processed',
+          definition: video.contentDetails?.definition || 'sd',
+          caption: video.contentDetails?.caption === 'true'
+        },
+        
+        // 🏷️ 메타데이터 (videos.list에서)
+        tags: video.snippet?.tags || [],
+        categoryId: video.snippet?.categoryId || '',
+        defaultLanguage: video.snippet?.defaultLanguage || '',
+        
+        // 🌍 지역 제한 정보
+        regionRestriction: video.contentDetails?.regionRestriction || null,
+        
+        // 🔗 URL 정보
+        url: `https://www.youtube.com/watch?v=${video.id}`,
+        shortUrl: `https://youtu.be/${video.id}`,
+        embedUrl: `https://www.youtube.com/embed/${video.id}`,
+        
+        // 📱 프론트엔드 최적화 정보
+        thumbnail: searchData?.snippet?.thumbnails?.medium?.url || 
+                   searchData?.snippet?.thumbnails?.high?.url || 
+                   searchData?.snippet?.thumbnails?.default?.url || '',
+        
+        // 🎨 추가 UI 정보
+        shortDescription: this.truncateDescription(
+          searchData?.snippet?.description || video.snippet?.description || '', 
+          100
+        ),
+        
+        // 📊 품질 등급
+        qualityGrade: this.calculateQualityGrade(video),
+        
+        // 🕐 데이터 생성 시간
+        processedAt: new Date().toISOString(),
+        
+        // 🔍 검색 관련 메타데이터
+        searchRelevance: searchData ? 'high' : 'medium', // search.list에서 온 경우 높은 관련성
+        
+        // 🎯 디버깅 정보 (개발용)
+        _debug: {
+          hasSearchData: !!searchData,
+          hasVideoData: !!video,
+          apiSources: {
+            search: !!searchData,
+            videos: !!video
+          }
+        }
+      };
+    });
+  }
+
+  /**
+   * 🕐 시간 포맷팅 (59초 → "59초", 90초 → "1분 30초")
+   */
+  formatDuration(totalSeconds) {
+    if (totalSeconds < 60) {
+      return `${totalSeconds}초`;
+    } else {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return seconds > 0 ? `${minutes}분 ${seconds}초` : `${minutes}분`;
+    }
+  }
+
+  /**
+   * ✂️ 설명 요약 (100자 제한)
+   */
+  truncateDescription(description, maxLength = 100) {
+    if (!description || description.length <= maxLength) {
+      return description;
+    }
+    return description.substring(0, maxLength) + '...';
+  }
+
+  /**
+   * 🏆 품질 등급 계산 (A+, A, B+, B, C)
+   */
+  calculateQualityGrade(video) {
+    const engagement = this.calculateEngagementRate(video);
+    const viewCount = parseInt(video.statistics?.viewCount) || 0;
+    
+    if (engagement >= 0.05 && viewCount >= 100000) return 'A+';
+    if (engagement >= 0.03 && viewCount >= 50000) return 'A';
+    if (engagement >= 0.02 && viewCount >= 20000) return 'B+';
+    if (engagement >= 0.01 && viewCount >= 10000) return 'B';
+    return 'C';
   }
 
   /**
@@ -342,17 +463,17 @@ function createVideoFilter() {
 /**
  * 📊 통합 필터링 (편의 함수)
  */
-export async function filterAndAnalyzeVideos(videoIds, criteria = {}) {
+export async function filterAndAnalyzeVideos(videoIds, searchItems = null, criteria = {}) {
   const filter = createVideoFilter();
-  return await filter.filterAndAnalyzeVideos(videoIds, criteria);
+  return await filter.filterAndAnalyzeVideos(videoIds, searchItems, criteria);
 }
 
 /**
  * 🔍 빠른 필터링 (편의 함수)
  */
-export async function quickFilterVideos(videoIds, options = {}) {
+export async function quickFilterVideos(videoIds, searchItems = null, options = {}) {
   const filter = createVideoFilter();
-  const result = await filter.filterAndAnalyzeVideos(videoIds, {
+  const result = await filter.filterAndAnalyzeVideos(videoIds, searchItems, {
     minViewCount: options.minViewCount || 1000,
     minEngagementRate: options.minEngagementRate || 0.01,
     maxResults: options.maxResults || 20,

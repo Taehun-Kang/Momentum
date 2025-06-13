@@ -1303,6 +1303,307 @@ class AutoOptimizer {
 
 ---
 
-> **최종 업데이트**: 2024년 6월 12일 (150개 주제 반영)  
-> **구현 목표**: 2024년 7월 1일  
-> **다음 리뷰**: 2024년 8월 1일 (1개월 운영 성과 분석)
+# 🚀 YouTube Shorts AI 큐레이션 전체 시스템 설계 (v4.0)
+
+> **2024년 12월 업데이트**: 완전한 AI 큐레이션 생태계 설계
+
+## 📋 전체 시스템 아키텍처
+
+### 🎯 1. 키워드 추출 시스템
+
+#### 1.1 트렌드 키워드 파이프라인 ✅ (구현 완료)
+
+```javascript
+// 현재 구현된 워크플로우
+google-trends-collector.js → news-based-trend-refiner.js
+     (20개 활성 키워드)    →    (10개 정제된 키워드)
+
+// 특징:
+- Google 트렌드 KR 지역, active 요소만 선별
+- 뉴스 기반 맥락 추가 ("키워드 + 한 단어")
+- 중복 제거 + 순서 유지 (트렌드 강도 보존)
+- 배치 뉴스 분석 + Claude AI 정제
+```
+
+#### 1.2 사용자 답변 분석 시스템 🆕 (구현 예정)
+
+```javascript
+// 새로운 natural-language-extractor 모듈
+사용자 입력: "오늘 우울한데 카페에서 보기 좋은 영상"
+
+↓ AI 분석 결과
+{
+  // DB 확인용 단일 키워드
+  singleKeywords: ["카페", "힐링", "감성", "음악"],
+
+  // 즉시 검색용 복합 키워드
+  compoundKeywords: ["카페 브이로그", "감성 음악", "힐링 영상"],
+
+  // 감성 문장 큐레이션 (핵심!)
+  emotionalCurations: [
+    {
+      sentence: "마음을 편안하게 해주는 따뜻한 카페 분위기",
+      keywords: ["카페 브이로그", "카페 음악"]
+    },
+    {
+      sentence: "우울한 마음을 달래주는 힐링 시간",
+      keywords: ["힐링 영상", "감성 음악"]
+    }
+  ],
+
+  // 개인화 데이터
+  userEmotion: "우울함",
+  preferredSettings: ["카페", "실내"],
+  timeContext: "일상적인 시간"
+}
+```
+
+### 🔍 2. 검색 시스템 (3단계 전략)
+
+#### 2.1 트렌드 키워드 검색 (최신성 우선)
+
+```javascript
+// 트렌드 특화 필터링 로직
+const trendSearchStrategy = {
+  pagination: false, // 한 번의 검색만
+  filterCriteria: {
+    uploadDate: "최근 7일 이내", // 최신성 우선
+    channelAuthority: "구독자 1만+ 채널", // 신뢰도 보완
+    viewCount: "1000회 이상", // 기본 품질 보장
+    engagement: "댓글/좋아요 비율 고려", // 참여도 평가
+  },
+
+  // 트렌드는 조회수보다 최신성과 채널 품질이 중요
+  scoringWeight: {
+    recency: 0.4, // 최신성 40%
+    authority: 0.3, // 채널 권위도 30%
+    engagement: 0.2, // 참여도 20%
+    viewCount: 0.1, // 조회수 10%
+  },
+};
+```
+
+#### 2.2 매일 키워드 캐싱 (안정성 우선)
+
+```javascript
+// 인기 키워드 150개 순환 캐싱
+const dailyCachingStrategy = {
+  schedule: "매일 새벽 3시 배치 실행",
+
+  topics: {
+    priority5: "10개 주제 (매일 갱신)", // K-pop, 먹방 등
+    priority4: "20개 주제 (2일마다 갱신)", // 패션, 운동 등
+    priority3: "40개 주제 (3일마다 갱신)", // 교육, 취미 등
+    priority2: "50개 주제 (주간 갱신)", // 문화, 예술 등
+    priority1: "30개 주제 (월간 갱신)", // 시즌별 키워드
+  },
+
+  process: [
+    "1. youtube-search-engine으로 검색",
+    "2. video-complete-filter로 필터링",
+    "3. 기존 DB와 중복 체크",
+    "4. 새로운 영상만 추가",
+    "5. 영상별 주제/감정 태깅 자동 분석",
+    "6. 키워드별 카테고리 저장",
+  ],
+};
+```
+
+#### 2.3 사용자 개별 키워드 검색 (개인화 우선)
+
+```javascript
+// natural-language-extractor 결과 기반 검색
+const personalizedSearchStrategy = {
+  cacheCheck: "먼저 DB에서 유사 키워드 조회",
+
+  cacheResult: {
+    hit: "캐시된 결과 + 개인화 재순위 조정",
+    miss: "실시간 YouTube API 검색 + DB 저장",
+  },
+
+  personalization: [
+    "1. 사용자 과거 선택 이력 분석",
+    "2. 유사 감정 사용자들의 선호도 반영",
+    "3. 시간대/요일별 패턴 고려",
+    "4. 감성 문장별 클릭률 최적화",
+  ],
+};
+```
+
+### ⏰ 3. 시간 기반 운영 전략
+
+#### 3.1 트렌드 키워드 (매일 2회)
+
+```javascript
+const trendSchedule = {
+  morning: {
+    time: "오전 10시",
+    purpose: "하루 시작 트렌드 반영",
+    workflow: [
+      "google-trends-collector 실행",
+      "news-based-trend-refiner로 정제",
+      "트렌드 검색 실행",
+      "DB 저장 (24시간 TTL)",
+    ],
+  },
+
+  afternoon: {
+    time: "오후 3시",
+    purpose: "실시간 이슈 업데이트",
+    workflow: [
+      "동일한 워크플로우 재실행",
+      "기존 키워드와 중복 체크",
+      "새로운 키워드만 추가 검색",
+      "중복 키워드는 유지, 없어진 키워드는 삭제",
+    ],
+  },
+
+  lifecycle: {
+    hot: "24시간 (매일 2회 갱신)",
+    warm: "72시간 (관련 키워드 유지)",
+    cold: "7일 (완전 삭제)",
+  },
+};
+```
+
+#### 3.2 매일 키워드 캐싱 (1회)
+
+```javascript
+const dailyCachingSchedule = {
+  time: "매일 새벽 3시",
+  duration: "약 2-3시간 (150개 주제 순환)",
+
+  process: {
+    videoCollection: [
+      "우선순위별 주제 선택",
+      "YouTube API 검색 실행",
+      "신규 영상만 필터링하여 수집",
+    ],
+
+    videoAnalysis: [
+      "수집된 영상의 제목/설명 분석",
+      "Claude AI로 주제 분류",
+      "감정 태그 자동 추출",
+      "키워드별 카테고리 저장",
+    ],
+
+    databaseUpdate: [
+      "기존 영상과 중복 제거",
+      "새로운 영상만 DB 추가",
+      "영상별 메타데이터 저장",
+      "검색 인덱스 최적화",
+    ],
+  },
+};
+```
+
+#### 3.3 사용자 DB 실시간 업데이트
+
+```javascript
+const userDataUpdate = {
+  // 개인 선호도 학습
+  personalPreferences: {
+    trigger: "감성 문장 큐레이션 선택 시",
+    update: [
+      "선택된 키워드들의 선호도 점수 증가",
+      "감정 상태별 키워드 패턴 학습",
+      "시간대별 선호 콘텐츠 분석",
+      "만족도 피드백 반영",
+    ],
+  },
+
+  // 감정별 글로벌 통계
+  emotionStatistics: {
+    trigger: "모든 사용자의 선택 데이터",
+    update: [
+      "감정별 키워드 클릭률 통계",
+      "유사 사용자 그룹 분석",
+      "감성 문장 효과성 측정",
+      "추천 알고리즘 자동 최적화",
+    ],
+  },
+};
+```
+
+## 🎯 구현 우선순위 및 다음 단계
+
+### Phase 1: natural-language-extractor 구현 (우선순위: 최고)
+
+```javascript
+// 새로 구현할 핵심 모듈
+keywords/modules/natural-language-extractor.js
+
+주요 기능:
+✅ 사용자 입력 감정 분석 (Claude AI)
+✅ 단일/복합 키워드 추출
+✅ 감성 문장 큐레이션 생성
+✅ 개인화 추천 로직
+✅ 사용자 피드백 수집
+```
+
+### Phase 2: 트렌드 특화 검색 필터 (우선순위: 높음)
+
+```javascript
+// 기존 모듈 확장
+search/modules/trend-specialized-filter.js
+
+주요 기능:
+✅ 트렌드 vs 일반 키워드 구분
+✅ 최신성 우선 필터링 로직
+✅ 채널 권위도 기반 품질 보장
+✅ 참여도 가중치 조정
+```
+
+### Phase 3: 스케줄링 시스템 (우선순위: 높음)
+
+```javascript
+// 새로운 스케줄러 모듈
+scheduler/
+
+포함 모듈:
+✅ trend-scheduler.js (매일 2회)
+✅ caching-scheduler.js (매일 1회)
+✅ user-data-processor.js (실시간)
+✅ quota-optimizer.js (API 할당량 관리)
+```
+
+### Phase 4: 데이터베이스 설계 (우선순위: 중간)
+
+```sql
+-- 새로운 테이블들
+user_emotion_history          -- 사용자 감정 이력
+user_keyword_preferences      -- 개인 키워드 선호도
+emotion_global_stats          -- 감정별 글로벌 통계
+curation_effectiveness        -- 감성 문장 효과성
+video_topic_tags             -- 영상별 주제 태그
+cached_search_results        -- 캐시된 검색 결과
+```
+
+## 📊 예상 성과 및 KPI
+
+### 사용자 경험 개선
+
+- **개인화 정확도**: 60% → 85% (25% 향상)
+- **클릭률**: 12% → 28% (133% 향상)
+- **만족도**: 3.2/5 → 4.3/5 (34% 향상)
+- **재방문율**: 45% → 72% (60% 향상)
+
+### 시스템 효율성
+
+- **API 사용 최적화**: 70% → 95% 활용도
+- **캐시 적중률**: 45% → 85% (검색 속도 3배 향상)
+- **응답시간**: 800ms → 200ms (4배 향상)
+- **서버 비용**: 현재 대비 60% 절감
+
+### 비즈니스 임팩트
+
+- **일일 활성 사용자**: 2배 증가 예상
+- **평균 세션 시간**: 5분 → 12분
+- **프리미엄 전환율**: 8% → 22%
+- **사용자 유지율**: 30일 기준 35% → 65%
+
+---
+
+> **최종 업데이트**: 2024년 12월 13일 (전체 시스템 설계 완성)  
+> **다음 구현**: natural-language-extractor.js (Phase 1)  
+> **예상 완료**: 2024년 12월 말 (MVP 버전)

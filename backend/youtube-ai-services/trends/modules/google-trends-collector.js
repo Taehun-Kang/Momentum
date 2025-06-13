@@ -368,7 +368,99 @@ export default GoogleTrendsCollector;
  */
 
 /**
- * 📈 모든 Google Trends 수집 (메인 함수)
+ * 🇰🇷 한국 활성화 트렌드 키워드 수집 (메인 함수)
+ * - 한국(KR) 지역만 대상
+ * - 활성화된 키워드(active: true)만 반환
+ * - YouTube Shorts 검색에 최적화
+ */
+export async function getActiveKoreanTrends(options = {}) {
+  console.log('🇰🇷 한국 활성화 트렌드 수집 시작...');
+  
+  const { 
+    maxKeywords = 50,     // 최대 키워드 수
+    includeMetadata = true,
+    timeout = 10000,
+    noCache = false       // 실시간 강제 호출 여부
+  } = options;
+  
+  try {
+    const collector = new GoogleTrendsCollector();
+    
+    // 한국 지역 실시간 트렌딩 수집
+    const trendingData = await collector.collectTrendingNow('KR', { 
+      timeout, 
+      noCache 
+    });
+    
+    console.log(`📊 수집된 한국 트렌드: ${trendingData.length}개`);
+    
+    // 활성화된 키워드만 필터링
+    const activeTrends = trendingData.filter(trend => trend.isActive === true);
+    
+    console.log(`✅ 활성화된 키워드: ${activeTrends.length}개`);
+    
+    // 최대 개수로 제한 (Google 원본 순서 유지)
+    const limitedTrends = activeTrends.slice(0, maxKeywords);
+    
+    // 키워드만 추출한 배열 (단순 사용용)
+    const keywordsOnly = limitedTrends.map(trend => trend.keyword);
+    
+    const result = {
+      success: true,
+      keywords: keywordsOnly,                    // 🎯 키워드 배열 (단순 사용)
+      trends: limitedTrends,                     // 📊 완전한 트렌드 정보
+      summary: {
+        totalCollected: trendingData.length,
+        activeCount: activeTrends.length,
+        finalCount: limitedTrends.length,
+        region: 'KR',
+        timestamp: new Date().toISOString()
+      }
+    };
+    
+    // 메타데이터 포함 여부
+    if (includeMetadata) {
+      result.metadata = {
+        collectionTime: Date.now(),
+        source: 'google_trending_now',
+        filterCriteria: {
+          region: 'KR',
+          activeOnly: true,
+          maxKeywords
+        }
+      };
+    }
+    
+    // 결과 출력
+    console.log('\n🎯 ===== 한국 활성화 키워드 =====');
+    keywordsOnly.forEach((keyword, index) => {
+      console.log(`${String(index + 1).padStart(3, ' ')}. ${keyword}`);
+    });
+    console.log('===== 한국 활성화 키워드 끝 =====\n');
+    
+    return result;
+    
+  } catch (error) {
+    console.error('❌ 한국 활성화 트렌드 수집 실패:', error.message);
+    
+    return {
+      success: false,
+      keywords: [],
+      trends: [],
+      error: error.message,
+      summary: {
+        totalCollected: 0,
+        activeCount: 0,
+        finalCount: 0,
+        region: 'KR',
+        timestamp: new Date().toISOString()
+      }
+    };
+  }
+}
+
+/**
+ * 📈 모든 Google Trends 수집 (기존 함수)
  */
 export async function collectAllGoogleTrends(options = {}) {
   const collector = new GoogleTrendsCollector();

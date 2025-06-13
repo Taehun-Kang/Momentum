@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Momentum - AI 큐레이션 YouTube Shorts 서비스 백엔드 by Wave Team",
   "main": "server.js",
+  "type": "module",
   "homepage": "https://github.com/wave-team/momentum",
   "repository": {
     "type": "git",

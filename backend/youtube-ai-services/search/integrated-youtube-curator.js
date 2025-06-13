@@ -116,6 +116,7 @@ class IntegratedYouTubeCurator {
    */
   async runSearchWorkflow(keyword, options = {}) {
     let allVideos = [];
+    let allSearchItems = []; // 🎯 모든 페이지의 search.list items 축적
     let currentPage = 1;
     let nextPageToken = null;
     let totalSearched = 0;
@@ -145,8 +146,15 @@ class IntegratedYouTubeCurator {
       totalSearched += searchResult.count;
       totalApiCost += searchResult.apiCost;
       
-      // 2단계: 필터링 (기준 전달)
-      const filterResult = await this.executeFiltering(searchResult.videoIds, filterCriteria);
+      // 🎯 search.list items 축적
+      allSearchItems.push(...searchResult.searchItems);
+      
+      // 2단계: 필터링 (검색 데이터와 함께 전달)
+      const filterResult = await this.executeFiltering(
+        searchResult.videoIds, 
+        searchResult.searchItems, // 🎯 현재 페이지의 search items 전달
+        filterCriteria
+      );
       if (!filterResult.success) {
         break;
       }
@@ -185,6 +193,7 @@ class IntegratedYouTubeCurator {
     return {
       success: allVideos.length > 0,
       videos: allVideos,
+      searchItems: allSearchItems, // 🎯 모든 search items 포함
       summary: {
         totalSearched,
         totalFiltered: allVideos.length,
@@ -226,6 +235,7 @@ class IntegratedYouTubeCurator {
       return {
         success: true,
         videoIds,
+        searchItems: response.data.items,
         count: videoIds.length,
         nextPageToken: response.data.nextPageToken,
         apiCost: 100 // search.list 비용
@@ -240,11 +250,11 @@ class IntegratedYouTubeCurator {
   /**
    * 🎬 2단계: 필터링 실행
    */
-  async executeFiltering(videoIds, filterCriteria = {}) {
+  async executeFiltering(videoIds, searchItems, filterCriteria = {}) {
     try {
       console.log(`🎬 필터링 시작: ${videoIds.length}개 영상`);
       
-      const filterResult = await this.videoFilter.filterAndAnalyzeVideos(videoIds, filterCriteria);
+      const filterResult = await this.videoFilter.filterAndAnalyzeVideos(videoIds, searchItems, filterCriteria);
       
       if (!filterResult.success) {
         console.log('❌ 필터링 실패');
