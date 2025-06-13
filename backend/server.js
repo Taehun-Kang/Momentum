@@ -13,6 +13,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import trendRoutes from './routes/trendRoutes.js';
 import llmRoutes from './routes/llmRoutes.js';
+import searchRoutes from './routes/searchRoutes.js';
 
 dotenv.config();
 
@@ -98,6 +99,7 @@ app.get('/', (req, res) => {
     endpoints: {
       trends: '/api/v1/trends',
       llm: '/api/v1/llm',
+      search: '/api/v1/search',
       health: '/health'
     },
     features: [
@@ -107,6 +109,10 @@ app.get('/', (req, res) => {
       '🎯 개인화 감성 분석 API (신규)',
       '🗣️ 자연어 감정 분석 및 키워드 추출',
       '💬 AI 감성 문장 큐레이션',
+      '🔍 매일 키워드 갱신 서비스 (신규)',
+      '🤖 AI 기반 영상 분류 및 태깅',
+      '⚡ 실시간 키워드 검색 서비스 (신규)',
+      '🔍 사용자 요청 즉시 처리',
       '⚡ Railway 배포 최적화'
     ]
   });
@@ -156,6 +162,14 @@ console.log('🔍 llmRoutes stack length:', llmRoutes.stack?.length || 'undefine
 
 app.use('/api/v1/llm', llmRoutes);
 console.log('🎯 LLM 감성 분석 API 라우트 등록 완료');
+
+// 🔍 Search API Routes - 매일 키워드 갱신 서비스!
+console.log('🔄 Search 라우트 등록 시작...');
+console.log('🔍 searchRoutes type:', typeof searchRoutes);
+console.log('🔍 searchRoutes stack length:', searchRoutes.stack?.length || 'undefined');
+
+app.use('/api/v1/search', searchRoutes);
+console.log('🔍 Search API 라우트 등록 완료');
 
 // 🧪 간단한 테스트 라우트 추가
 app.get('/api/test', (req, res) => {
@@ -300,7 +314,21 @@ app.use('*', (req, res) => {
       'POST /api/v1/llm/track-click',
       'GET /api/v1/llm/stats',
       'GET /api/v1/llm/health',
-      'POST /api/v1/llm/test'
+      'POST /api/v1/llm/test',
+      'POST /api/v1/search/daily-update',
+      'GET /api/v1/search/daily-update/progress',
+      'POST /api/v1/search/test-keyword',
+      'POST /api/v1/search/batch-keywords',
+      'GET /api/v1/search/daily-update/stats',
+      'POST /api/v1/search/retry-classifications',
+      'GET /api/v1/search/failed-videos',
+      'POST /api/v1/search/reprocess-videos',
+      'POST /api/v1/search/cleanup-failed',
+      'POST /api/v1/search/realtime',
+      'GET /api/v1/search/realtime/session',
+      'GET /api/v1/search/realtime/failed-videos',
+      'POST /api/v1/search/quick',
+      'GET /api/v1/search/health'
     ]
   });
 });
@@ -398,6 +426,10 @@ function startServer() {
   console.log('  🎯 개인화 감성 분석 API (신규)');
   console.log('  🗣️ 자연어 감정 분석 및 키워드 추출');
   console.log('  💬 AI 감성 문장 큐레이션');
+  console.log('  🔍 매일 키워드 갱신 서비스 (신규)');
+  console.log('  🤖 AI 기반 영상 분류 및 태깅');
+  console.log('  ⚡ 실시간 키워드 검색 서비스 (신규)');
+  console.log('  🔍 사용자 요청 즉시 처리');
   console.log('');
   console.log('📡 주요 엔드포인트:');
   console.log(`  🔥 Trend Videos: GET ${HOST}:${PORT}/api/v1/trends/videos`);
@@ -407,6 +439,16 @@ function startServer() {
   console.log(`  🎯 Emotion Analysis: POST ${HOST}:${PORT}/api/v1/llm/analyze`);
   console.log(`  💬 Quick Keywords: POST ${HOST}:${PORT}/api/v1/llm/quick-keywords`);
   console.log(`  🔍 Click Tracking: POST ${HOST}:${PORT}/api/v1/llm/track-click`);
+  console.log(`  🔄 Daily Update: POST ${HOST}:${PORT}/api/v1/search/daily-update`);
+  console.log(`  📊 Update Progress: GET ${HOST}:${PORT}/api/v1/search/daily-update/progress`);
+  console.log(`  🧪 Test Keyword: POST ${HOST}:${PORT}/api/v1/search/test-keyword`);
+  console.log(`  🔄 Retry Classifications: POST ${HOST}:${PORT}/api/v1/search/retry-classifications`);
+  console.log(`  📋 Failed Videos: GET ${HOST}:${PORT}/api/v1/search/failed-videos`);
+  console.log(`  🎯 Reprocess Videos: POST ${HOST}:${PORT}/api/v1/search/reprocess-videos`);
+  console.log(`  🧹 Cleanup Failed: POST ${HOST}:${PORT}/api/v1/search/cleanup-failed`);
+  console.log(`  🔍 Realtime Search: POST ${HOST}:${PORT}/api/v1/search/realtime`);
+  console.log(`  📊 Realtime Session: GET ${HOST}:${PORT}/api/v1/search/realtime/session`);
+  console.log(`  ⚡ Quick Search: POST ${HOST}:${PORT}/api/v1/search/quick`);
   console.log(`  ❤️ Health Check: GET ${HOST}:${PORT}/health`);
   console.log('');
   
@@ -438,6 +480,25 @@ function startServer() {
   console.log(`    -H "Content-Type: application/json" \\`);
   console.log(`    -d '{"userInput":"퇴근하고 와서 피곤해","inputType":"emotion"}'`);
   console.log(`  curl -X GET ${HOST}:${PORT}/api/v1/llm/health`);
+  console.log('');
+  console.log('🔍 새로운 검색 서비스 API 테스트:');
+  console.log(`  curl -X GET ${HOST}:${PORT}/api/v1/search/health`);
+  console.log(`  curl -X POST ${HOST}:${PORT}/api/v1/search/test-keyword \\`);
+  console.log(`    -H "Content-Type: application/json" \\`);
+  console.log(`    -d '{"keyword":"먹방","category":"음식","min_view_count":50000}'`);
+  console.log(`  curl -X GET ${HOST}:${PORT}/api/v1/search/daily-update/progress`);
+  console.log('');
+  console.log('🔄 분류 실패 영상 재처리 API 테스트:');
+  console.log(`  curl -X GET ${HOST}:${PORT}/api/v1/search/failed-videos`);
+  console.log(`  curl -X POST ${HOST}:${PORT}/api/v1/search/retry-classifications \\`);
+  console.log(`    -H "Content-Type: application/json" \\`);
+  console.log(`    -d '{"maxRetries":3}'`);
+  console.log('');
+  console.log('🔍 새로운 실시간 검색 API 테스트:');
+  console.log(`  curl -X POST ${HOST}:${PORT}/api/v1/search/quick \\`);
+  console.log(`    -H "Content-Type: application/json" \\`);
+  console.log(`    -d '{"keyword":"유튜브쇼츠","category":"엔터테인먼트"}'`);
+  console.log(`  curl -X GET ${HOST}:${PORT}/api/v1/search/realtime/session`);
   console.log('');
     console.log('🚀 ================================ 🚀');
   });
