@@ -1,14 +1,16 @@
 /**
- * 🗣️ 개인화 큐레이션 자연어 키워드 추출기 v3.0
+ * 🗣️ 개인화 큐레이션 자연어 키워드 추출기 v3.2
  * 
- * 7단계 개인화 큐레이션 워크플로우:
+ * 간소화된 3단계 개인화 큐레이션 워크플로우 + DB 연동:
  * 1. 🔍 사용자 입력 분석 (감정/상태 분석)
- * 2. 👤 사용자 개인 선호 분석 (DB 기반 히스토리)
- * 3. 👥 유사 사용자 선호 분석 (감정별 통계 DB)
- * 4. 🏷️ 단일 키워드 추출 (최대한 다양하게)
- * 5. 🎯 복합 검색어 추출 (2단어 조합)
- * 6. 💬 감성 문장 큐레이션 생성 ("오늘 하루를 잔잔하게 마무리하고 싶다면...")
- * 7. 📊 사용자 선택 데이터 피드백 (선호도 업데이트)
+ * 2. 🏷️ 개인화 단일 키워드 추출 (입력 중심 70% + 개인 선호 20% + 유사 사용자 10%)
+ * 3. 🎯 추천 검색어 + 감성 문장 생성 (4개 문장, 관련 키워드 포함)
+ * 
+ * ✨ v3.2 핵심 개선:
+ * - 복잡한 2,3단계 제거로 간소화
+ * - 사용자 입력 분석 결과 최우선 (70% 비중)
+ * - 검색어별 관련 키워드 제공 (DB 저장용)
+ * - 감성 문장 4개로 확장하여 선택지 다양화
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -31,7 +33,8 @@ class NaturalLanguageExtractor {
     this.stats = {
       totalExtractions: 0,
       successfulExtractions: 0,
-      averageProcessingTime: 0
+      averageProcessingTime: 0,
+      dbAccessCount: 0
     };
   }
 
@@ -45,8 +48,80 @@ class NaturalLanguageExtractor {
     }
   }
 
-  async extractKeywords(userInput, inputType, maxKeywords = 5) {
-    console.log(`🗣️ 키워드 추출: "${userInput}" (타입: ${inputType})`);
+  /**
+   * 📊 사용자 개인 선호 키워드 조회 (DB 연동)
+   */
+  async getUserPreferences(userId) {
+    console.log(`👤 사용자 선호 키워드 조회: ${userId}`);
+    this.stats.dbAccessCount++;
+    
+    try {
+      // 🚧 실제 DB 구현 예정 - 현재는 Mock 데이터 (간소화됨)
+      const mockUserPreferences = {
+        userId: userId,
+        preferredKeywords: [
+          { keyword: "ASMR", score: 0.95 },
+          { keyword: "힐링", score: 0.89 },
+          { keyword: "피아노", score: 0.76 },
+          { keyword: "자연", score: 0.68 },
+          { keyword: "음악", score: 0.62 }
+        ],
+        lastUpdated: new Date().toISOString()
+      };
+
+      console.log(`   ✅ 개인 선호 키워드 로드: ${mockUserPreferences.preferredKeywords.length}개`);
+      return mockUserPreferences;
+    } catch (error) {
+      console.error(`   ❌ 사용자 선호 조회 실패: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * 👥 유사 감정 사용자들의 선호 키워드 조회 (감정별 통계 DB)
+   */
+  async getSimilarEmotionPreferences(emotion) {
+    console.log(`👥 유사 감정 선호 조회: ${emotion}`);
+    this.stats.dbAccessCount++;
+
+    try {
+      // 🚧 실제 DB 구현 예정 - 현재는 Mock 데이터 (간소화됨)
+      const mockEmotionPreferences = {
+        "피곤함": [
+          { keyword: "ASMR", score: 0.91 },
+          { keyword: "힐링", score: 0.87 },
+          { keyword: "수면", score: 0.82 },
+          { keyword: "피아노", score: 0.79 },
+          { keyword: "자연", score: 0.74 }
+        ],
+        "스트레스": [
+          { keyword: "명상", score: 0.94 },
+          { keyword: "자연", score: 0.88 },
+          { keyword: "백색소음", score: 0.85 },
+          { keyword: "운동", score: 0.79 },
+          { keyword: "요가", score: 0.72 }
+        ],
+        "기쁨": [
+          { keyword: "댄스", score: 0.95 },
+          { keyword: "케이팝", score: 0.92 },
+          { keyword: "예능", score: 0.88 },
+          { keyword: "뮤직비디오", score: 0.85 },
+          { keyword: "챌린지", score: 0.82 }
+        ]
+      };
+
+      const emotionKeywords = mockEmotionPreferences[emotion] || [];
+
+      console.log(`   ✅ 감정별 선호 키워드 로드: ${emotionKeywords.length}개`);
+      return emotionKeywords;
+    } catch (error) {
+      console.error(`   ❌ 감정별 선호 조회 실패: ${error.message}`);
+      return [];
+    }
+  }
+
+  async extractKeywords(userInput, inputType, maxKeywords = 5, userId = null) {
+    console.log(`🗣️ 키워드 추출: "${userInput}" (타입: ${inputType}, 사용자: ${userId})`);
     const startTime = Date.now();
 
     try {
@@ -59,16 +134,53 @@ class NaturalLanguageExtractor {
 
       console.log(`   🎯 선택된 타입: ${inputType}`);
 
-      // 타입별 키워드 추출 전략
-      let result = null;
+      // 🎯 **1단계: 사용자 입력 분석 (Claude로 정확한 감정/상태 파악)**
+      console.log(`   📊 1단계: 사용자 입력 분석 시작...`);
+      const initialAnalysis = await this.analyzeUserInput(userInput, inputType);
+      
+      if (!initialAnalysis) {
+        throw new Error('사용자 입력 분석 실패');
+      }
+      
+      console.log(`   ✅ 1단계 완료: 감정="${initialAnalysis.current_state}", 니즈="${initialAnalysis.emotional_need}"`);
+
+      // 🗃️ **2단계: 분석된 감정을 바탕으로 개인화 데이터 수집**
+      console.log(`   📚 2단계: 개인화 데이터 수집 시작...`);
+      let userPreferences = null;
+      let emotionPreferences = [];
+
+      if (userId) {
+        userPreferences = await this.getUserPreferences(userId);
+      }
+
+      // 정확한 감정 분석 결과를 바탕으로 유사 사용자 데이터 수집
+      if (inputType === 'emotion' && initialAnalysis.current_state) {
+        emotionPreferences = await this.getSimilarEmotionPreferences(initialAnalysis.current_state);
+      }
+      
+      console.log(`   ✅ 2단계 완료: 개인 선호 ${userPreferences ? userPreferences.preferredKeywords.length : 0}개, 감정별 선호 ${emotionPreferences.length}개`);
+
+      // 🎨 **3단계: 종합적 키워드 생성 및 감성 문장 큐레이션**
+      console.log(`   🎨 3단계: 키워드 생성 및 감성 문장 큐레이션 시작...`);
+      let finalResult = null;
+      
       if (this.anthropic) {
-        result = await this.claudeExtractWithType(userInput, inputType, maxKeywords);
+        finalResult = await this.generateKeywordsAndCurations(
+          userInput, 
+          inputType, 
+          maxKeywords, 
+          initialAnalysis, 
+          userPreferences, 
+          emotionPreferences
+        );
       }
 
       // 폴백 처리 (Claude 실패 시)
-      if (!result) {
-        result = this.simpleFallback(userInput, maxKeywords);
+      if (!finalResult) {
+        finalResult = this.simpleFallback(userInput, maxKeywords, userPreferences, emotionPreferences);
       }
+
+      console.log(`   ✅ 3단계 완료: 키워드 ${Object.keys(finalResult.step4SingleKeywords || {}).length}개, 감성 문장 ${finalResult.step6EmotionalCuration?.length || 0}개`);
 
       const processingTime = Date.now() - startTime;
       this.updateStats(true, processingTime);
@@ -76,44 +188,51 @@ class NaturalLanguageExtractor {
       return {
         success: true,
         inputType: inputType,
-        originalInput: userInput, // 🎯 사용자 원본 입력
+        originalInput: userInput,
+        userId: userId,
         
-        // 🎯 v3.0 7단계 워크플로우 구조
-        step1UserAnalysis: result.step1UserAnalysis,           // 사용자 입력 분석
-        step4SingleKeywords: result.step4SingleKeywords,       // 단일 키워드 (개인화용)
-        step5CompoundSearch: result.step5CompoundSearch,       // 복합 검색어 (실시간 검색용)
-        step6EmotionalCuration: result.step6EmotionalCuration, // 감성 문장 큐레이션 ⭐ 핵심!
+        // 🎯 v3.2 3단계 워크플로우 구조
+        step1UserAnalysis: finalResult.step1UserAnalysis || initialAnalysis,           
+        step2PersonalPreferences: finalResult.step2PersonalPreferences,
+        step3SimilarUsers: finalResult.step3SimilarUsers,
+        step4SingleKeywords: finalResult.step4SingleKeywords,       
+        step5CompoundSearch: finalResult.step5CompoundSearch,      
+        step6EmotionalCuration: finalResult.step6EmotionalCuration, 
         
-        // 🔄 v2.0 호환성 유지 (기존 모듈 연동용)
-        directSearch: result.directSearch,        // step5와 동일
-        basicKeywords: result.basicKeywords,      // step4와 동일
-        userAnalysis: result.userAnalysis,        // step1과 동일
+        // 🔄 v2.0 호환성 유지
+        directSearch: finalResult.directSearch,        
+        basicKeywords: finalResult.basicKeywords,      
+        userAnalysis: finalResult.userAnalysis,        
         
         // 📊 캐싱 및 개인화 메타데이터
-        cacheCategories: result.cacheCategories,              // 카테고리별 캐싱 전략
-        emotionalCurations: result.emotionalCurations,        // 감성 큐레이션 데이터
+        cacheCategories: finalResult.cacheCategories,              
+        emotionalCurations: finalResult.emotionalCurations,        
         
         // 🎯 피드백 및 학습 데이터 (향후 DB 업데이트용)
         feedbackData: {
-          userEmotion: result.step1UserAnalysis?.current_state,
-          recommendedCurations: result.step6EmotionalCuration?.map(c => c.sentence) || [],
-          suggestedKeywords: Object.keys(result.step4SingleKeywords || {}),
+          userEmotion: initialAnalysis.current_state,
+          recommendedCurations: finalResult.step6EmotionalCuration?.map(c => c.sentence) || [],
+          suggestedKeywords: Object.keys(finalResult.step4SingleKeywords || {}),
+          personalizedScore: finalResult.personalizationScore || 0.5,
+          dbDataUsed: {
+            userPreferences: !!userPreferences,
+            emotionPreferences: emotionPreferences.length > 0
+          },
           timestamp: new Date().toISOString(),
-          // 사용자 선택 시 업데이트될 필드들
-          selectedCuration: null,        // 사용자가 선택한 감성 문장
-          selectedKeywords: [],          // 사용자가 선택한 키워드들
-          interactionTime: null,         // 선택까지 걸린 시간
-          satisfactionScore: null        // 만족도 평가 (1-5)
+          selectedCuration: null,        
+          selectedKeywords: [],          
+          interactionTime: null,         
+          satisfactionScore: null        
         },
         
         // 🔄 기존 호환성 유지
-        expansionTerms: result.expansionTerms,
-        keywords: result.keywords,
+        expansionTerms: finalResult.expansionTerms,
+        keywords: finalResult.keywords,
         
-        analysis: result.analysis,
-        confidence: result.confidence || 0.8,
+        analysis: finalResult.analysis,
+        confidence: finalResult.confidence || 0.8,
         processingTime,
-        version: '3.0'
+        version: '3.2'
       };
 
     } catch (error) {
@@ -129,141 +248,170 @@ class NaturalLanguageExtractor {
   }
 
   /**
-   * 🤖 타입별 Claude API 호출
+   * 📊 1단계: 사용자 입력 분석 (Claude로 정확한 감정/상태 파악)
    */
-  async claudeExtractWithType(input, inputType, maxKeywords) {
+  async analyzeUserInput(userInput, inputType) {
+    console.log(`   📊 사용자 입력 분석: "${userInput}" (${inputType})`);
+
+    if (!this.anthropic) {
+      console.warn(`   ⚠️ Claude API 없음, 기본 분석 사용`);
+      return {
+        current_state: this.predictEmotion(userInput),
+        emotional_need: 'general',
+        context: 'fallback_analysis'
+      };
+    }
+
     let prompt = '';
-
+    
     if (inputType === 'emotion') {
-      prompt = `🎯 v3.0 개인화 큐레이션 감정 분석 (7단계 워크플로우)
+      prompt = `🔍 사용자 감정/상태 분석
 
-사용자 입력: "${input}"
+사용자 입력: "${userInput}"
 
-**7단계 분석 워크플로우:**
+**분석 요청:**
+1. 현재 감정 상태 정확히 파악
+2. 감정적 니즈 분석
+3. 상황 맥락 파악
 
-1. 🔍 **사용자 입력 분석**
-   - 사용자 현재 감정/상태 정확히 파악
-   - 맥락 정보 (시간, 상황, 톤) 분석
-
-2. 👤 **사용자 개인 선호 분석** (주석: DB 연동 예정)
-   - 개인 히스토리 기반 선호 키워드 추출 예정
-   - 과거 선택 패턴 분석 예정
-
-3. 👥 **유사 사용자 선호 분석** (주석: 감정별 통계 DB 연동 예정)
-   - 동일 감정 상태 사용자들의 선호도 통계 활용 예정
-   - 클릭률 기반 키워드 순위 반영 예정
-
-4. 🏷️ **단일 키워드 추출**
-   - 최대한 다양한 단일 키워드 생성 (10개 이상)
-   - 점수 기반 우선순위 설정
-
-5. 🎯 **복합 검색어 추출**
-   - 정확히 2단어로 구성된 특화 검색어
-   - 프리미엄/실시간 검색용
-
-6. 💬 **감성 문장 큐레이션 생성** (핵심 신기능!)
-   - 사용자 감정에 맞는 감성적인 문장 2-3개 생성
-   - 각 문장에 어울리는 키워드 카테고리 매칭
-
-**예시 - "퇴근하고 와서 피곤해":**
-감성 문장들:
-- "오늘 하루를 잔잔하게 마무리하고 싶다면" → [힐링 피아노, 우중 캠핑]
-- "하루를 돌아보고 싶은 지금 나에게" → [다이어리 꾸미기, 감성 영상]
-
-응답 JSON 형식:
+**응답 JSON 형식:**
 {
-  "step1_user_analysis": {
-    "current_state": "피곤함",
-    "emotional_need": "휴식",
-    "context": "퇴근 후 저녁시간"
-  },
-  "step4_single_keywords": {
-    "힐링": 1.0, "편안": 0.9, "쉼": 0.8, "재즈": 0.7, "피아노": 0.6,
-    "ASMR": 0.5, "자연": 0.4, "명상": 0.3, "백색소음": 0.2, "캠핑": 0.1
-  },
-  "step5_compound_search": [
-    {"keyword": "우중 캠핑", "category": "힐링"},
-    {"keyword": "잔잔한 피아노", "category": "음악"},
-    {"keyword": "ASMR 영상", "category": "수면"}
-  ],
-  "step6_emotional_curation": [
-    {
-      "sentence": "오늘 하루를 잔잔하게 마무리하고 싶다면",
-      "keywords": ["힐링 피아노", "우중 캠핑"],
-      "emotion_match": 0.95
-    },
-    {
-      "sentence": "지친 마음을 달래주는 시간이 필요할 때",
-      "keywords": ["ASMR 영상", "자연 소리"],
-      "emotion_match": 0.90
-    }
-  ],
-  "overall_confidence": 0.89
+  "current_state": "감정명 (피곤함, 스트레스, 기쁨, 우울함, 불안 등)",
+  "emotional_need": "요구사항 (휴식, 즐거움, 위로, 자극 등)",
+  "context": "상황분석 (퇴근 후, 주말, 스트레스 상황 등)",
+  "intensity": "강도 (낮음/보통/높음)",
+  "confidence": 0.9
 }`;
+
     } else if (inputType === 'topic') {
-      prompt = `🎯 캐싱 최적화 주제 분석 및 개인화 키워드 추출
+      prompt = `🔍 사용자 주제/관심사 분석
 
-사용자 입력: "${input}"
+사용자 입력: "${userInput}"
 
-**분석 단계:**
-1. 🔍 주제 영역 및 사용자 관심사 분석
-2. 💡 개인화 추천 전략 (주석: 향후 사용자 DB 연동)
-   - 사용자 주제별 선호 히스토리 분석 예정
-   - 유사한 관심사를 가진 다른 사용자들 선호도 패턴 분석 예정
-   - 주제별 최신 트렌드 가중치 적용 예정
+**분석 요청:**
+1. 원하는 콘텐츠 주제 파악
+2. 관심 영역 분석
+3. 구체적 요구사항 파악
 
-**키워드 생성 요구사항:**
-- direct_search: **정확히 2단어**로만 구성 (캐싱 효율성)
-- basic_keywords: 점수 기반 **단일 키워드** 다양하게 (0.1~1.0)
-- similar_groups: 각 검색 키워드별 유사 캐싱 키워드들
-
-**예시 - "롤드컵 경기 하이라이트 보고 싶어":**
-- 분석: 게임(롤) 관심사, 경쟁적 콘텐츠 선호, 하이라이트 형태 선호
-- direct_search: ["롤드컵 하이라이트", "LCK 명경기", "게임 베스트"] (각각 롤드컵, LCK, 게임 카테고리 캐싱)
-- basic_keywords: {"게임": 1.0, "롤": 0.9, "하이라이트": 0.8, "경기": 0.7, "프로": 0.5}
-
-응답 JSON 형식:
+**응답 JSON 형식:**
 {
-  "user_analysis": {
-    "topic_category": "게임/음식/운동/공부/여행/음악 등",
-    "interest_level": "캐주얼/진지함/전문적 등",
-    "content_preference": "하이라이트/풀영상/튜토리얼/리뷰 등",
-    "trend_alignment": "최신트렌드/클래식/니치 등"
-  },
-  "direct_search": [
-    {
-      "keyword": "롤드컵 하이라이트",
-      "cache_category": "게임",
-      "similar_keywords": ["게임", "롤", "하이라이트", "경기"]
-    },
-    {
-      "keyword": "LCK 명경기",
-      "cache_category": "게임", 
-      "similar_keywords": ["LCK", "프로게임", "명경기", "리그"]
-    },
-    {
-      "keyword": "게임 베스트",
-      "cache_category": "게임",
-      "similar_keywords": ["게임", "베스트", "하이라이트", "모음"]
-    }
-  ],
-  "basic_keywords": {
-    "게임": 1.0,
-    "롤": 0.9,
-    "하이라이트": 0.8,
-    "경기": 0.7,
-    "LCK": 0.6,
-    "프로": 0.5,
-    "모음": 0.4
-  },
-  "overall_confidence": 0.91
+  "current_state": "주제명 (먹방, 음악, 게임, 요리 등)",
+  "emotional_need": "콘텐츠 니즈 (오락, 학습, 감상 등)",
+  "context": "상황분석 (저녁시간, 주말, 특별한 날 등)",
+  "topic_category": "카테고리 (음식, 엔터테인먼트, 교육 등)",
+  "confidence": 0.9
 }`;
     }
 
     try {
       const response = await this.anthropic.messages.create({
         model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 500,
+        max_tokens: 300,
+        messages: [{ role: 'user', content: prompt }]
+      });
+
+      const content = response.content[0].text;
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return parsed;
+      }
+    } catch (error) {
+      console.error('   ❌ Claude 분석 실패:', error.message);
+    }
+    
+    // 폴백: 기본 분석
+    return {
+      current_state: this.predictEmotion(userInput),
+      emotional_need: 'general',
+      context: 'basic_analysis'
+    };
+  }
+
+  /**
+   * 🎨 3단계: 종합적 키워드 생성 및 감성 문장 큐레이션
+   */
+  async generateKeywordsAndCurations(userInput, inputType, maxKeywords, userAnalysis, userPreferences, emotionPreferences) {
+    console.log(`   🎨 종합 키워드 생성: 감정="${userAnalysis.current_state}"`);
+
+    // 개인화 데이터 구성
+    const personalData = userPreferences ? `
+**🔹 사용자 개인 선호 키워드:**
+- ${userPreferences.preferredKeywords.map(k => `${k.keyword}(${k.score})`).join(', ')}` : '개인 데이터 없음';
+
+    const emotionData = emotionPreferences.length > 0 ? `
+**🔹 "${userAnalysis.current_state}" 감정 사용자들의 선호:**
+- ${emotionPreferences.map(k => `${k.keyword}(${k.score})`).join(', ')}` : '감정별 데이터 없음';
+
+    const prompt = `🎨 v3.2 종합 키워드 생성 및 감성 문장 큐레이션
+
+**1단계 분석 결과:**
+- 감정/상태: ${userAnalysis.current_state}
+- 니즈: ${userAnalysis.emotional_need}
+- 상황: ${userAnalysis.context}
+
+${personalData}
+
+${emotionData}
+
+**📋 핵심 원칙:**
+1. **사용자 입력 분석 결과 최우선** (70% 비중)
+2. 개인 선호 키워드 반영 (20% 비중)  
+3. 유사 감정 사용자 선호 반영 (10% 비중)
+4. 감정/주제 키워드 구분 없이 **최대한 다양하게**
+
+**응답 JSON 형식:**
+{
+  "step1_user_analysis": {
+    "current_state": "${userAnalysis.current_state}",
+    "emotional_need": "${userAnalysis.emotional_need}",
+    "context": "${userAnalysis.context}"
+  },
+  "step4_single_keywords": {
+    "키워드1": 0.95, "키워드2": 0.92, "키워드3": 0.88, "키워드4": 0.82,
+    "키워드5": 0.78, "키워드6": 0.74, "키워드7": 0.71, "키워드8": 0.65,
+    "키워드9": 0.58, "키워드10": 0.52
+  },
+  "step5_compound_search": [
+    {
+      "search_term": "2단어 활동/영상",
+      "related_keywords": ["관련키워드1", "관련키워드2", "관련키워드3", "관련키워드4"]
+    },
+    {
+      "search_term": "2단어 활동/영상",
+      "related_keywords": ["관련키워드1", "관련키워드2", "관련키워드3"]
+    }
+  ],
+  "step6_emotional_curation": [
+    {
+      "sentence": "감성적인 큐레이션 문장 1",
+      "keywords": ["키워드1", "키워드2"],
+      "emotion_match": 0.95
+    },
+    {
+      "sentence": "감성적인 큐레이션 문장 2",
+      "keywords": ["검색어1", "키워드3"],
+      "emotion_match": 0.91
+    },
+    {
+      "sentence": "감성적인 큐레이션 문장 3",
+      "keywords": ["키워드4", "키워드5"],
+      "emotion_match": 0.88
+    },
+    {
+      "sentence": "감성적인 큐레이션 문장 4",
+      "keywords": ["검색어2", "키워드6"],
+      "emotion_match": 0.85
+    }
+  ],
+  "overall_confidence": 0.91
+}`;
+
+    try {
+      const response = await this.anthropic.messages.create({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 800,
         messages: [{ role: 'user', content: prompt }]
       });
 
@@ -273,8 +421,8 @@ class NaturalLanguageExtractor {
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         
-        // 🎯 v3.0 7단계 워크플로우 구조 파싱
-        const step1Analysis = parsed.step1_user_analysis || {};
+        // 응답 파싱
+        const step1Analysis = parsed.step1_user_analysis || userAnalysis;
         const step4Keywords = parsed.step4_single_keywords || {};
         const step5Compounds = parsed.step5_compound_search || [];
         const step6Curation = parsed.step6_emotional_curation || [];
@@ -284,36 +432,43 @@ class NaturalLanguageExtractor {
         const cacheCategories = {};
         
         step5Compounds.forEach(item => {
-          if (typeof item === 'object' && item.keyword) {
-            compoundSearch.push(item.keyword);
-            cacheCategories[item.keyword] = item.category || 'general';
-          } else if (typeof item === 'string') {
-            compoundSearch.push(item);
-            cacheCategories[item] = 'general';
+          if (item.search_term) {
+            compoundSearch.push(item.search_term);
+            cacheCategories[item.search_term] = item.related_keywords || [];
           }
         });
         
-        // 기존 호환성을 위한 변환
+        // 개인화 데이터 구성
+        const mockStep2 = {
+          matched_keywords: userPreferences ? userPreferences.preferredKeywords.map(k => k.keyword).slice(0, 3) : [],
+          personalization_score: userPreferences ? 0.8 : 0.3
+        };
+        
+        const mockStep3 = {
+          popular_choices: emotionPreferences.map(k => k.keyword).slice(0, 3),
+          community_confidence: emotionPreferences.length > 0 ? 0.7 : 0.3
+        };
+        
         const expansionTerms = Object.keys(step4Keywords).slice(0, 5);
         const allKeywords = [...compoundSearch, ...expansionTerms];
         
         return {
-          // 🎯 v3.0 7단계 워크플로우 구조
-          step1UserAnalysis: step1Analysis,         // 사용자 입력 분석
-          step4SingleKeywords: step4Keywords,       // 단일 키워드 (점수 기반)
-          step5CompoundSearch: compoundSearch,      // 복합 검색어 (2단어)
-          step6EmotionalCuration: step6Curation,    // 감성 문장 큐레이션
+          step1UserAnalysis: step1Analysis,
+          step2PersonalPreferences: mockStep2,
+          step3SimilarUsers: mockStep3,
+          step4SingleKeywords: step4Keywords,
+          step5CompoundSearch: compoundSearch,
+          step6EmotionalCuration: step6Curation,
           
-          // 🔄 v2.0 호환성 유지 (기존 모듈과의 연동)
-          directSearch: compoundSearch,             // step5와 동일
-          basicKeywords: step4Keywords,             // step4와 동일
-          userAnalysis: step1Analysis,              // step1과 동일
+          directSearch: compoundSearch,
+          basicKeywords: step4Keywords,
+          userAnalysis: step1Analysis,
           
-          // 캐싱 및 개인화 메타데이터
-          cacheCategories: cacheCategories,         // 카테고리별 캐싱 전략
-          emotionalCurations: step6Curation,        // 감성 큐레이션 (핵심 신기능)
+          cacheCategories: cacheCategories,
+          emotionalCurations: step6Curation,
           
-          // 기존 호환성
+          personalizationScore: parsed.overall_confidence || 0.7,
+          
           expansionTerms: expansionTerms,
           keywords: allKeywords,
           
@@ -322,23 +477,49 @@ class NaturalLanguageExtractor {
             emotionalNeed: step1Analysis.emotional_need || null,
             context: step1Analysis.context || null,
             confidence: parsed.overall_confidence || 0.8,
-            userState: step1Analysis
+            userState: step1Analysis,
+            personalization: {
+              score: parsed.overall_confidence || 0.7,
+              personalMatch: mockStep2,
+              similarUsers: mockStep3
+            }
           },
           confidence: parsed.overall_confidence || 0.8
         };
       }
     } catch (error) {
-      console.error('Claude 추출 실패:', error.message);
+      console.error('   ❌ 키워드 생성 실패:', error.message);
     }
     
     return null;
   }
 
   /**
-   * 🔄 v2.0 캐싱 최적화 폴백 처리
+   * 🧠 기본 감정 예측 (간단한 키워드 매칭)
    */
-  simpleFallback(input, maxKeywords) {
-    console.log(`   🔄 v2.0 캐싱 최적화 폴백 처리`);
+  predictEmotion(input) {
+    const emotionKeywords = {
+      "피곤함": ["피곤", "지침", "힘들", "지쳐", "졸려", "피로"],
+      "스트레스": ["스트레스", "압박", "답답", "짜증", "막막", "부담"],
+      "우울함": ["우울", "슬프", "외로", "공허", "무기력", "허탈"],
+      "기쁨": ["기쁘", "즐겁", "행복", "신나", "좋아", "만족"],
+      "불안": ["불안", "걱정", "근심", "초조", "두려", "떨려"]
+    };
+
+    for (const [emotion, keywords] of Object.entries(emotionKeywords)) {
+      if (keywords.some(keyword => input.includes(keyword))) {
+        return emotion;
+      }
+    }
+
+    return "일반"; // 기본값
+  }
+
+  /**
+   * 🔄 개선된 폴백 처리 (DB 데이터 활용)
+   */
+  simpleFallback(input, maxKeywords, userPreferences, emotionPreferences) {
+    console.log(`   🔄 v3.1 개인화 폴백 처리 (DB 활용)`);
     
     // 입력에서 기본 키워드 추출
     const words = input
@@ -346,48 +527,85 @@ class NaturalLanguageExtractor {
       .split(/\s+/)
       .filter(w => w.length > 1);
 
-    // 🎯 2단어 조합 생성 (캐싱 최적화)
+    // 📊 개인 선호 키워드 우선 활용
     const directSearch = [];
-    if (words.length >= 2) {
-      // 2단어 조합들 생성
-      for (let i = 0; i < words.length - 1 && directSearch.length < 3; i++) {
-        directSearch.push(`${words[i]} ${words[i + 1]}`);
-      }
-    } else if (words.length === 1) {
-      // 단일 단어인 경우 기본 조합
-      directSearch.push(`${words[0]} 영상`);
+    const basicKeywords = {};
+
+    if (userPreferences && userPreferences.preferredKeywords.length > 0) {
+      // 개인 선호 키워드 기반 검색어 생성
+      const topPrefs = userPreferences.preferredKeywords.slice(0, 2);
+      topPrefs.forEach(pref => {
+        if (words.length > 0) {
+          directSearch.push(`${words[0]} ${pref.keyword}`);
+        } else {
+          directSearch.push(`${pref.keyword} 영상`);
+        }
+        basicKeywords[pref.keyword] = pref.score;
+      });
     }
 
-    // 📊 기본 키워드 점수 생성
-    const basicKeywords = {};
-    words.slice(0, 6).forEach((word, index) => {
-      basicKeywords[word] = Math.max(0.3, 1.0 - (index * 0.15));
+    // 감정별 선호 키워드 추가
+    if (emotionPreferences && emotionPreferences.length > 0) {
+      emotionPreferences.forEach(ek => {
+        if (!basicKeywords[ek.keyword]) {
+          basicKeywords[ek.keyword] = ek.score * 0.8; // 개인 선호보다 약간 낮은 점수
+        }
+      });
+    }
+
+    // 기본 단어들도 추가
+    words.slice(0, 4).forEach((word, index) => {
+      if (!basicKeywords[word]) {
+        basicKeywords[word] = Math.max(0.3, 0.7 - (index * 0.1));
+      }
     });
 
-    // 🔗 유사 그룹 기본 생성
-    const similarGroups = {};
-    directSearch.forEach(keyword => {
-      similarGroups[keyword] = {
-        category: 'general',
-        similar: words.slice(0, 3)
-      };
-    });
+    // 기본 2단어 조합 추가
+    if (directSearch.length === 0 && words.length >= 2) {
+      directSearch.push(`${words[0]} ${words[1]}`);
+    } else if (directSearch.length === 0 && words.length === 1) {
+      directSearch.push(`${words[0]} 영상`);
+    }
 
     // 기존 호환성
     const expansionTerms = Object.keys(basicKeywords).slice(0, 3);
 
     return {
-      // 🎯 v2.0 구조
-      directSearch: directSearch,           // ["음식 영상", "맛있는 요리"]
-      basicKeywords: basicKeywords,         // {"음식": 1.0, "맛있는": 0.85}
-      similarGroups: similarGroups,        // 유사 키워드 그룹
-      
-      // 📊 기본 분석
+      // 🎯 v3.2 간소화 구조
+      step1UserAnalysis: {
+        current_state: 'unknown',
+        emotional_need: 'general',
+        context: 'fallback'
+      },
+      step2PersonalPreferences: {
+        matched_keywords: userPreferences ? userPreferences.preferredKeywords.map(k => k.keyword).slice(0, 3) : [],
+        personalization_score: userPreferences ? 0.6 : 0.2
+      },
+      step3SimilarUsers: {
+        popular_choices: emotionPreferences.map(k => k.keyword).slice(0, 3),
+        community_confidence: emotionPreferences.length > 0 ? 0.7 : 0.3
+      },
+      step4SingleKeywords: basicKeywords,
+      step5CompoundSearch: directSearch,
+      step6EmotionalCuration: [
+        {
+          sentence: "지금 이 순간에 딱 맞는 영상을 찾아보세요",
+          keywords: directSearch.slice(0, 2),
+          emotion_match: 0.6
+        }
+      ],
+
+      // 🔄 v2.0 호환성
+      directSearch: directSearch,           
+      basicKeywords: basicKeywords,         
       userAnalysis: {
         current_state: 'unknown',
         emotional_need: 'general',
         predicted_preference: 'general'
       },
+      
+      // 📊 개인화 점수
+      personalizationScore: userPreferences ? 0.6 : 0.2,
       
       // 🔄 기존 호환성
       expansionTerms: expansionTerms,
@@ -395,7 +613,11 @@ class NaturalLanguageExtractor {
       analysis: {
         emotion: null,
         topic: null,
-        confidence: 0.6
+        confidence: 0.5,
+        personalization: {
+          score: userPreferences ? 0.6 : 0.2,
+          dataAvailable: !!userPreferences || !!emotionPreferences
+        }
       }
     };
   }
@@ -404,9 +626,8 @@ class NaturalLanguageExtractor {
    * 🚨 비상 폴백
    */
   emergencyFallback(input) {
-    // 매우 간단한 비상 폴백
     const words = input.split(/\s+/).filter(w => w.length > 1).slice(0, 3);
-    return words.length > 0 ? words : ['추천', '영상']; // 기본 키워드
+    return words.length > 0 ? words : ['추천', '영상'];
   }
 
   updateStats(success, time) {
@@ -420,7 +641,8 @@ class NaturalLanguageExtractor {
     return {
       ...this.stats,
       successRate: ((this.stats.successfulExtractions / this.stats.totalExtractions) * 100).toFixed(1) + '%',
-      claudeAvailable: !!this.anthropic
+      claudeAvailable: !!this.anthropic,
+      dbAccessRate: this.stats.dbAccessCount + ' accesses'
     };
   }
 }
@@ -429,18 +651,22 @@ class NaturalLanguageExtractor {
 const extractor = new NaturalLanguageExtractor();
 
 // 편의 함수들
-export async function extractKeywordsFromText(userInput, inputType, maxKeywords = 5) {
-  return await extractor.extractKeywords(userInput, inputType, maxKeywords);
+export async function extractKeywordsFromText(userInput, inputType, maxKeywords = 5, userId = null) {
+  return await extractor.extractKeywords(userInput, inputType, maxKeywords, userId);
 }
 
-export async function quickExtract(userInput, inputType) {
-  const result = await extractor.extractKeywords(userInput, inputType, 3);
+export async function quickExtract(userInput, inputType, userId = null) {
+  const result = await extractor.extractKeywords(userInput, inputType, 3, userId);
   return result.success ? {
-    // 🎯 v2.0 캐싱 최적화 구조
-    directSearch: result.directSearch,      // 2단어 검색용
-    basicKeywords: result.basicKeywords,    // 점수별 단일 키워드
-    similarGroups: result.similarGroups,   // 유사 키워드 그룹
-    userAnalysis: result.userAnalysis,     // 사용자 분석
+    // 🎯 v3.1 개인화 구조
+    directSearch: result.directSearch,      
+    basicKeywords: result.basicKeywords,    
+    userAnalysis: result.userAnalysis,     
+    personalization: {
+      score: result.feedbackData?.personalizedScore || 0.5,
+      personalPreferences: result.step2PersonalPreferences,
+      similarUsers: result.step3SimilarUsers
+    },
     
     // 🔄 기존 호환성
     expansionTerms: result.expansionTerms
@@ -448,8 +674,8 @@ export async function quickExtract(userInput, inputType) {
     directSearch: [], 
     expansionTerms: [],
     basicKeywords: {},
-    similarGroups: {},
-    userAnalysis: {}
+    userAnalysis: {},
+    personalization: { score: 0 }
   };
 }
 
@@ -460,11 +686,11 @@ export function getStats() {
 export default extractor;
 
 /**
- * 🎯 v3.0 사용 예시 및 7단계 개인화 큐레이션 전략
+ * 🎯 v3.2 사용 예시 및 간소화된 3단계 개인화 큐레이션
  * 
  * 입력: "퇴근하고 와서 피곤해"
  * 
- * 7단계 워크플로우 출력 구조:
+ * 3단계 워크플로우 출력 구조:
  * {
  *   // Step 1: 사용자 입력 분석
  *   step1UserAnalysis: {
@@ -473,58 +699,66 @@ export default extractor;
  *     context: "퇴근 후 저녁시간"
  *   },
  * 
- *   // Step 4: 단일 키워드 (개인화 추천용)
+ *   // Step 4: 개인화 단일 키워드 (입력 중심 70% + 개인 선호 20% + 유사 사용자 10%)
  *   step4SingleKeywords: {
- *     "힐링": 1.0, "편안": 0.9, "쉼": 0.8, "재즈": 0.7, "피아노": 0.6,
- *     "ASMR": 0.5, "자연": 0.4, "명상": 0.3, "백색소음": 0.2, "캠핑": 0.1
+ *     "힐링": 0.95, "피아노": 0.92, "재즈": 0.88, "쉼": 0.82, "자연": 0.78,
+ *     "음악": 0.74, "ASMR": 0.71, "여행": 0.65, "카페": 0.58, "로파이": 0.52
  *   },
  * 
- *   // Step 5: 복합 검색어 (프리미엄/실시간 검색용)
- *   step5CompoundSearch: ["우중 캠핑", "잔잔한 피아노", "ASMR 영상"],
+ *   // Step 5: 추천 검색어 + 관련 키워드 (DB 저장용)
+ *   step5CompoundSearch: ["우중 캠핑", "잔잔한 로파이", "여수 여행"],
+ *   cacheCategories: {
+ *     "우중 캠핑": ["캠핑", "여행", "잔잔함", "쉼"],
+ *     "잔잔한 로파이": ["로파이", "음악", "힐링", "집중"],
+ *     "여수 여행": ["여행", "바다", "힐링", "자연"]
+ *   },
  * 
- *   // Step 6: 감성 문장 큐레이션 ⭐ 핵심 신기능!
+ *   // Step 6: 감성 문장 큐레이션 ⭐ 4개 문장!
  *   step6EmotionalCuration: [
  *     {
- *       sentence: "오늘 하루를 잔잔하게 마무리하고 싶다면",
- *       keywords: ["힐링 피아노", "우중 캠핑"],
+ *       sentence: "하루의 피로를 자연스럽게 풀어내고 싶을 때",
+ *       keywords: ["힐링", "ASMR"],
  *       emotion_match: 0.95
  *     },
  *     {
+ *       sentence: "많은 분들이 이런 날 선택하는 마음의 쉼표",
+ *       keywords: ["우중 캠핑", "자연"],
+ *       emotion_match: 0.91
+ *     },
+ *     {
+ *       sentence: "오늘 하루를 잔잔하게 마무리하고 싶다면",
+ *       keywords: ["잔잔한 로파이", "피아노"],
+ *       emotion_match: 0.88
+ *     },
+ *     {
  *       sentence: "지친 마음을 달래주는 시간이 필요할 때",
- *       keywords: ["ASMR 영상", "자연 소리"],
- *       emotion_match: 0.90
+ *       keywords: ["여수 여행", "음악"],
+ *       emotion_match: 0.85
  *     }
- *   ],
- * 
- *   // Step 7: 피드백 데이터 (DB 업데이트용)
- *   feedbackData: {
- *     userEmotion: "피곤함",
- *     recommendedCurations: ["오늘 하루를 잔잔하게...", "지친 마음을 달래주는..."],
- *     selectedCuration: null,      // 사용자 선택 시 업데이트
- *     selectedKeywords: [],        // 사용자 선택 키워드
- *     interactionTime: null,       // 선택까지 걸린 시간
- *     satisfactionScore: null      // 만족도 (1-5)
- *   }
+ *   ]
  * }
  * 
- * 🚀 개인화 큐레이션 활용 전략:
+ * 🚀 v3.2 간소화 개선점:
  * 
- * 1. 🎭 감성 문장 제시: "오늘 하루를 잔잔하게 마무리하고 싶다면"
- *    → 사용자가 개인적인 큐레이션을 받는다고 느끼게 함
+ * 1. 🎯 **핵심 3단계로 집중**
+ *    - 복잡한 2,3단계 제거
+ *    - 사용자 입력 분석 결과가 가장 중요 (70% 비중)
  * 
- * 2. 🎯 카테고리별 추천: 각 문장 아래에 키워드 카테고리 표시
- *    → 힐링 피아노, 우중 캠핑 등
+ * 2. 🏷️ **다양한 키워드 추출**
+ *    - 감정/주제 구분 없이 최대한 다양하게
+ *    - 힐링, 피아노, 재즈, 쉼, 자연 등
  * 
- * 3. 📊 선택 데이터 학습: 사용자가 선택한 문장/키워드를 DB에 저장
- *    → 감정 상태별 선호도 통계 구축
+ * 3. 🔗 **검색어별 관련 키워드 제공**
+ *    - "우중 캠핑" → ["캠핑", "여행", "잔잔함", "쉼"]
+ *    - DB 저장 및 영상 검색 시 활용
  * 
- * 4. 👥 유사 사용자 분석: "피곤함" 감정의 다른 사용자들 선호도 반영
- *    → 클릭률 기반 키워드 순위 업데이트
+ * 4. 💬 **4개 감성 문장으로 확장**
+ *    - 더 다양한 선택지 제공
+ *    - 키워드를 자연스럽게 연결
  * 
- * 5. 🔄 실시간 개선: step5CompoundSearch로 새로운 콘텐츠 검색 및 캐싱
- *    → 프리미엄 유저 또는 캐시 미스 시 실행
- * 
- * 🎉 차별화 포인트:
- * - 기존: "힐링 영상" 키워드 나열 → 기계적
- * - v3.0: "오늘 하루를 잔잔하게 마무리하고 싶다면" → 감성적 개인화!
+ * 🎉 활용 시나리오:
+ * 1. 사용자가 감성 문장 클릭
+ * 2. 해당 문장의 키워드로 영상 검색
+ * 3. 관련 키워드들을 DB에 태깅하여 저장
+ * 4. 사용자 선호도 학습 및 업데이트
  */ 

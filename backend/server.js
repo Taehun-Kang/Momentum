@@ -12,6 +12,7 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import dotenv from 'dotenv';
 import trendRoutes from './routes/trendRoutes.js';
+import llmRoutes from './routes/llmRoutes.js';
 
 dotenv.config();
 
@@ -90,18 +91,22 @@ app.get('/', (req, res) => {
   res.json({
     success: true,
     message: '🚀 Momentum YouTube Shorts AI 큐레이션 서비스',
-    version: '1.0.0',
+    version: '1.0',
     team: 'Wave Team',
     timestamp: new Date().toISOString(),
     status: 'healthy',
     endpoints: {
       trends: '/api/v1/trends',
+      llm: '/api/v1/llm',
       health: '/health'
     },
     features: [
       '🔥 실시간 트렌드 영상 큐레이션',
       '🎬 4단계 워크플로우 (Google Trends → 뉴스 정제 → YouTube 검색 → 채널 필터링)',
       '📊 고품질 채널 필터링 (5만+ 구독자)',
+      '🎯 개인화 감성 분석 API (신규)',
+      '🗣️ 자연어 감정 분석 및 키워드 추출',
+      '💬 AI 감성 문장 큐레이션',
       '⚡ Railway 배포 최적화'
     ]
   });
@@ -143,6 +148,14 @@ console.log('🔍 trendRoutes stack length:', trendRoutes.stack?.length || 'unde
 // 라우트 등록
 app.use('/api/v1/trends', trendRoutes);
 console.log('🔥 Trend API 라우트 등록 완료');
+
+// 🎯 LLM 감성 분석 API Routes - 새로운 기능!
+console.log('🔄 LLM 라우트 등록 시작...');
+console.log('🔍 llmRoutes type:', typeof llmRoutes);
+console.log('🔍 llmRoutes stack length:', llmRoutes.stack?.length || 'undefined');
+
+app.use('/api/v1/llm', llmRoutes);
+console.log('🎯 LLM 감성 분석 API 라우트 등록 완료');
 
 // 🧪 간단한 테스트 라우트 추가
 app.get('/api/test', (req, res) => {
@@ -281,7 +294,13 @@ app.use('*', (req, res) => {
       'GET /api/v1/trends/stats',
       'GET /api/v1/trends/videos/quick',
       'POST /api/v1/trends/videos/custom',
-      'GET /api/v1/trends/health'
+      'GET /api/v1/trends/health',
+      'POST /api/v1/llm/analyze',
+      'POST /api/v1/llm/quick-keywords',
+      'POST /api/v1/llm/track-click',
+      'GET /api/v1/llm/stats',
+      'GET /api/v1/llm/health',
+      'POST /api/v1/llm/test'
     ]
   });
 });
@@ -376,12 +395,18 @@ function startServer() {
   console.log('  📰 뉴스 기반 키워드 정제');
   console.log('  🎬 YouTube 최신 영상 검색');
   console.log('  📺 채널 품질 필터링 (5만+ 구독자)');
+  console.log('  🎯 개인화 감성 분석 API (신규)');
+  console.log('  🗣️ 자연어 감정 분석 및 키워드 추출');
+  console.log('  💬 AI 감성 문장 큐레이션');
   console.log('');
   console.log('📡 주요 엔드포인트:');
   console.log(`  🔥 Trend Videos: GET ${HOST}:${PORT}/api/v1/trends/videos`);
   console.log(`  🎨 Trend Keywords: GET ${HOST}:${PORT}/api/v1/trends/keywords`);
   console.log(`  ⚡ Quick Videos: GET ${HOST}:${PORT}/api/v1/trends/videos/quick`);
   console.log(`  📊 Service Stats: GET ${HOST}:${PORT}/api/v1/trends/stats`);
+  console.log(`  🎯 Emotion Analysis: POST ${HOST}:${PORT}/api/v1/llm/analyze`);
+  console.log(`  💬 Quick Keywords: POST ${HOST}:${PORT}/api/v1/llm/quick-keywords`);
+  console.log(`  🔍 Click Tracking: POST ${HOST}:${PORT}/api/v1/llm/track-click`);
   console.log(`  ❤️ Health Check: GET ${HOST}:${PORT}/health`);
   console.log('');
   
@@ -407,6 +432,12 @@ function startServer() {
   console.log(`  curl -X GET ${HOST}:${PORT}/health`);
   console.log(`  curl -X GET "${HOST}:${PORT}/api/v1/trends/keywords"`);
   console.log(`  curl -X GET "${HOST}:${PORT}/api/v1/trends/videos?maxKeywords=5"`);
+  console.log('');
+  console.log('🎯 새로운 감성 분석 API 테스트:');
+  console.log(`  curl -X POST ${HOST}:${PORT}/api/v1/llm/analyze \\`);
+  console.log(`    -H "Content-Type: application/json" \\`);
+  console.log(`    -d '{"userInput":"퇴근하고 와서 피곤해","inputType":"emotion"}'`);
+  console.log(`  curl -X GET ${HOST}:${PORT}/api/v1/llm/health`);
   console.log('');
     console.log('🚀 ================================ 🚀');
   });
