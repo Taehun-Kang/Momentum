@@ -1,6 +1,9 @@
 /**
  * 📰 실시간 트렌드 뉴스 분석기
  * 상위 20개 뉴스에서 빈출 키워드 추출 및 Claude AI 분석
+ * 
+ * ⚠️ 현재 비활성화됨: 새로운 배치 처리 방식으로 대체
+ * → trends/modules/news-based-trend-refiner.js 사용
  */
 
 import axios from 'axios';

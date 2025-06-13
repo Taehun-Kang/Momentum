@@ -33,6 +33,15 @@ YouTube Shorts 큐레이션을 위한 **완전 검증된** 고품질 키워드 �
 - **5개 트렌드 키워드** (실시간 이슈 반영)
 - **빈출 키워드 + AI 트렌드 분석**
 - **완벽한 실시간 분석**: BTS 전역 이슈 등
+- ⚠️ **현재 비활성화됨**: news-based-trend-refiner.js로 대체
+
+### 🔥 **news-based-trend-refiner.js** (뉴스 기반 트렌드 정제) ⭐
+
+- **trends 모듈 연계**: getActiveKoreanTrends() 결과를 정제
+- **배치 뉴스 분석**: SerpAPI로 키워드별 뉴스 수집
+- **Claude AI 정제**: 중복 제거 + 맥락 추가 + 순서 유지
+- **20개 → 10개 압축**: 50% 효율적 압축
+- **"키워드 + 한 단어"**: YouTube Shorts 최적화
 
 ## 🚀 사용법
 
@@ -76,6 +85,28 @@ const result2 = await extractKeywordsSmart("조계사 화재"); // → 트렌드
 
 console.log(`선택된 모드: ${result1.mode}`); // "fast"
 console.log(`선택된 모드: ${result2.mode}`); // "trend"
+```
+
+### **트렌드 키워드 정제** (trends 모듈 연계) 🔥
+
+```javascript
+import { refineKoreanTrends } from "./keywords/modules/news-based-trend-refiner.js";
+import { getActiveKoreanTrends } from "../trends/modules/google-trends-collector.js";
+
+// 1. trends 모듈에서 원본 수집
+const rawTrends = await getActiveKoreanTrends();
+// → 20개 활성 키워드 (중복 포함)
+
+// 2. keywords 모듈에서 정제
+const refined = await refineKoreanTrends(rawTrends.keywords, {
+  maxFinalKeywords: 10,
+  removeDuplicates: true,
+  addContext: true,
+});
+
+console.log(`정제 결과: ${refined.refinedKeywords.length}개`);
+console.log("정제된 키워드:", refined.refinedKeywords);
+// → ["이스라엘 이란 갈등", "에어인디아 사고", "조은석 특검", ...]
 ```
 
 ## 📊 응답 형식
@@ -158,11 +189,12 @@ console.log(`선택된 모드: ${result2.mode}`); // "trend"
 
 ## ⚡ 성능 특성
 
-| 모드            | 처리 시간 | 키워드 수 | 품질     | 용도             |
-| --------------- | --------- | --------- | -------- | ---------------- |
-| **빠른 모드**   | ~70초     | 39개      | 0.78/1.0 | 일반 검색 (완벽) |
-| **트렌드 모드** | ~30초     | 5개       | 실시간   | 실시간 이슈      |
-| **스마트 모드** | 자동      | 자동      | 최적화   | AI 자동 판단     |
+| 모드            | 처리 시간 | 키워드 수 | 품질     | 용도                     |
+| --------------- | --------- | --------- | -------- | ------------------------ |
+| **빠른 모드**   | ~70초     | 39개      | 0.78/1.0 | 일반 검색 (완벽)         |
+| **트렌드 모드** | ~30초     | 5개       | 실시간   | 실시간 이슈              |
+| **스마트 모드** | 자동      | 자동      | 최적화   | AI 자동 판단             |
+| **트렌드 정제** | ~10초     | 10개      | 순서유지 | trends 모듈 결과 정제 🔥 |
 
 ## 🔧 기술적 특징
 
@@ -186,14 +218,30 @@ console.log(`선택된 모드: ${result2.mode}`); // "trend"
 - **중복 제거**: 대소문자 무시 중복 제거
 - **할루시네이션 방지**: 실제 데이터만 사용
 
+### **트렌드 정제 특화 (news-based-trend-refiner)**
+
+- **순서 완벽 유지**: 원본 트렌드 순서 절대 변경 금지
+- **의미적 중복 제거**: "이스라엘 이란" + "israel iran" → "이스라엘 이란 갈등"
+- **뉴스 맥락 추가**: 실시간 뉴스 분석으로 "정확히 한 단어" 추가
+- **배치 처리 최적화**: 20개 키워드를 5개씩 묶어서 병렬 뉴스 수집
+- **폴백 시스템**: 뉴스 수집 실패 시 기본 중복 제거로 폴백
+
 ## 🎯 사용 시나리오
 
-### **trends 폴더에서 받은 키워드**
+### **trends 폴더에서 받은 키워드** 🔥
 
 ```javascript
-// 트렌드 키워드 → 최신 키워드 확장
+// 방법 1: 직접 정제 (권장)
+import { refineKoreanTrends } from "./keywords/modules/news-based-trend-refiner.js";
+import { getActiveKoreanTrends } from "../trends/modules/google-trends-collector.js";
+
+const rawTrends = await getActiveKoreanTrends();
+const refined = await refineKoreanTrends(rawTrends.keywords);
+// → 20개 → 10개 정제, 중복 제거 + 뉴스 맥락
+
+// 방법 2: 기존 방식 (비활성화)
 const trendResult = await extractTrendKeywords(trendKeyword);
-// → 실시간 이슈 반영한 5개 키워드
+// → 실시간 이슈 반영한 5개 키워드 (realtime-trend-collector)
 ```
 
 ### **사용자 입력 검색어**
@@ -224,6 +272,7 @@ import {
   collectGoogleAutocomplete,
   analyzeRealtimeTrend,
 } from "./keywords/index.js";
+import { refineKoreanTrends } from "./keywords/modules/news-based-trend-refiner.js";
 
 // 메인 모듈 고급 설정
 const extractor = new EnhancedKeywordExtractorV2();
@@ -237,8 +286,16 @@ const autocomplete = await collectGoogleAutocomplete("키워드", {
   maxResults: 15,
 });
 
-// 트렌드 분석만 사용
+// 트렌드 분석만 사용 (비활성화)
 const trend = await analyzeRealtimeTrend("키워드");
+
+// 뉴스 기반 트렌드 정제만 사용 🔥
+const refined = await refineKoreanTrends(["키워드1", "키워드2"], {
+  maxFinalKeywords: 5,
+  newsPerKeyword: 2,
+  removeDuplicates: true,
+  addContext: true,
+});
 ```
 
 ### **병렬 처리**
@@ -322,12 +379,25 @@ console.log("🔄 폴백 모드로 전환 중...");
 
 **trends 폴더와 동급의 완성된 핵심 모듈입니다!**
 
+### **4개 핵심 모듈 완성** 🎯
+
+1. **youtube-keyword-extractor.js** - 39개 고품질 키워드 생성
+2. **google-autocomplete-collector.js** - 10개 자동완성 키워드
+3. **realtime-trend-collector.js** - 실시간 트렌드 분석 (비활성화)
+4. **news-based-trend-refiner.js** - trends 모듈 결과 정제 🔥
+
 ### **즉시 사용 가능** ⚡
 
 ```javascript
+// 일반 키워드 확장
 import { extractKeywordsFast } from "./keywords/index.js";
 const result = await extractKeywordsFast("검색어");
 // → 39개 고품질 키워드, 견고한 에러 처리, 100% 성공률
+
+// 트렌드 키워드 정제
+import { refineKoreanTrends } from "./keywords/modules/news-based-trend-refiner.js";
+const refined = await refineKoreanTrends(trendKeywords);
+// → 20개 → 10개 정제, 순서 유지, 뉴스 맥락 추가
 ```
 
 **YouTube Shorts 큐레이션 시스템의 핵심 엔진이 완전히 준비되었습니다!** 🚀
