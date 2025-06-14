@@ -3,6 +3,11 @@ description:
 globs: 
 alwaysApply: true
 ---
+---
+rule_type: always_applied_workspace_rules
+priority: critical
+---
+
 # YouTube API 최적화 가이드
 
 ## API 할당량 관리
@@ -345,5 +350,3 @@ async function searchWithFallback(query, userId) {
 - [YouTube Shorts 필터링 가이드](mdc:docs/development/youtube-shorts-filtering-guide.md)
 - [YouTube API 파라미터](mdc:docs/development/youtube-api-parameters.md)
 - [API 활용 전략](mdc:docs/basic/7.Youtube API 활용 전략.md)
-
-

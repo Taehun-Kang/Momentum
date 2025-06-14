@@ -1,34 +1,53 @@
-const express = require('express');
-const { createClient } = require('@supabase/supabase-js');
-const supabaseService = require('../services/supabaseService');
-const { verifyToken, optionalAuth, securityHeaders, createSession } = require('../middleware/authMiddleware');
+import express from 'express';
+import { createClient } from '@supabase/supabase-js';
+import { verifyToken, optionalAuth } from '../middleware/authMiddleware.js';
+import dotenv from 'dotenv';
+
+// 환경변수 로드
+dotenv.config();
 
 const router = express.Router();
 
-// Supabase 클라이언트 (사용자 인증용)
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+// Supabase 클라이언트 (사용자 인증용) - 조건부 생성
+let supabase = null;
+if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+  supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+  console.log('✅ Auth Routes: Supabase 클라이언트 초기화 완료');
+} else {
+  console.warn('⚠️ Auth Routes: Supabase 환경변수가 설정되지 않았습니다');
+}
 
 /**
- * 인증 관련 API 라우트
- * Wave Team - Momentum 프로젝트
+ * 간소화된 인증 API 라우트
+ * 핵심 기능만 유지: 회원가입, 로그인, 로그아웃, 토큰 갱신, 기본 프로필
+ * 
+ * 보안 헤더는 server.js의 helmet과 cors에서 전역 처리됨
  */
 
-// 모든 라우트에 보안 헤더 및 세션 적용
-router.use(securityHeaders);
-router.use(createSession);
+// Supabase 연결 상태 확인 미들웨어
+const checkSupabaseConnection = (req, res, next) => {
+  if (!supabase) {
+    return res.status(503).json({
+      success: false,
+      error: 'SERVICE_UNAVAILABLE', 
+      message: '인증 서비스가 현재 사용할 수 없습니다. 관리자에게 문의해주세요.'
+    });
+  }
+  next();
+};
 
 // ============================================
-// 1. 사용자 인증 (회원가입, 로그인, 로그아웃)
+// 1. 핵심 인증 기능
 // ============================================
 
 /**
  * POST /api/v1/auth/signup
  * 회원가입
  */
-router.post('/signup', async (req, res) => {
+router.post('/signup', checkSupabaseConnection, async (req, res) => {
   try {
     const { email, password, name } = req.body;
 
@@ -59,19 +78,6 @@ router.post('/signup', async (req, res) => {
       });
     }
 
-    // 사용자 프로필 생성
-    if (authData.user) {
-      await supabaseService.upsertUserProfile(authData.user.id, {
-        display_name: name || authData.user.email.split('@')[0],
-        user_tier: 'free',
-        preferences: {
-          categories: ['일반'],
-          language: 'ko',
-          theme: 'light'
-        }
-      });
-    }
-
     res.status(201).json({
       success: true,
       message: '회원가입이 완료되었습니다. 이메일 인증을 확인해주세요.',
@@ -79,6 +85,7 @@ router.post('/signup', async (req, res) => {
         user: {
           id: authData.user?.id,
           email: authData.user?.email,
+          name: authData.user?.user_metadata?.name,
           emailConfirmed: authData.user?.email_confirmed_at != null
         },
         session: authData.session
@@ -99,7 +106,7 @@ router.post('/signup', async (req, res) => {
  * POST /api/v1/auth/signin
  * 로그인
  */
-router.post('/signin', async (req, res) => {
+router.post('/signin', checkSupabaseConnection, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -125,9 +132,6 @@ router.post('/signin', async (req, res) => {
       });
     }
 
-    // 사용자 프로필 조회
-    const userProfile = await supabaseService.getUserProfile(authData.user.id);
-
     res.json({
       success: true,
       message: '로그인되었습니다',
@@ -135,8 +139,8 @@ router.post('/signin', async (req, res) => {
         user: {
           id: authData.user.id,
           email: authData.user.email,
-          emailConfirmed: authData.user.email_confirmed_at != null,
-          ...userProfile
+          name: authData.user.user_metadata?.name,
+          emailConfirmed: authData.user.email_confirmed_at != null
         },
         session: authData.session
       }
@@ -158,6 +162,13 @@ router.post('/signin', async (req, res) => {
  */
 router.post('/signout', verifyToken, async (req, res) => {
   try {
+    if (!supabase) {
+      return res.json({
+        success: true,
+        message: '로그아웃되었습니다'
+      });
+    }
+
     const { error } = await supabase.auth.signOut();
 
     if (error) {
@@ -187,7 +198,7 @@ router.post('/signout', verifyToken, async (req, res) => {
  * POST /api/v1/auth/refresh
  * 토큰 갱신
  */
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', checkSupabaseConnection, async (req, res) => {
   try {
     const { refresh_token } = req.body;
 
@@ -215,7 +226,11 @@ router.post('/refresh', async (req, res) => {
       success: true,
       data: {
         session: data.session,
-        user: data.user
+        user: {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.user_metadata?.name
+        }
       }
     });
 
@@ -230,60 +245,103 @@ router.post('/refresh', async (req, res) => {
 });
 
 // ============================================
-// 2. 사용자 프로필 관리
+// 2. 기본 사용자 정보
 // ============================================
 
 /**
- * GET /api/v1/auth/profile
- * 프로필 조회
+ * GET /api/v1/auth/me
+ * 현재 사용자 정보 (토큰 있으면 조회, 없으면 null)
  */
-router.get('/profile', verifyToken, async (req, res) => {
+router.get('/me', optionalAuth, async (req, res) => {
   try {
-    const userProfile = await supabaseService.getUserProfile(req.user.id);
+    if (!req.user || !supabase) {
+      return res.json({
+        success: true,
+        data: { user: null }
+      });
+    }
+
+    // Supabase에서 최신 사용자 정보 조회
+    const { data: { user }, error } = await supabase.auth.getUser(
+      req.headers.authorization?.substring(7)
+    );
+
+    if (error || !user) {
+      return res.json({
+        success: true,
+        data: { user: null }
+      });
+    }
 
     res.json({
       success: true,
       data: {
         user: {
-          id: req.user.id,
-          email: req.user.email,
-          ...userProfile
+          id: user.id,
+          email: user.email,
+          name: user.user_metadata?.name,
+          emailConfirmed: user.email_confirmed_at != null,
+          createdAt: user.created_at
         }
       }
     });
 
   } catch (error) {
-    console.error('프로필 조회 오류:', error);
+    console.error('사용자 정보 조회 오류:', error);
     res.status(500).json({
       success: false,
       error: 'INTERNAL_ERROR',
-      message: '프로필 조회 중 오류가 발생했습니다'
+      message: '사용자 정보 조회 중 오류가 발생했습니다'
     });
   }
 });
 
 /**
  * PUT /api/v1/auth/profile
- * 프로필 업데이트
+ * 기본 프로필 업데이트
  */
 router.put('/profile', verifyToken, async (req, res) => {
   try {
-    const { display_name, avatar_url, preferences } = req.body;
+    if (!supabase) {
+      return res.status(503).json({
+        success: false,
+        error: 'SERVICE_UNAVAILABLE',
+        message: '프로필 업데이트 서비스가 현재 사용할 수 없습니다'
+      });
+    }
 
-    const updatedProfile = await supabaseService.upsertUserProfile(req.user.id, {
-      display_name,
-      avatar_url,
-      preferences
+    const { name } = req.body;
+
+    if (!name || name.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'MISSING_NAME',
+        message: '이름을 입력해주세요'
+      });
+    }
+
+    // Supabase 사용자 메타데이터 업데이트
+    const { data, error } = await supabase.auth.updateUser({
+      data: { name: name.trim() }
     });
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        error: error.code || 'UPDATE_FAILED',
+        message: error.message || '프로필 업데이트에 실패했습니다'
+      });
+    }
 
     res.json({
       success: true,
       message: '프로필이 업데이트되었습니다',
       data: {
         user: {
-          id: req.user.id,
-          email: req.user.email,
-          ...updatedProfile
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.user_metadata?.name,
+          emailConfirmed: data.user.email_confirmed_at != null
         }
       }
     });
@@ -299,68 +357,10 @@ router.put('/profile', verifyToken, async (req, res) => {
 });
 
 /**
- * POST /api/v1/auth/change-password
- * 비밀번호 변경
- */
-router.post('/change-password', verifyToken, async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        error: 'MISSING_FIELDS',
-        message: '현재 비밀번호와 새 비밀번호를 입력해주세요'
-      });
-    }
-
-    // 현재 비밀번호 확인
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: req.user.email,
-      password: currentPassword
-    });
-
-    if (signInError) {
-      return res.status(400).json({
-        success: false,
-        error: 'INVALID_CURRENT_PASSWORD',
-        message: '현재 비밀번호가 올바르지 않습니다'
-      });
-    }
-
-    // 새 비밀번호로 변경
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: newPassword
-    });
-
-    if (updateError) {
-      return res.status(400).json({
-        success: false,
-        error: updateError.code || 'PASSWORD_UPDATE_FAILED',
-        message: updateError.message || '비밀번호 변경에 실패했습니다'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: '비밀번호가 변경되었습니다'
-    });
-
-  } catch (error) {
-    console.error('비밀번호 변경 오류:', error);
-    res.status(500).json({
-      success: false,
-      error: 'INTERNAL_ERROR',
-      message: '서버 오류가 발생했습니다'
-    });
-  }
-});
-
-/**
  * POST /api/v1/auth/reset-password
- * 비밀번호 재설정 요청
+ * 비밀번호 재설정 요청 (간소화 버전)
  */
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', checkSupabaseConnection, async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -372,9 +372,7 @@ router.post('/reset-password', async (req, res) => {
       });
     }
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.FRONTEND_URL}/reset-password`
-    });
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
 
     if (error) {
       return res.status(400).json({
@@ -399,178 +397,4 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-// ============================================
-// 3. 계정 관리
-// ============================================
-
-/**
- * GET /api/v1/auth/me
- * 현재 사용자 정보 (토큰 있으면 조회, 없으면 null)
- */
-router.get('/me', optionalAuth, async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.json({
-        success: true,
-        data: { user: null }
-      });
-    }
-
-    const userProfile = await supabaseService.getUserProfile(req.user.id);
-
-    res.json({
-      success: true,
-      data: {
-        user: {
-          id: req.user.id,
-          email: req.user.email,
-          ...userProfile
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error('사용자 정보 조회 오류:', error);
-    res.status(500).json({
-      success: false,
-      error: 'INTERNAL_ERROR',
-      message: '사용자 정보 조회 중 오류가 발생했습니다'
-    });
-  }
-});
-
-/**
- * GET /api/v1/auth/search-patterns
- * 사용자 검색 패턴 조회
- */
-router.get('/search-patterns', verifyToken, async (req, res) => {
-  try {
-    const { data, error } = await supabaseService.client
-      .from('user_search_patterns')
-      .select('*')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      throw error;
-    }
-
-    res.json({
-      success: true,
-      data: {
-        searchPatterns: data || {
-          search_keywords: [],
-          search_time_patterns: {},
-          preferred_categories: [],
-          last_analyzed: null
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error('검색 패턴 조회 오류:', error);
-    res.status(500).json({
-      success: false,
-      error: 'INTERNAL_ERROR',
-      message: '검색 패턴 조회 중 오류가 발생했습니다'
-    });
-  }
-});
-
-/**
- * GET /api/v1/auth/usage-stats
- * 사용자 사용량 통계
- */
-router.get('/usage-stats', verifyToken, async (req, res) => {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    
-    // 오늘의 검색 횟수
-    const { data: searchCount } = await supabaseService.client
-      .from('search_sessions')
-      .select('id', { count: 'exact' })
-      .eq('user_id', req.user.id)
-      .gte('created_at', `${today}T00:00:00.000Z`)
-      .lt('created_at', `${today}T23:59:59.999Z`);
-
-    // 이번 달 사용량
-    const thisMonth = new Date().toISOString().slice(0, 7);
-    const { data: monthlyUsage } = await supabaseService.client
-      .from('search_sessions')
-      .select('id', { count: 'exact' })
-      .eq('user_id', req.user.id)
-      .gte('created_at', `${thisMonth}-01T00:00:00.000Z`);
-
-    // 사용자 티어에 따른 제한
-    const tierLimits = {
-      free: { daily: 100, monthly: 1000 },
-      premium: { daily: 1000, monthly: 10000 },
-      pro: { daily: 10000, monthly: 100000 }
-    };
-
-    const userTier = req.user.user_tier || 'free';
-    const limits = tierLimits[userTier];
-
-    res.json({
-      success: true,
-      data: {
-        today: {
-          searches: searchCount?.length || 0,
-          limit: limits.daily,
-          remaining: Math.max(0, limits.daily - (searchCount?.length || 0))
-        },
-        thisMonth: {
-          searches: monthlyUsage?.length || 0,
-          limit: limits.monthly,
-          remaining: Math.max(0, limits.monthly - (monthlyUsage?.length || 0))
-        },
-        tier: userTier,
-        upgradeAvailable: userTier === 'free'
-      }
-    });
-
-  } catch (error) {
-    console.error('사용량 통계 조회 오류:', error);
-    res.status(500).json({
-      success: false,
-      error: 'INTERNAL_ERROR',
-      message: '사용량 통계 조회 중 오류가 발생했습니다'
-    });
-  }
-});
-
-/**
- * DELETE /api/v1/auth/account
- * 계정 삭제
- */
-router.delete('/account', verifyToken, async (req, res) => {
-  try {
-    const { confirmDelete } = req.body;
-
-    if (!confirmDelete) {
-      return res.status(400).json({
-        success: false,
-        error: 'CONFIRMATION_REQUIRED',
-        message: '계정 삭제 확인이 필요합니다'
-      });
-    }
-
-    // 관련 데이터 모두 삭제 (RLS로 자동 처리됨)
-    // 실제로는 soft delete나 data export 옵션도 고려
-
-    res.json({
-      success: true,
-      message: '계정이 삭제되었습니다'
-    });
-
-  } catch (error) {
-    console.error('계정 삭제 오류:', error);
-    res.status(500).json({
-      success: false,
-      error: 'INTERNAL_ERROR',
-      message: '계정 삭제 중 오류가 발생했습니다'
-    });
-  }
-});
-
-module.exports = router; 
+export default router; 

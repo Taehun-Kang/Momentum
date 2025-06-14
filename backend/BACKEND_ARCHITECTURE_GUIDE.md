@@ -1,390 +1,393 @@
 # 🏗️ Backend 아키텍처 가이드
 
-> **YouTube Shorts AI 큐레이션 서비스 백엔드 구조 완전 가이드**
+> **YouTube Shorts AI 큐레이션 서비스 백엔드 구조 완전 가이드**  
+> **초보자도 이해할 수 있는 백엔드 작동 원리 설명**
+
+## 🎯 백엔드란? (간단 설명)
+
+백엔드는 **식당의 주방**과 같습니다:
+
+- **프론트엔드**: 고객이 앉아서 메뉴를 보는 홀
+- **백엔드**: 요리사가 음식을 만드는 주방
+- **데이터베이스**: 재료를 보관하는 창고
+
+```
+고객(사용자) → 주문(요청) → 주방(백엔드) → 요리(처리) → 음식(응답) → 고객
+```
+
+## 🔄 백엔드 작동 흐름 (단계별 상세 설명)
+
+### 1️⃣ **사용자가 버튼을 클릭한다**
+
+```javascript
+// 프론트엔드에서 검색 버튼 클릭
+사용자: "먹방 영상 보여줘!" 버튼 클릭
+```
+
+### 2️⃣ **프론트엔드가 백엔드에게 요청한다**
+
+```javascript
+// HTTP 요청 전송
+fetch("http://localhost:3002/api/v1/search/realtime", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", // 로그인한 경우만
+  },
+  body: JSON.stringify({
+    keyword: "먹방",
+    category: "먹방 & 요리",
+  }),
+});
+```
+
+### 3️⃣ **server.js가 요청을 받는다 (대문 역할)**
+
+```javascript
+// server.js - 모든 요청이 여기로 들어옴
+app.listen(3002, () => {
+  console.log('🚀 서버가 3002번 포트에서 시작됨');
+});
+
+// 요청이 들어오면...
+1. helmet() → 보안 헤더 추가 (모자 쓰기)
+2. cors() → 다른 도메인 접근 허용 (출입 허가)
+3. rateLimit() → 너무 많은 요청 차단 (줄 서기)
+4. express.json() → JSON 데이터 읽기 (번역기)
+```
+
+### 4️⃣ **라우터가 길을 찾는다 (교통 정리)**
+
+```javascript
+// routes/index.js - 어디로 갈지 결정
+app.use('/api/v1/search', searchRoutes);  // 검색 관련은 searchRoutes로
+app.use('/api/v1/auth', authRoutes);      // 로그인 관련은 authRoutes로
+app.use('/api/v1/llm', llmRoutes);        // AI 관련은 llmRoutes로
+
+// URL 분석
+'/api/v1/search/realtime' → searchRoutes.js로 이동!
+```
+
+### 5️⃣ **미들웨어가 검문한다 (보안 검색대)**
+
+```javascript
+// 인증이 필요한 경우
+router.post('/realtime', verifyToken, async (req, res) => {
+  // verifyToken이 먼저 실행됨:
+
+  1. 토큰 확인: "이 사람이 로그인했나?"
+  2. 사용자 정보 추출: "이 사람 정보는?"
+  3. req.user에 사용자 정보 저장
+  4. next() 호출로 다음 단계 진행
+});
+
+// 인증이 필요없는 경우
+router.get('/health', async (req, res) => {
+  // 바로 실행됨 (미들웨어 없음)
+});
+```
+
+### 6️⃣ **실제 일꾼들이 일한다 (핵심 로직)**
+
+```javascript
+// searchRoutes.js - "먹방" 검색 처리
+router.post("/realtime", async (req, res) => {
+  console.log("🔍 실시간 검색 시작:", req.body.keyword);
+
+  // 1. youtube-ai-services 모듈들이 차례로 실행
+  const keyword = req.body.keyword; // '먹방'
+
+  // 2. YouTube API로 영상 검색
+  const rawVideos = await youtube.search("먹방");
+
+  // 3. 재생 불가능한 영상 필터링
+  const playableVideos = await filterPlayableVideos(rawVideos);
+
+  // 4. AI로 카테고리 분류
+  const categorizedVideos = await classifyWithAI(playableVideos);
+
+  // 5. 결과 반환
+  res.json({
+    success: true,
+    data: categorizedVideos,
+  });
+});
+```
+
+### 7️⃣ **데이터베이스와 대화한다 (창고 관리)**
+
+```javascript
+// 실제로는 이런 일들이 일어남:
+
+// 1. 캐시 확인
+"혹시 '먹방' 검색 결과가 이미 있나?"
+→ 있으면 바로 반환 (빠름!)
+→ 없으면 새로 검색
+
+// 2. 새 결과 저장
+"이번에 찾은 '먹방' 영상들을 저장해두자"
+→ 다음에 더 빨리 응답 가능
+
+// 3. 사용자 로그 저장
+"홍길동님이 '먹방'을 검색했다"
+→ 나중에 개인화 추천에 활용
+```
+
+### 8️⃣ **응답을 만들어서 보낸다**
+
+```javascript
+// 최종 응답 생성
+res.json({
+  success: true,
+  message: "먹방 영상 검색 완료",
+  data: {
+    videos: [
+      {
+        videoId: "abc123",
+        title: "대왕 먹방 도전!",
+        channelName: "먹방왕",
+        thumbnailUrl: "https://...",
+        category: "먹방 & 요리",
+      },
+      // ... 더 많은 영상들
+    ],
+    total: 25,
+    cached: false,
+  },
+  timestamp: "2024-12-13T12:30:45.000Z",
+});
+```
+
+### 9️⃣ **프론트엔드가 받아서 화면에 표시**
+
+```javascript
+// 프론트엔드에서 응답 처리
+fetch("/api/v1/search/realtime")
+  .then((response) => response.json())
+  .then((data) => {
+    if (data.success) {
+      // 화면에 영상들 표시
+      data.data.videos.forEach((video) => {
+        displayVideo(video);
+      });
+    }
+  });
+```
+
+## 🔐 인증 시스템 적용 전략
+
+### **현재 상황 분석**
+
+| 라우트           | 현재 상태          | 인증 필요 여부     | 이유                                 |
+| ---------------- | ------------------ | ------------------ | ------------------------------------ |
+| **authRoutes**   | ✅ **인증 적용됨** | 필수               | 로그인/회원가입/프로필               |
+| **searchRoutes** | ❌ **공개 API**    | **부분 적용 필요** | 기본 검색은 공개, 고급 기능은 인증   |
+| **llmRoutes**    | ❌ **공개 API**    | **인증 필요**      | AI 분석은 비용이 많이 듦             |
+| **trendRoutes**  | ❌ **공개 API**    | **선택적**         | 기본 트렌드는 공개, 상세 분석은 인증 |
+
+### **인증 적용 계획**
+
+#### 1️⃣ **searchRoutes 개선**
+
+```javascript
+// routes/searchRoutes.js
+
+// ✅ 공개 API (로그인 없이도 사용 가능)
+router.get("/health", async (req, res) => {
+  // 서버 상태 체크 - 누구나 접근 가능
+});
+
+// ✅ 선택적 인증 (로그인하면 더 좋음)
+router.post("/realtime", optionalAuth, async (req, res) => {
+  if (req.user) {
+    // 로그인한 유저: 개인화된 결과 + 검색 기록 저장
+    console.log(`👤 ${req.user.email}님의 검색:`, req.body.keyword);
+
+    // 사용자 선호도 반영
+    const personalizedResults = await addPersonalization(results, req.user.id);
+
+    // 검색 기록 저장
+    await saveSearchHistory(req.user.id, req.body.keyword);
+
+    return res.json({ data: personalizedResults, personalized: true });
+  } else {
+    // 비로그인 유저: 기본 검색 결과만
+    console.log(`🕵️ 익명 사용자 검색:`, req.body.keyword);
+
+    return res.json({ data: basicResults, personalized: false });
+  }
+});
+
+// ❌ 로그인 필수 (프리미엄 기능)
+router.post("/batch-keywords", verifyToken, async (req, res) => {
+  // 여러 키워드 동시 처리 - 로그인 필수
+  if (req.user.tier !== "premium") {
+    return res.status(403).json({
+      error: "프리미엄 회원만 사용 가능한 기능입니다",
+    });
+  }
+
+  // 배치 처리 로직...
+});
+```
+
+#### 2️⃣ **llmRoutes 인증 추가**
+
+```javascript
+// routes/llmRoutes.js
+
+// ❌ 로그인 필수 (AI 분석은 비용이 많이 듦)
+router.post("/analyze-sentiment", verifyToken, async (req, res) => {
+  // Claude AI 감정 분석 - 로그인 필수
+  console.log(`🤖 ${req.user.email}님의 AI 분석 요청`);
+
+  // API 사용량 체크
+  const usageCount = await checkUserAPIUsage(req.user.id);
+  if (usageCount > 100) {
+    // 일일 100회 제한
+    return res.status(429).json({
+      error: "일일 AI 분석 한도를 초과했습니다",
+    });
+  }
+
+  // AI 분석 실행...
+});
+
+// ✅ 공개 API (단순 정보 조회)
+router.get("/categories", async (req, res) => {
+  // 9개 고정 카테고리 조회 - 누구나 접근 가능
+});
+```
+
+#### 3️⃣ **trendRoutes 선택적 적용**
+
+```javascript
+// routes/trendRoutes.js
+
+// ✅ 공개 API (기본 트렌드)
+router.get("/keywords", async (req, res) => {
+  // 인기 키워드 TOP 10 - 누구나 접근 가능
+});
+
+// ❌ 로그인 필요 (상세 분석)
+router.get("/detailed-analysis", verifyToken, async (req, res) => {
+  // 상세 트렌드 분석 - 로그인 필수
+});
+```
+
+### **인증 레벨 정의**
+
+```javascript
+// 인증 레벨 구분
+const AuthLevel = {
+  PUBLIC: "공개", // 누구나 접근 가능
+  OPTIONAL: "선택적", // 로그인하면 더 좋음
+  REQUIRED: "필수", // 반드시 로그인
+  PREMIUM: "프리미엄", // 유료 사용자만
+  ADMIN: "관리자", // 관리자만
+};
+
+// 실제 적용
+router.post(
+  "/search",
+  optionalAuth, // 선택적 인증
+  rateLimitByUser, // 사용자별 요청 제한
+  async (req, res) => {
+    // 로직...
+  }
+);
+
+router.post(
+  "/premium-search",
+  verifyToken, // 로그인 확인
+  requirePremium, // 프리미엄 확인
+  async (req, res) => {
+    // 프리미엄 전용 로직...
+  }
+);
+```
+
+## 📊 실제 요청 처리 예시
+
+### **시나리오 1: 비로그인 사용자 검색**
+
+```
+1. 사용자: "먹방" 검색 버튼 클릭
+2. 프론트엔드: Authorization 헤더 없이 요청
+3. server.js: 기본 보안 처리
+4. searchRoutes: optionalAuth → req.user = null
+5. 검색 로직: 기본 결과만 반환
+6. 응답: { personalized: false, data: [...] }
+```
+
+### **시나리오 2: 로그인 사용자 검색**
+
+```
+1. 사용자: "먹방" 검색 버튼 클릭
+2. 프론트엔드: Authorization 헤더 포함하여 요청
+3. server.js: 기본 보안 처리
+4. searchRoutes: optionalAuth → req.user = { id, email, ... }
+5. 검색 로직: 개인화 + 기록 저장
+6. 응답: { personalized: true, data: [...] }
+```
+
+### **시나리오 3: 프리미엄 기능 접근**
+
+```
+1. 사용자: "배치 검색" 버튼 클릭
+2. 프론트엔드: Authorization 헤더 포함하여 요청
+3. server.js: 기본 보안 처리
+4. searchRoutes: verifyToken → 로그인 확인
+5. requirePremium → 프리미엄 회원 확인
+6. 검색 로직: 고급 기능 실행
+7. 응답: { premium: true, data: [...] }
+```
+
+## 🚀 다음 단계 구현 계획
+
+### **Phase 1: 현재 라우트 인증 적용** (3-4일)
+
+1. ✅ authRoutes 완료됨
+2. 🔄 searchRoutes에 optionalAuth 추가
+3. 🔄 llmRoutes에 verifyToken 추가
+4. 🔄 trendRoutes 선택적 적용
+
+### **Phase 2: 프리미엄 기능 구현** (1주)
+
+1. requirePremium 미들웨어 추가
+2. 사용량 제한 로직 구현
+3. 개인화 기능 강화
+
+### **Phase 3: 모니터링 및 최적화** (1주)
+
+1. API 사용량 추적
+2. 성능 모니터링
+3. 보안 강화
 
 ## 📁 백엔드 폴더 구조
 
 ```
 backend/
-├── server.js               # 🚀 서버 진입점 (여기서 시작!)
-├── config/
-│   └── config.js           # ⚙️ 설정 관리 (API 키, DB 연결 등)
+├── server.js               # 🚀 서버 진입점 (모든 요청이 시작되는 곳)
+├── config/                 # ⚙️ 설정 파일들
 ├── routes/                 # 🛣️ API 엔드포인트 정의
-│   ├── videoRoutes.js      # 영상 검색 API
-│   ├── authRoutes.js       # 로그인/회원가입 API
-│   ├── trendRoutes.js      # 트렌드 키워드 API
-│   ├── analyticsRoutes.js  # 사용자 분석 API
-│   └── systemRoutes.js     # 시스템 관리 API
+│   ├── index.js           #     라우트 통합 관리
+│   ├── searchRoutes.js    #     검색 관련 API (optionalAuth 적용 예정)
+│   ├── authRoutes.js      #     인증 관련 API (✅ 완료)
+│   ├── llmRoutes.js       #     AI 분석 API (verifyToken 적용 예정)
+│   └── trendRoutes.js     #     트렌드 API (선택적 적용 예정)
 ├── middleware/             # 🔐 요청 전처리
-│   └── authMiddleware.js   # 인증 확인
-├── services/               # 🧠 비즈니스 로직
-│   ├── supabaseService.js  # DB 연결/조작
-│   └── userAnalyticsService.js # 사용자 분석
-├── youtube-ai-services/    # 🤖 AI 모듈들 (우리가 만든!)
-│   ├── search/            # 검색 엔진
-│   ├── keywords/          # 키워드 처리
-│   ├── trends/            # 트렌드 분석
-│   └── llm/               # AI 언어모델
-└── database/               # 💾 DB 스키마
+│   └── authMiddleware.js  #     인증 확인 (verifyToken, optionalAuth)
+├── services/               # 🧠 비즈니스 로직 (현재 없음)
+└── youtube-ai-services/    # 🤖 핵심 AI 모듈들
+    ├── search/            #     영상 검색 엔진
+    ├── keywords/          #     키워드 처리
+    ├── trends/            #     트렌드 분석
+    └── llm/               #     AI 언어모델
 ```
-
-## 🔄 백엔드 작동 흐름 (요청 → 응답)
-
-### 전체 요청 처리 흐름
-
-```
-👤 프론트엔드 요청
-    ↓
-🚀 server.js (진입점)
-    ↓
-🔐 middleware (보안/인증)
-    ↓
-🛣️ routes (엔드포인트 매칭)
-    ↓
-🤖 youtube-ai-services (AI 처리)
-    ↓
-🧠 services (DB 연결)
-    ↓
-💾 Supabase Database
-    ↓
-📤 JSON 응답 반환
-```
-
-### 실제 요청 예시: "먹방" 검색
-
-```javascript
-// 1. 프론트엔드 요청
-fetch('http://localhost:3000/api/v1/videos/search?q=먹방')
-
-// 2. server.js 진입
-서버 시작 → 미들웨어 실행 → 라우터 찾기
-
-// 3. videoRoutes.js 실행
-'/search' 엔드포인트 매칭 → 핸들러 함수 실행
-
-// 4. youtube-ai-services 모듈들 실행
-keywords/extractor.js → "먹방" 키워드 분석
-search/engine.js → YouTube API 호출
-search/filter.js → 재생 가능 영상만 필터링
-llm/optimizer.js → AI로 결과 개선
-
-// 5. services/supabaseService.js
-검색 결과를 DB에 저장 (캐싱)
-사용자 검색 기록 저장
-
-// 6. 응답 반환
-{
-  "success": true,
-  "data": {
-    "videos": [...재생 가능한 먹방 영상들],
-    "total": 50,
-    "keywords": ["먹방", "ASMR 먹방", "도전 먹방"],
-    "cached": false
-  }
-}
-```
-
-## 🧩 각 컴포넌트의 역할
-
-### 1. **server.js** - 🚀 지휘탑
-
-```javascript
-// 역할: 서버의 진입점, 모든 설정과 라우트 연결
-const app = express();
-
-// ✅ 보안 설정
-app.use(helmet()); // 보안 헤더
-app.use(cors()); // 도메인 간 요청 허용
-app.use(rateLimit()); // 요청 횟수 제한
-
-// ✅ 미들웨어 연결
-app.use(express.json()); // JSON 파싱
-
-// ✅ 라우트 연결
-app.use("/api/v1/videos", videoRoutes);
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/trends", trendRoutes);
-
-// ✅ 에러 처리
-app.use(globalErrorHandler);
-
-// ✅ 서버 시작
-app.listen(3000);
-```
-
-### 2. **routes/** - 🛣️ 교통 정리소
-
-```javascript
-// 역할: URL 경로별로 요청을 적절한 핸들러에 전달
-
-// videoRoutes.js - 영상 관련 API
-GET    /api/v1/videos/search        → 영상 검색
-GET    /api/v1/videos/trending      → 트렌드 영상
-POST   /api/v1/videos/chat-search   → AI 대화형 검색 (새로 만들 예정!)
-POST   /api/v1/videos/favorite      → 즐겨찾기 추가
-
-// authRoutes.js - 인증 관련 API
-POST   /api/v1/auth/login           → 로그인
-POST   /api/v1/auth/register        → 회원가입
-GET    /api/v1/auth/profile         → 프로필 조회
-PUT    /api/v1/auth/profile         → 프로필 수정
-
-// trendRoutes.js - 트렌드 관련 API
-GET    /api/v1/trends/keywords      → 트렌드 키워드 조회
-GET    /api/v1/trends/categories    → 카테고리별 트렌드
-```
-
-### 3. **middleware/** - 🔐 보안관
-
-```javascript
-// 역할: 요청을 처리하기 전에 검증/변환
-
-// authMiddleware.js
-const authMiddleware = {
-  verifyToken: (req, res, next) => {
-    // JWT 토큰 검증
-    // 사용자 권한 확인
-    // 요청 로깅
-    next(); // 다음 단계로 진행
-  },
-
-  requirePremium: (req, res, next) => {
-    // 프리미엄 유저만 접근 가능
-    if (req.user.tier !== "premium") {
-      return res.status(403).json({ error: "Premium required" });
-    }
-    next();
-  },
-};
-
-// 사용법
-router.get(
-  "/premium-search",
-  authMiddleware.verifyToken, // 먼저 로그인 확인
-  authMiddleware.requirePremium, // 그다음 프리미엄 확인
-  (req, res) => {
-    // 실제 처리 로직
-  }
-);
-```
-
-### 4. **services/** - 🧠 두뇌
-
-```javascript
-// 역할: 실제 비즈니스 로직 처리
-
-// supabaseService.js → 데이터베이스와 대화
-class SupabaseService {
-  async saveUser(userData) {
-    // 사용자 데이터를 DB에 저장
-  }
-
-  async getVideos(query) {
-    // 캐시된 영상 조회
-  }
-
-  async saveSearchResult(query, results) {
-    // 검색 결과 캐싱
-  }
-}
-
-// userAnalyticsService.js → 사용자 분석
-class UserAnalyticsService {
-  async analyzeUserBehavior(userId) {
-    // 사용자 행동 패턴 분석
-  }
-
-  async getPersonalizedRecommendations(userId) {
-    // 개인화 추천 생성
-  }
-}
-```
-
-### 5. **youtube-ai-services/** - 🤖 우리의 핵심!
-
-```javascript
-// 역할: YouTube AI 큐레이션의 핵심 로직
-
-// search/ 모듈
-- youtube-search-engine.js     → YouTube API 검색
-- video-complete-filter.js     → 재생 가능 영상 필터링
-- trend-specialized-filter.js  → 트렌드 특화 필터
-
-// keywords/ 모듈
-- natural-language-extractor.js → 자연어 감정 분석 (새로 만들 예정!)
-- news-based-trend-refiner.js  → 트렌드 키워드 정제
-
-// trends/ 모듈
-- google-trends-collector.js   → Google 트렌드 수집
-
-// llm/ 모듈
-- claude-integration.js        → Claude AI 연동
-
-// 이 모듈들을 조합해서 최종 결과 생성!
-```
-
-## 💾 데이터베이스 접근 방식
-
-### **Supabase 연결 구조**
-
-```javascript
-// config/config.js에서 설정
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-// services/supabaseService.js에서 사용
-class SupabaseService {
-  constructor() {
-    this.supabase = supabase;
-  }
-
-  // 영상 데이터 저장
-  async insertVideo(videoData) {
-    const { data, error } = await this.supabase
-      .from("videos") // 테이블명
-      .insert(videoData) // 데이터 삽입
-      .select(); // 결과 반환
-
-    if (error) throw error;
-    return data;
-  }
-
-  // 캐시된 검색 결과 조회
-  async getCachedSearch(query) {
-    const { data } = await this.supabase
-      .from("search_cache")
-      .select("*")
-      .eq("query", query) // WHERE query = ?
-      .gt("expires_at", new Date()) // WHERE expires_at > now()
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    return data[0]; // 최신 캐시 결과
-  }
-
-  // 사용자 선호도 저장
-  async saveUserPreference(userId, preferences) {
-    const { data, error } = await this.supabase
-      .from("user_preferences")
-      .upsert({
-        // 있으면 업데이트, 없으면 삽입
-        user_id: userId,
-        preferences: preferences,
-        updated_at: new Date(),
-      });
-
-    return data;
-  }
-}
-```
-
-### **데이터베이스 테이블 구조**
-
-```sql
--- 영상 캐시 테이블
-videos (
-  id uuid PRIMARY KEY,
-  video_id varchar(20) UNIQUE,
-  title text,
-  channel_name varchar(255),
-  thumbnail_url text,
-  is_playable boolean,
-  cached_at timestamp,
-  expires_at timestamp
-);
-
--- 검색 캐시 테이블
-search_cache (
-  id uuid PRIMARY KEY,
-  query varchar(255),
-  results jsonb,
-  cached_at timestamp,
-  expires_at timestamp
-);
-
--- 사용자 선호도 테이블
-user_preferences (
-  user_id uuid PRIMARY KEY,
-  preferences jsonb,
-  created_at timestamp,
-  updated_at timestamp
-);
-
--- 사용자 감정 분석 기록
-user_emotion_history (
-  id uuid PRIMARY KEY,
-  user_id uuid,
-  detected_emotion varchar(50),
-  input_text text,
-  created_at timestamp
-);
-```
-
-## 🎯 API 엔드포인트 완전 목록
-
-### **현재 구현된 엔드포인트**
-
-```javascript
-// 영상 관련
-GET  /api/v1/videos/search?q=키워드     → 기본 검색
-GET  /api/v1/videos/trending           → 트렌드 영상
-
-// 인증 관련
-POST /api/v1/auth/login               → 로그인
-POST /api/v1/auth/register            → 회원가입
-
-// 시스템
-GET  /health                          → 서버 상태 확인
-```
-
-### **새로 만들 엔드포인트**
-
-```javascript
-// AI 대화형 검색 (핵심!)
-POST /api/v1/videos/chat-search       → 자연어 감정 분석 검색
-
-// 개인화
-GET  /api/v1/videos/recommendations   → 개인화 추천
-POST /api/v1/videos/feedback          → 사용자 피드백
-
-// 트렌드 확장
-GET  /api/v1/trends/refined-keywords  → 정제된 트렌드 키워드
-GET  /api/v1/trends/emotional-stats   → 감정별 통계
-
-// 프리미엄 기능
-POST /api/v1/premium/advanced-search  → 고급 검색
-GET  /api/v1/premium/analytics        → 상세 분석
-```
-
-## 🚀 다음 단계 구현 순서
-
-### **Phase 1: 핵심 AI 모듈 완성** (1-2주)
-
-1. `natural-language-extractor.js` 구현
-2. 기존 검색 모듈과 통합
-3. 테스트 및 최적화
-
-### **Phase 2: 새로운 API 엔드포인트** (1주)
-
-1. `/api/v1/videos/chat-search` 구현
-2. `/api/v1/videos/recommendations` 구현
-3. 프리미엄 기능 엔드포인트 추가
-
-### **Phase 3: 데이터베이스 확장** (1주)
-
-1. 새로운 테이블 생성
-2. 캐싱 로직 구현
-3. 사용자 분석 데이터 수집
-
-### **Phase 4: 통합 테스트 및 최적화** (1주)
-
-1. 전체 시스템 통합 테스트
-2. 성능 최적화
-3. 에러 처리 강화
 
 ---
 
 > **작성일**: 2024년 12월 13일  
-> **다음 업데이트**: Phase 1 완료 후
+> **업데이트**: Phase 1 인증 적용 계획 추가  
+> **다음 업데이트**: 인증 시스템 적용 완료 후

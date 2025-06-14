@@ -1,0 +1,184 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+rule_type: user_rules
+priority: low
+---
+
+# 🇰🇷 한국어 로컬라이제이션 가이드
+
+## 🗣️ 기본 언어 설정
+
+### AI 어시스턴트 응답
+- **기본 언어**: 한국어
+- **기술 용어**: 한영 혼용 (예: "API", "YouTube", "MCP")
+- **코드 주석**: 한국어 우선, 필요시 영어 병기
+
+### 로그 및 콘솔 출력
+```javascript
+// ✅ 권장: 한국어 로그 메시지
+console.log('🔍 실시간 키워드 검색 시작');
+console.log('✅ 영상 분류 완료: 15개 성공');
+console.error('❌ API 할당량 초과');
+
+// 🔧 에러 메시지도 한국어
+throw new Error('YouTube API 키가 설정되지 않았습니다');
+```
+
+### API 응답 메시지
+```javascript
+// 성공 메시지
+{
+  "success": true,
+  "message": "검색이 완료되었습니다",
+  "data": { /* 결과 */ }
+}
+
+// 에러 메시지
+{
+  "success": false,
+  "error": "API 할당량이 초과되었습니다",
+  "code": "QUOTA_EXCEEDED"
+}
+```
+
+## 🎯 YouTube API 한국 지역 설정
+
+### 필수 파라미터
+```javascript
+const defaultParams = {
+  regionCode: 'KR',           // 한국 지역
+  relevanceLanguage: 'ko',    // 한국어 우선
+  hl: 'ko'                    // 인터페이스 언어
+};
+```
+
+### 검색 키워드 처리
+```javascript
+// 한국어 키워드 정규화
+function normalizeKoreanKeyword(keyword) {
+  return keyword
+    .trim()
+    .replace(/\s+/g, ' ')     // 공백 정리
+    .replace(/[ㄱ-ㅎㅏ-ㅣ]/g, ''); // 불완전한 한글 제거
+}
+```
+
+## 📱 프론트엔드 다국어 지원
+
+### 기본 텍스트
+```javascript
+const texts = {
+  ko: {
+    search: '검색',
+    loading: '로딩 중...',
+    noResults: '검색 결과가 없습니다',
+    error: '오류가 발생했습니다'
+  }
+};
+```
+
+### 날짜 및 시간 형식
+```javascript
+// 한국 시간대 표시
+const formatDate = (date) => {
+  return new Intl.DateTimeFormat('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Seoul'
+  }).format(date);
+};
+```
+
+## 🏷️ LLM 카테고리 한국어 설정
+
+### 9개 고정 카테고리 (한국어)
+```javascript
+const categories = [
+  '음악 & 엔터테인먼트',
+  '코미디 & 챌린지', 
+  '게임 & 테크',
+  '교육 & 정보',
+  '뷰티 & 패션',
+  '라이프스타일 & 건강',
+  '여행 & 문화',
+  '먹방 & 요리',
+  'ASMR & 힐링'
+];
+```
+
+### Claude API 프롬프트 (한국어)
+```javascript
+const classificationPrompt = `
+다음 키워드를 9개 카테고리 중 하나로 분류해주세요:
+키워드: "${keyword}"
+
+카테고리 목록:
+1. 음악 & 엔터테인먼트
+2. 코미디 & 챌린지
+3. 게임 & 테크
+4. 교육 & 정보
+5. 뷰티 & 패션
+6. 라이프스타일 & 건강
+7. 여행 & 문화
+8. 먹방 & 요리
+9. ASMR & 힐링
+
+응답은 정확한 카테고리명만 반환해주세요.
+`;
+```
+
+## 🔍 검색 관련 한국어 처리
+
+### 인기 한국어 키워드
+```javascript
+const popularKoreanKeywords = [
+  '먹방', '브이로그', '챌린지', 'ASMR', '운동',
+  '요리', '여행', '댄스', '커버', '리뷰',
+  '힐링', '일상', '뷰티', '패션', '게임'
+];
+```
+
+### 검색어 제안 (한국어)
+```javascript
+const searchSuggestions = {
+  mood: ['힐링', '웃긴', '신나는', '감동', '평화로운'],
+  time: ['아침', '점심', '저녁', '밤', '주말'],
+  weather: ['비오는날', '화창한날', '추운날', '더운날'],
+  activity: ['운동', '요리', '공부', '휴식', '여행']
+};
+```
+
+## 📊 통계 및 리포트 (한국어)
+
+### 성능 지표 표시
+```javascript
+const performanceReport = {
+  successRate: '성공률',
+  efficiency: '효율성', 
+  responseTime: '응답 시간',
+  cacheHitRate: '캐시 적중률',
+  apiUsage: 'API 사용량'
+};
+```
+
+### 로그 메시지 템플릿
+```javascript
+const logTemplates = {
+  search: '🔍 검색 시작: "{keyword}"',
+  success: '✅ 처리 완료: {count}개 영상',
+  error: '❌ 오류 발생: {message}',
+  cache: '💾 캐시 적중: {percentage}%'
+};
+```
+
+## 참조
+- [YouTube API 파라미터](mdc:<mdc:docs/development/youtube-api-parameters.md>)
+- [LLM 분류 시스템](mdc:<mdc:backend/youtube-ai-services/llm/>)
+- [프론트엔드 구조](mdc:<mdc:frontend/>)

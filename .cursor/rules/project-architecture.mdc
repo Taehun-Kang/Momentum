@@ -1,0 +1,269 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+rule_type: user_rules
+priority: medium
+---
+
+# 📐 프로젝트 아키텍처 가이드
+
+## 🏗️ 전체 시스템 아키텍처
+
+### 기술 스택
+- **백엔드**: Node.js + Express.js
+- **프론트엔드**: Vanilla JavaScript SPA (No Framework)
+- **데이터베이스**: Supabase (PostgreSQL)
+- **인증**: Supabase Auth
+- **배포**: Railway
+- **AI 통합**: Claude API (MCP)
+
+### 프로젝트 구조
+```
+Youtube/
+├── backend/                    # 백엔드 서버
+│   ├── server.js              # 메인 서버 파일
+│   ├── routes/                # API 라우트
+│   │   ├── searchRoutes.js    # 검색 관련 API
+│   │   ├── trendRoutes.js     # 트렌드 관련 API
+│   │   └── llmRoutes.js       # LLM 감성 분석 API
+│   ├── services/              # 비즈니스 로직
+│   │   ├── search/            # 검색 서비스
+│   │   ├── video/             # 영상 처리 서비스
+│   │   └── llm/               # LLM 서비스
+│   └── youtube-ai-services/   # YouTube AI 모듈
+│       ├── search/            # 검색 엔진
+│       ├── llm/               # LLM 분류기
+│       ├── keywords/          # 키워드 관리
+│       └── trends/            # 트렌드 분석
+├── frontend/                  # 프론트엔드 SPA
+│   ├── index.html             # 메인 HTML
+│   ├── js/                    # JavaScript 모듈
+│   │   ├── app.js             # 앱 진입점
+│   │   ├── router.js          # Hash 기반 라우터
+│   │   ├── store.js           # 상태 관리
+│   │   ├── components/        # UI 컴포넌트
+│   │   └── pages/             # 페이지 컴포넌트
+│   ├── css/                   # 스타일시트
+│   └── assets/                # 정적 자산
+├── shared/                    # 공통 유틸리티
+├── test-lab/                  # 기능 테스트
+└── docs/                      # 프로젝트 문서
+```
+
+## 💻 코딩 스타일 가이드
+
+### JavaScript 스타일
+```javascript
+// ✅ 권장: ES6+ 문법 사용
+const searchResults = await searchAPI.query(keyword);
+const filteredVideos = videos.filter(video => video.isPlayable);
+
+// ✅ 권장: 명확한 함수명
+async function getPlayableYouTubeShorts(keyword) {
+  // 구현
+}
+
+// ✅ 권장: 에러 처리 포함
+try {
+  const result = await apiCall();
+  return { success: true, data: result };
+} catch (error) {
+  console.error('API 호출 실패:', error);
+  return { success: false, error: error.message };
+}
+```
+
+### API 응답 형식 표준화
+```javascript
+// 성공 응답
+{
+  "success": true,
+  "message": "검색 완료",
+  "data": { /* 실제 데이터 */ },
+  "timestamp": "2025-01-01T00:00:00.000Z"
+}
+
+// 에러 응답
+{
+  "success": false,
+  "error": "API 할당량 초과",
+  "code": "QUOTA_EXCEEDED",
+  "timestamp": "2025-01-01T00:00:00.000Z"
+}
+```
+
+## 🎨 프론트엔드 아키텍처
+
+### Vanilla JS SPA 패턴
+```javascript
+// Component 기반 구조 (Web Components 아님!)
+class VideoCard extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { liked: false };
+  }
+  
+  render() {
+    return `<div class="video-card">...</div>`;
+  }
+  
+  mount() {
+    this.bindEvents();
+  }
+}
+
+// Store 패턴으로 상태 관리
+class VideoStore extends Store {
+  constructor() {
+    super();
+    this.videos = [];
+    this.loading = false;
+  }
+  
+  async searchVideos(keyword) {
+    this.setState({ loading: true });
+    const result = await api.searchVideos(keyword);
+    this.setState({ videos: result.data, loading: false });
+  }
+}
+
+// Hash 기반 라우팅
+const router = new Router({
+  '/': HomePage,
+  '/search': SearchPage,
+  '/trending': TrendingPage
+});
+```
+
+### CSS 구조화
+```css
+/* CSS Variables 사용 */
+:root {
+  --primary-color: #1a73e8;
+  --secondary-color: #34a853;
+  --text-color: #202124;
+  --bg-color: #ffffff;
+}
+
+/* 모듈화된 컴포넌트 스타일 */
+.video-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .video-grid {
+    grid-template-columns: 1fr;
+  }
+}
+```
+
+## 🔧 백엔드 서비스 패턴
+
+### 서비스 레이어 구조
+```javascript
+// services/search/youtubeSearchService.js
+class YouTubeSearchService {
+  constructor() {
+    this.apiKey = process.env.YOUTUBE_API_KEY;
+    this.quotaManager = new QuotaManager();
+  }
+  
+  async searchShorts(keyword, options = {}) {
+    // 1. 할당량 확인
+    await this.quotaManager.checkQuota();
+    
+    // 2. 검색 실행
+    const searchResult = await this.performSearch(keyword, options);
+    
+    // 3. 필터링
+    const filteredResult = await this.filterPlayableVideos(searchResult);
+    
+    // 4. 사용량 기록
+    await this.quotaManager.recordUsage(searchResult.unitsUsed);
+    
+    return filteredResult;
+  }
+}
+```
+
+### 에러 처리 미들웨어
+```javascript
+// middleware/errorHandler.js
+function errorHandler(error, req, res, next) {
+  console.error('API 에러:', error);
+  
+  if (error.code === 'QUOTA_EXCEEDED') {
+    return res.status(429).json({
+      success: false,
+      error: 'API 할당량이 초과되었습니다',
+      code: 'QUOTA_EXCEEDED'
+    });
+  }
+  
+  res.status(500).json({
+    success: false,
+    error: '서버 내부 오류',
+    code: 'INTERNAL_ERROR'
+  });
+}
+```
+
+## 📊 데이터베이스 설계
+
+### 테이블 명명 규칙
+- **테이블명**: `snake_case`, 복수형 사용
+- **컬럼명**: `snake_case`, 명확하고 간결하게
+- **인덱스명**: `idx_{table}_{column(s)}`
+
+### 필수 컬럼 패턴
+```sql
+-- 모든 테이블에 포함
+id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+created_at timestamptz DEFAULT now() NOT NULL,
+updated_at timestamptz DEFAULT now() NOT NULL
+```
+
+## 🧪 테스트 전략
+
+### test-lab 활용
+```
+test-lab/
+├── youtube-api/           # YouTube API 단위 테스트
+├── mcp-integration/       # MCP 연동 테스트
+├── component-tests/       # 프론트엔드 컴포넌트 테스트
+└── e2e-scenarios/         # 전체 플로우 테스트
+```
+
+### 테스트 우선순위
+1. **API 연동 테스트** (YouTube, Claude)
+2. **핵심 비즈니스 로직** (필터링, 분류)
+3. **UI 컴포넌트 테스트**
+4. **통합 테스트**
+
+## 📝 코드 품질 기준
+
+### 필수 체크사항
+- [ ] 모든 API 호출에 에러 처리
+- [ ] 할당량 추적 및 제한
+- [ ] 캐싱 전략 적용
+- [ ] 반응형 UI 구현
+- [ ] 접근성 고려 (a11y)
+
+### 성능 기준
+- **API 응답 시간**: < 500ms
+- **페이지 로드 시간**: < 2초
+- **캐시 적중률**: > 85%
+- **모바일 호환성**: 100%
+
+## 참조
+- [서버 구조 가이드](mdc:<mdc:backend/server.js>)
+- [검색 서비스](mdc:<mdc:backend/services/search/>)
+- [YouTube AI 모듈](mdc:<mdc:backend/youtube-ai-services/>)
+- [프론트엔드 계획](mdc:<mdc:frontend/>)

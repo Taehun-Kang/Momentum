@@ -1,18 +1,17 @@
-const express = require('express');
-const router = express.Router();
+import express from 'express';
 
 // Import route modules
-const authRoutes = require('./authRoutes');
-const videoRoutes = require('./videoRoutes');
-const trendRoutes = require('./trendRoutes');
-const systemRoutes = require('./systemRoutes');
+import authRoutes from './authRoutes.js';
+import searchRoutes from './searchRoutes.js';
+import llmRoutes from './llmRoutes.js';
+import trendRoutes from './trendRoutes.js';
+
+const router = express.Router();
 
 // API Routes
 router.use('/auth', authRoutes);
-router.use('/videos', videoRoutes);
+router.use('/search', searchRoutes);
+router.use('/llm', llmRoutes);
 router.use('/trends', trendRoutes);
 
-// System monitoring routes
-router.use('/system', systemRoutes);
-
-module.exports = router; 
+export default router; 
