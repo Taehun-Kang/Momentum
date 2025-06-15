@@ -43,3 +43,7 @@ config/api-keys.json
 *.temp
 temp/
 tmp/
+# Frontend build files
+frontend/.parcel-cache/
+frontend/dist/
+frontend/package-lock.json

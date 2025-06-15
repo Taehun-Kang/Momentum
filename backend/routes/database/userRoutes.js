@@ -2,13 +2,13 @@
  * 👤 User Database Routes - 사용자 DB 서비스 API 엔드포인트
  * 
  * 경로: /api/users_db/*
- * 기능: userService.js의 32개 함수를 모두 HTTP API로 노출
+ * 기능: userService.js의 실제 구현된 25개 함수를 HTTP API로 노출
  * 
- * 엔드포인트 그룹:
- * - 사용자 프로필 관리 (8개)
- * - 키워드 선호도 관리 (6개) 
- * - 영상 상호작용 관리 (8개)
- * - 사용자 분석 및 통계 (7개)
+ * 실제 구현된 함수 그룹:
+ * - 사용자 프로필 관리 (7개)
+ * - 키워드 선호도 관리 (5개) 
+ * - 영상 상호작용 관리 (4개)
+ * - 사용자 분석 및 통계 (6개)
  * - 유틸리티 및 관리 (3개)
  * 
  * @author AI Assistant
@@ -16,13 +16,26 @@
  */
 
 import express from 'express';
-import userService from '../../services/database/userService.js';
+import * as userService from '../../services/database/userService.js';
 
 const router = express.Router();
 
 // ============================================================================
-// 👤 사용자 프로필 관리 (8개 엔드포인트)
+// 👤 사용자 프로필 관리 (7개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
+
+/**
+ * POST /api/users_db/profile
+ * 사용자 프로필 생성
+ */
+router.post('/profile', async (req, res) => {
+  try {
+    const result = await userService.createUserProfile(req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 /**
  * GET /api/users_db/profile/:userId
@@ -39,12 +52,13 @@ router.get('/profile/:userId', async (req, res) => {
 });
 
 /**
- * POST /api/users_db/profile
- * 사용자 프로필 생성
+ * GET /api/users_db/profile/:userId/summary
+ * 사용자 프로필 요약 조회 (DB 함수 활용)
  */
-router.post('/profile', async (req, res) => {
+router.get('/profile/:userId/summary', async (req, res) => {
   try {
-    const result = await userService.createUserProfile(req.body);
+    const { userId } = req.params;
+    const result = await userService.getUserProfileSummary(userId);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -66,6 +80,35 @@ router.put('/profile/:userId', async (req, res) => {
 });
 
 /**
+ * PUT /api/users_db/profile/:userId/preferences
+ * 사용자 설정(preferences) 업데이트
+ */
+router.put('/profile/:userId/preferences', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await userService.updateUserPreferences(userId, req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * PUT /api/users_db/profile/:userId/tier
+ * 사용자 티어 업데이트
+ */
+router.put('/profile/:userId/tier', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { tier, expiresAt } = req.body;
+    const result = await userService.updateUserTier(userId, tier, expiresAt);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * DELETE /api/users_db/profile/:userId
  * 사용자 프로필 삭제
  */
@@ -79,72 +122,48 @@ router.delete('/profile/:userId', async (req, res) => {
   }
 });
 
-/**
- * GET /api/users_db/profiles
- * 모든 사용자 프로필 조회
- */
-router.get('/profiles', async (req, res) => {
-  try {
-    const result = await userService.getAllUserProfiles(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/users_db/profile/:userId/settings
- * 사용자 설정 조회
- */
-router.get('/profile/:userId/settings', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const result = await userService.getUserSettings(userId);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * PUT /api/users_db/profile/:userId/settings
- * 사용자 설정 업데이트
- */
-router.put('/profile/:userId/settings', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const result = await userService.updateUserSettings(userId, req.body);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/users_db/search
- * 사용자 검색
- */
-router.get('/search', async (req, res) => {
-  try {
-    const result = await userService.searchUsers(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
 // ============================================================================
-// 🏷️ 키워드 선호도 관리 (6개 엔드포인트)
+// 🏷️ 키워드 선호도 관리 (5개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
  * GET /api/users_db/:userId/keyword-preferences
- * 사용자 키워드 선호도 조회
+ * 키워드 선호도 조회 (기본)
  */
 router.get('/:userId/keyword-preferences', async (req, res) => {
   try {
     const { userId } = req.params;
-    const result = await userService.getUserKeywordPreferences(userId);
+    const result = await userService.getKeywordPreferences(userId, req.query);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/users_db/:userId/keyword-preferences/detailed
+ * 사용자 선호 키워드 상세 조회 (DB 함수 활용)
+ */
+router.get('/:userId/keyword-preferences/detailed', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const limit = req.query.limit || 10;
+    const result = await userService.getUserPreferencesDetailed(userId, limit);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/users_db/:userId/keyword-preferences/upsert
+ * 키워드 선호도 업데이트 (DB 함수 활용)
+ */
+router.post('/:userId/keyword-preferences/upsert', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { keyword, incrementSelection } = req.body;
+    const result = await userService.upsertKeywordPreference(userId, keyword, incrementSelection);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -153,12 +172,13 @@ router.get('/:userId/keyword-preferences', async (req, res) => {
 
 /**
  * POST /api/users_db/:userId/keyword-preferences
- * 키워드 선호도 추가
+ * 키워드 선호도 수동 생성/업데이트
  */
 router.post('/:userId/keyword-preferences', async (req, res) => {
   try {
     const { userId } = req.params;
-    const result = await userService.addKeywordPreference(userId, req.body);
+    const preferenceData = { user_id: userId, ...req.body };
+    const result = await userService.createOrUpdateKeywordPreference(preferenceData);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -166,55 +186,14 @@ router.post('/:userId/keyword-preferences', async (req, res) => {
 });
 
 /**
- * PUT /api/users_db/:userId/keyword-preferences/:preferenceId
- * 키워드 선호도 업데이트
+ * PUT /api/users_db/:userId/keyword-preferences/:keyword/block
+ * 키워드 차단/해제
  */
-router.put('/:userId/keyword-preferences/:preferenceId', async (req, res) => {
+router.put('/:userId/keyword-preferences/:keyword/block', async (req, res) => {
   try {
-    const { preferenceId } = req.params;
-    const result = await userService.updateKeywordPreference(preferenceId, req.body);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * DELETE /api/users_db/:userId/keyword-preferences/:preferenceId
- * 키워드 선호도 삭제
- */
-router.delete('/:userId/keyword-preferences/:preferenceId', async (req, res) => {
-  try {
-    const { preferenceId } = req.params;
-    const result = await userService.removeKeywordPreference(preferenceId);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/users_db/:userId/preferred-keywords
- * 사용자 선호 키워드 목록 조회
- */
-router.get('/:userId/preferred-keywords', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const result = await userService.getUserPreferredKeywords(userId, req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * PUT /api/users_db/:userId/keyword-preferences/bulk
- * 키워드 선호도 일괄 업데이트
- */
-router.put('/:userId/keyword-preferences/bulk', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const result = await userService.bulkUpdateKeywordPreferences(userId, req.body);
+    const { userId, keyword } = req.params;
+    const { isBlocked, blockReason } = req.body;
+    const result = await userService.blockUnblockKeyword(userId, keyword, isBlocked, blockReason);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -222,8 +201,23 @@ router.put('/:userId/keyword-preferences/bulk', async (req, res) => {
 });
 
 // ============================================================================
-// 📺 영상 상호작용 관리 (8개 엔드포인트)
+// 📺 영상 상호작용 관리 (4개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
+
+/**
+ * POST /api/users_db/:userId/video-interactions
+ * 영상 상호작용 기록 생성
+ */
+router.post('/:userId/video-interactions', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const interactionData = { user_id: userId, ...req.body };
+    const result = await userService.createVideoInteraction(interactionData);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 /**
  * GET /api/users_db/:userId/video-interactions
@@ -240,83 +234,13 @@ router.get('/:userId/video-interactions', async (req, res) => {
 });
 
 /**
- * POST /api/users_db/:userId/video-interactions
- * 영상 상호작용 기록
+ * GET /api/users_db/:userId/video-interactions/:videoId
+ * 특정 영상에 대한 사용자 상호작용 조회
  */
-router.post('/:userId/video-interactions', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const result = await userService.recordVideoInteraction({ userId, ...req.body });
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * PUT /api/users_db/:userId/video-interactions/:interactionId
- * 영상 상호작용 업데이트
- */
-router.put('/:userId/video-interactions/:interactionId', async (req, res) => {
-  try {
-    const { interactionId } = req.params;
-    const result = await userService.updateVideoInteraction(interactionId, req.body);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * DELETE /api/users_db/:userId/video-interactions/:interactionId
- * 영상 상호작용 삭제
- */
-router.delete('/:userId/video-interactions/:interactionId', async (req, res) => {
-  try {
-    const { interactionId } = req.params;
-    const result = await userService.deleteVideoInteraction(interactionId);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/users_db/:userId/favorite-videos
- * 즐겨찾기 영상 조회
- */
-router.get('/:userId/favorite-videos', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const result = await userService.getFavoriteVideos(userId, req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * POST /api/users_db/:userId/favorite-videos
- * 즐겨찾기 영상 추가
- */
-router.post('/:userId/favorite-videos', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const result = await userService.addFavoriteVideo(userId, req.body);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * DELETE /api/users_db/:userId/favorite-videos/:videoId
- * 즐겨찾기 영상 삭제
- */
-router.delete('/:userId/favorite-videos/:videoId', async (req, res) => {
+router.get('/:userId/video-interactions/:videoId', async (req, res) => {
   try {
     const { userId, videoId } = req.params;
-    const result = await userService.removeFavoriteVideo(userId, videoId);
+    const result = await userService.getUserVideoInteractionsByVideo(userId, videoId);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -324,13 +248,14 @@ router.delete('/:userId/favorite-videos/:videoId', async (req, res) => {
 });
 
 /**
- * GET /api/users_db/:userId/watch-history
- * 시청 히스토리 조회
+ * GET /api/users_db/:userId/watching-stats
+ * 사용자 시청 통계
  */
-router.get('/:userId/watch-history', async (req, res) => {
+router.get('/:userId/watching-stats', async (req, res) => {
   try {
     const { userId } = req.params;
-    const result = await userService.getWatchHistory(userId, req.query);
+    const days = req.query.days || 30;
+    const result = await userService.getUserWatchingStats(userId, days);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -338,17 +263,17 @@ router.get('/:userId/watch-history', async (req, res) => {
 });
 
 // ============================================================================
-// 📊 사용자 분석 및 통계 (7개 엔드포인트)
+// 📊 사용자 분석 및 통계 (6개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
- * GET /api/users_db/:userId/analytics/dashboard
- * 사용자 대시보드 데이터
+ * GET /api/users_db/profiles
+ * 활성 사용자 프로필 조회
  */
-router.get('/:userId/analytics/dashboard', async (req, res) => {
+router.get('/profiles', async (req, res) => {
   try {
-    const { userId } = req.params;
-    const result = await userService.getUserDashboard(userId);
+    const limit = req.query.limit || 50;
+    const result = await userService.getActiveUserProfiles(limit);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -356,13 +281,13 @@ router.get('/:userId/analytics/dashboard', async (req, res) => {
 });
 
 /**
- * GET /api/users_db/:userId/analytics/activity
- * 사용자 활동 통계
+ * GET /api/users_db/keyword-preferences/popular
+ * 인기 키워드 선호도 조회
  */
-router.get('/:userId/analytics/activity', async (req, res) => {
+router.get('/keyword-preferences/popular', async (req, res) => {
   try {
-    const { userId } = req.params;
-    const result = await userService.getUserActivityStats(userId, req.query);
+    const limit = req.query.limit || 20;
+    const result = await userService.getPopularKeywordPreferences(limit);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -370,13 +295,14 @@ router.get('/:userId/analytics/activity', async (req, res) => {
 });
 
 /**
- * GET /api/users_db/:userId/analytics/preferences
- * 사용자 선호도 분석
+ * GET /api/users_db/:userId/behavior-summary
+ * 사용자 행동 요약 (또는 전체 사용자)
  */
-router.get('/:userId/analytics/preferences', async (req, res) => {
+router.get('/:userId/behavior-summary', async (req, res) => {
   try {
     const { userId } = req.params;
-    const result = await userService.analyzeUserPreferences(userId);
+    const limit = req.query.limit || 50;
+    const result = await userService.getUserBehaviorSummary(userId, limit);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -384,13 +310,13 @@ router.get('/:userId/analytics/preferences', async (req, res) => {
 });
 
 /**
- * GET /api/users_db/:userId/analytics/patterns
- * 사용자 패턴 분석
+ * POST /api/users_db/:userId/activity
+ * 사용자 활동 업데이트
  */
-router.get('/:userId/analytics/patterns', async (req, res) => {
+router.post('/:userId/activity', async (req, res) => {
   try {
     const { userId } = req.params;
-    const result = await userService.getUserBehaviorPatterns(userId, req.query);
+    const result = await userService.updateUserActivity(userId);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -398,13 +324,14 @@ router.get('/:userId/analytics/patterns', async (req, res) => {
 });
 
 /**
- * GET /api/users_db/:userId/recommendations
- * 사용자 맞춤 추천
+ * GET /api/users_db/:userId/ai-search-quota
+ * AI 검색 할당량 확인 (및 사용량 증가)
  */
-router.get('/:userId/recommendations', async (req, res) => {
+router.get('/:userId/ai-search-quota', async (req, res) => {
   try {
     const { userId } = req.params;
-    const result = await userService.generateUserRecommendations(userId, req.query);
+    const incrementUsage = req.query.increment === 'true';
+    const result = await userService.checkAiSearchQuota(userId, incrementUsage);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -412,27 +339,13 @@ router.get('/:userId/recommendations', async (req, res) => {
 });
 
 /**
- * GET /api/users_db/:userId/similar-users
- * 유사 사용자 찾기
+ * POST /api/users_db/:userId/personalization-score
+ * 개인화 점수 계산 및 업데이트 (DB 함수 활용)
  */
-router.get('/:userId/similar-users', async (req, res) => {
+router.post('/:userId/personalization-score', async (req, res) => {
   try {
     const { userId } = req.params;
-    const result = await userService.findSimilarUsers(userId, req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * POST /api/users_db/:userId/analytics/engagement
- * 사용자 참여도 업데이트
- */
-router.post('/:userId/analytics/engagement', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const result = await userService.updateUserEngagement(userId, req.body);
+    const result = await userService.calculatePersonalizationScore(userId);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -440,16 +353,17 @@ router.post('/:userId/analytics/engagement', async (req, res) => {
 });
 
 // ============================================================================
-// 🧹 유틸리티 및 관리 기능 (3개 엔드포인트)
+// 🧹 유틸리티 및 관리 기능 (3개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
- * DELETE /api/users_db/cleanup/inactive
- * 비활성 사용자 정리
+ * POST /api/users_db/:userId/onboarding
+ * 온보딩 완료 처리
  */
-router.delete('/cleanup/inactive', async (req, res) => {
+router.post('/:userId/onboarding', async (req, res) => {
   try {
-    const result = await userService.cleanupInactiveUsers(req.query);
+    const { userId } = req.params;
+    const result = await userService.completeOnboarding(userId, req.body);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -457,12 +371,18 @@ router.delete('/cleanup/inactive', async (req, res) => {
 });
 
 /**
- * POST /api/users_db/analytics/recalculate
- * 사용자 통계 재계산
+ * GET /api/users_db/search
+ * 사용자 검색
  */
-router.post('/analytics/recalculate', async (req, res) => {
+router.get('/search', async (req, res) => {
   try {
-    const result = await userService.recalculateUserStats(req.body);
+    // query 파라미터를 display_name으로 매핑
+    const searchParams = {
+      ...req.query,
+      display_name: req.query.query || req.query.display_name
+    };
+    
+    const result = await userService.searchUsers(searchParams);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -470,12 +390,13 @@ router.post('/analytics/recalculate', async (req, res) => {
 });
 
 /**
- * GET /api/users_db/analytics/summary
- * 전체 사용자 요약 통계
+ * GET /api/users_db/:userId/exists
+ * 사용자 존재 여부 확인
  */
-router.get('/analytics/summary', async (req, res) => {
+router.get('/:userId/exists', async (req, res) => {
   try {
-    const result = await userService.getUsersSummaryStats();
+    const { userId } = req.params;
+    const result = await userService.checkUserExists(userId);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

@@ -39,14 +39,28 @@ const supabase = createClient(
  */
 export const createUserProfile = async (userdata) => {
   try {
+    // user_id 또는 id 필드 모두 처리
+    const userId = userdata.user_id || userdata.id;
+    
+    if (!userId) {
+      throw new Error('user_id 또는 id 필드가 필요합니다');
+    }
+
+    // UUID 형식 검증 추가
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId)) {
+      throw new Error(`유효하지 않은 UUID 형식입니다. 정확한 UUID 형식(예: 550e8400-e29b-41d4-a716-446655440000)을 사용해주세요. 받은 값: "${userId}"`);
+    }
+
     const { data, error } = await supabase
       .from('user_profiles')
       .insert({
-        user_id: userdata.user_id,
+        user_id: userId,
         display_name: userdata.display_name || 'Unknown User',
         avatar_url: userdata.avatar_url || null,
         bio: userdata.bio || null,
-        user_tier: 'free',
+        user_tier: userdata.user_tier || 'free',
+        preferences: userdata.preferences || {},  // ✅ 추가: preferences 필드 처리
         onboarding_completed: false
       })
       .select()
@@ -61,9 +75,22 @@ export const createUserProfile = async (userdata) => {
     };
   } catch (error) {
     console.error('사용자 프로필 생성 실패:', error);
+    
+    // UUID 관련 에러에 대한 구체적인 처리
+    let errorMessage = error.message;
+    if (error.code === '22P02' && error.message.includes('invalid input syntax for type uuid')) {
+      errorMessage = `UUID 형식 오류: 유효한 UUID 형식을 사용해주세요. 예시: 550e8400-e29b-41d4-a716-446655440000`;
+    } else if (error.code === '23505') {
+      errorMessage = '이미 존재하는 사용자 ID입니다';
+    }
+    
     return {
       success: false,
-      error: error.message
+      error: errorMessage,
+      code: error.code || 'UNKNOWN_ERROR',
+      suggestion: error.code === '22P02' 
+        ? 'Supabase Auth를 통해 가입하거나 정확한 UUID 형식을 사용해주세요' 
+        : '다시 시도해주세요'
     };
   }
 };
@@ -206,7 +233,10 @@ export const updateUserTier = async (userId, tier, expiresAt = null) => {
     };
 
     if (tier !== 'free' && expiresAt) {
-      updateData.tier_expires_at = expiresAt.toISOString();
+      // expiresAt이 문자열인지 Date 객체인지 확인
+      updateData.tier_expires_at = typeof expiresAt === 'string' 
+        ? expiresAt 
+        : new Date(expiresAt).toISOString();
     }
 
     const { data, error } = await supabase
@@ -427,6 +457,43 @@ export const getKeywordPreferences = async (userId, filters = {}) => {
  */
 export const blockUnblockKeyword = async (userId, keyword, isBlocked, blockReason = null) => {
   try {
+    // 1. 먼저 키워드 선호도가 존재하는지 확인
+    const { data: existingPreference, error: checkError } = await supabase
+      .from('user_keyword_preferences')
+      .select('id, keyword, selection_count')
+      .eq('user_id', userId)
+      .eq('keyword', keyword)
+      .single();
+
+    // 2. 키워드 선호도가 존재하지 않으면 먼저 생성
+    if (checkError?.code === 'PGRST116') {
+      console.log(`키워드 "${keyword}" 선호도가 존재하지 않아 먼저 생성합니다`);
+      
+      const { data: newPreference, error: createError } = await supabase
+        .from('user_keyword_preferences')
+        .insert({
+          user_id: userId,
+          keyword: keyword,
+          selection_count: 0,
+          preference_score: 0.1,
+          is_blocked: isBlocked,
+          block_reason: isBlocked ? blockReason : null
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+
+      return {
+        success: true,
+        message: `키워드 "${keyword}"가 생성 후 ${isBlocked ? '차단' : '해제'}되었습니다`,
+        data: newPreference
+      };
+    }
+
+    if (checkError) throw checkError;
+
+    // 3. 기존 키워드 선호도 업데이트
     const { data, error } = await supabase
       .from('user_keyword_preferences')
       .update({
@@ -450,7 +517,7 @@ export const blockUnblockKeyword = async (userId, keyword, isBlocked, blockReaso
     console.error('키워드 차단/해제 실패:', error);
     return {
       success: false,
-      error: error.message
+      error: `키워드 차단/해제 처리 중 오류가 발생했습니다: ${error.message}`
     };
   }
 };
@@ -739,11 +806,21 @@ export const getUserBehaviorSummary = async (userId = null, limit = 50) => {
  */
 export const updateUserActivity = async (userId) => {
   try {
+    // 먼저 현재 login_count 조회
+    const { data: currentProfile, error: fetchError } = await supabase
+      .from('user_profiles')
+      .select('login_count')
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // login_count 증가하여 업데이트
     const { data, error } = await supabase
       .from('user_profiles')
       .update({
         last_active_at: new Date().toISOString(),
-        login_count: supabase.raw('login_count + 1'),
+        login_count: (currentProfile.login_count || 0) + 1,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', userId)
@@ -858,24 +935,34 @@ export const completeOnboarding = async (userId, onboardingData) => {
 // =============================================================================
 
 /**
- * 사용자 검색 (관리자용)
+ * 사용자 검색 (관리자용) - 성능 최적화 버전
  * @param {Object} searchParams - 검색 조건
- * @param {string} [searchParams.display_name] - 이름 검색
+ * @param {string} [searchParams.display_name] - 이름 검색 (query 필드로도 받음)
+ * @param {string} [searchParams.query] - 이름 검색 (display_name과 동일)
  * @param {string} [searchParams.user_tier] - 티어 필터
  * @param {number} [searchParams.days_inactive] - 비활성 기간 필터
- * @param {number} [searchParams.limit=50] - 조회 개수 제한
+ * @param {number} [searchParams.limit=20] - 조회 개수 제한 (기본값 축소)
  * @returns {Promise<Object>} 사용자 검색 결과
  */
 export const searchUsers = async (searchParams) => {
   try {
+    // 성능을 위해 기본 limit을 20으로 축소
+    const limit = Math.min(searchParams.limit || 20, 100);
+    
+    // 검색어 정규화 (display_name 또는 query 필드 모두 처리)
+    const searchQuery = searchParams.display_name || searchParams.query;
+    
+    // 기본 쿼리 - 필수 필드만 선택하여 성능 향상
     let query = supabase
       .from('user_profiles')
-      .select('user_id, display_name, user_tier, last_active_at, total_searches, created_at')
-      .order('last_active_at', { ascending: false })
-      .limit(searchParams.limit || 50);
+      .select('user_id, display_name, user_tier, last_active_at, total_searches')
+      .limit(limit);
 
-    if (searchParams.display_name) {
-      query = query.ilike('display_name', `%${searchParams.display_name}%`);
+    // 검색 조건이 있으면 먼저 적용
+    if (searchQuery) {
+      console.log('사용자 검색어:', searchQuery);
+      // 정확한 매칭 우선, 부분 매칭은 제한적으로
+      query = query.or(`display_name.eq.${searchQuery},display_name.ilike.%${searchQuery}%`);
     }
 
     if (searchParams.user_tier) {
@@ -887,20 +974,44 @@ export const searchUsers = async (searchParams) => {
       query = query.lt('last_active_at', cutoffDate.toISOString());
     }
 
-    const { data, error } = await query;
+    // 마지막에 정렬 적용 (인덱스 활용을 위해)
+    query = query.order('created_at', { ascending: false });
+
+    // Timeout 방지를 위한 간단한 타임아웃 설정
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('사용자 검색 시간 초과 (10초)')), 10000);
+    });
+
+    const queryPromise = query;
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
     if (error) throw error;
 
     return {
       success: true,
-      message: '사용자 검색 완료',
-      data
+      message: `사용자 검색 완료 (${data.length}명 찾음)`,
+      data,
+      searchParams: {
+        query: searchQuery,
+        limit,
+        total_found: data.length
+      }
     };
   } catch (error) {
     console.error('사용자 검색 실패:', error);
+    
+    // 더 구체적인 에러 메시지
+    let errorMessage = '사용자 검색 중 오류가 발생했습니다';
+    if (error.message.includes('시간 초과')) {
+      errorMessage = '검색 시간이 초과되었습니다. 더 구체적인 검색어를 사용해주세요';
+    } else if (error.code) {
+      errorMessage = `데이터베이스 오류 (${error.code}): ${error.message}`;
+    }
+
     return {
       success: false,
-      error: error.message
+      error: errorMessage,
+      suggestion: '검색어를 더 구체적으로 입력하거나 필터 조건을 추가해보세요'
     };
   }
 };

@@ -2,35 +2,38 @@
  * 🔍 Search Database Routes - 검색 DB 서비스 API 엔드포인트
  * 
  * 경로: /api/search_db/*
- * 기능: searchService.js의 30개 함수를 모두 HTTP API로 노출
+ * 기능: searchService.js의 실제 구현된 21개 함수를 HTTP API로 노출
  * 
- * 엔드포인트 그룹:
- * - 검색 로그 관리 (8개)
- * - 검색 성능 분석 (6개)
- * - API 사용량 추적 (7개)
- * - 검색 패턴 분석 (5개)
- * - 유틸리티 및 관리 (4개)
+ * 실제 구현된 함수 그룹:
+ * - 검색 로그 저장 및 관리 (4개)
+ * - 인기 키워드 및 트렌드 분석 (4개) 
+ * - API 사용량 및 성능 분석 (4개)
+ * - 사용자 검색 패턴 분석 (3개)
+ * - 검색 세션 및 에러 분석 (3개)
+ * - 유틸리티 및 관리 (3개)
+ * 
+ * 🌟 핵심 기능: realtime-keyword-search.js와 완전 통합!
  * 
  * @author AI Assistant
  * @version 1.0.0
  */
 
 import express from 'express';
-import searchService from '../../services/database/searchService.js';
+import * as searchService from '../../services/database/searchService.js';
 
 const router = express.Router();
 
 // ============================================================================
-// 📝 검색 로그 관리 (8개 엔드포인트)
+// 📝 검색 로그 저장 및 관리 (4개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
  * POST /api/search_db/logs
- * 검색 로그 기록
+ * 새로운 검색 로그 저장
  */
 router.post('/logs', async (req, res) => {
   try {
-    const result = await searchService.logSearch(req.body);
+    const result = await searchService.createSearchLog(req.body);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -38,13 +41,13 @@ router.post('/logs', async (req, res) => {
 });
 
 /**
- * GET /api/search_db/logs/:searchId
- * 검색 로그 조회
+ * PUT /api/search_db/logs/:logId
+ * 검색 로그 업데이트 (검색 완료 시)
  */
-router.get('/logs/:searchId', async (req, res) => {
+router.put('/logs/:logId', async (req, res) => {
   try {
-    const { searchId } = req.params;
-    const result = await searchService.getSearchLog(searchId);
+    const { logId } = req.params;
+    const result = await searchService.updateSearchLog(logId, req.body);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -52,39 +55,44 @@ router.get('/logs/:searchId', async (req, res) => {
 });
 
 /**
- * GET /api/search_db/logs/user/:userId
- * 사용자별 검색 히스토리 조회
+ * GET /api/search_db/logs/:logId
+ * 검색 로그 조회 (ID로)
  */
-router.get('/logs/user/:userId', async (req, res) => {
+router.get('/logs/:logId', async (req, res) => {
+  try {
+    const { logId } = req.params;
+    const result = await searchService.getSearchLogById(logId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/search_db/users/:userId/logs
+ * 사용자별 검색 로그 조회
+ */
+router.get('/users/:userId/logs', async (req, res) => {
   try {
     const { userId } = req.params;
-    const result = await searchService.getUserSearchHistory(userId, req.query);
+    const result = await searchService.getUserSearchLogs(userId, req.query);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-/**
- * GET /api/search_db/logs/recent
- * 최근 검색 로그 조회
- */
-router.get('/logs/recent', async (req, res) => {
-  try {
-    const result = await searchService.getRecentSearches(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
+// ============================================================================
+// 📊 인기 키워드 및 트렌드 분석 (4개 엔드포인트) ✅ 모두 구현됨
+// ============================================================================
 
 /**
  * GET /api/search_db/logs/popular
- * 인기 검색어 조회
+ * 인기 키워드 상세 분석 (DB 함수 활용)
  */
 router.get('/logs/popular', async (req, res) => {
   try {
-    const result = await searchService.getPopularSearchTerms(req.query);
+    const result = await searchService.getPopularKeywordsDetailed(req.query);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -92,13 +100,13 @@ router.get('/logs/popular', async (req, res) => {
 });
 
 /**
- * PUT /api/search_db/logs/:searchId
- * 검색 로그 업데이트
+ * GET /api/search_db/keywords/realtime-trends
+ * 실시간 트렌드 키워드 분석 (DB 함수 활용)
  */
-router.put('/logs/:searchId', async (req, res) => {
+router.get('/keywords/realtime-trends', async (req, res) => {
   try {
-    const { searchId } = req.params;
-    const result = await searchService.updateSearchLog(searchId, req.body);
+    const hoursBack = req.query.hours || 1;
+    const result = await searchService.getRealtimeTrendKeywords(hoursBack);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -106,13 +114,13 @@ router.put('/logs/:searchId', async (req, res) => {
 });
 
 /**
- * DELETE /api/search_db/logs/:searchId
- * 검색 로그 삭제
+ * GET /api/search_db/keywords/category/:category
+ * 카테고리별 인기 키워드 조회
  */
-router.delete('/logs/:searchId', async (req, res) => {
+router.get('/keywords/category/:category', async (req, res) => {
   try {
-    const { searchId } = req.params;
-    const result = await searchService.deleteSearchLog(searchId);
+    const { category } = req.params;
+    const result = await searchService.getPopularKeywordsByCategory(category, req.query);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -120,12 +128,14 @@ router.delete('/logs/:searchId', async (req, res) => {
 });
 
 /**
- * POST /api/search_db/logs/bulk
- * 검색 로그 일괄 처리
+ * GET /api/search_db/autocomplete
+ * 검색어 자동완성 후보 조회
  */
-router.post('/logs/bulk', async (req, res) => {
+router.get('/autocomplete', async (req, res) => {
   try {
-    const result = await searchService.bulkInsertSearchLogs(req.body);
+    const { prefix } = req.query;
+    const limit = req.query.limit || 10;
+    const result = await searchService.getSearchAutocompleteSuggestions(prefix, limit);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -133,16 +143,17 @@ router.post('/logs/bulk', async (req, res) => {
 });
 
 // ============================================================================
-// 📊 검색 성능 분석 (6개 엔드포인트)
+// 📈 API 사용량 및 성능 분석 (4개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
- * GET /api/search_db/analytics/performance
- * 검색 성능 통계 조회
+ * GET /api/search_db/analytics/api-usage
+ * API 사용량 분석 (DB 함수 활용)
  */
-router.get('/analytics/performance', async (req, res) => {
+router.get('/analytics/api-usage', async (req, res) => {
   try {
-    const result = await searchService.getSearchPerformanceStats(req.query);
+    const daysBack = req.query.days || 1;
+    const result = await searchService.analyzeApiUsage(daysBack);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -150,12 +161,13 @@ router.get('/analytics/performance', async (req, res) => {
 });
 
 /**
- * GET /api/search_db/analytics/response-time
- * 응답 시간 분석
+ * GET /api/search_db/analytics/quota-usage
+ * 할당량 카테고리별 사용량 조회
  */
-router.get('/analytics/response-time', async (req, res) => {
+router.get('/analytics/quota-usage', async (req, res) => {
   try {
-    const result = await searchService.analyzeResponseTimes(req.query);
+    const daysBack = req.query.days || 1;
+    const result = await searchService.getQuotaUsageByCategory(daysBack);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -163,12 +175,13 @@ router.get('/analytics/response-time', async (req, res) => {
 });
 
 /**
- * GET /api/search_db/analytics/success-rates
- * 검색 성공률 분석
+ * GET /api/search_db/analytics/cache-efficiency
+ * 캐시 효율성 분석
  */
-router.get('/analytics/success-rates', async (req, res) => {
+router.get('/analytics/cache-efficiency', async (req, res) => {
   try {
-    const result = await searchService.analyzeSearchSuccessRates(req.query);
+    const daysBack = req.query.days || 1;
+    const result = await searchService.analyzeCacheEfficiency(daysBack);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -176,38 +189,13 @@ router.get('/analytics/success-rates', async (req, res) => {
 });
 
 /**
- * GET /api/search_db/analytics/trends
- * 검색 트렌드 분석
+ * GET /api/search_db/analytics/performance-summary
+ * 성능 요약 분석
  */
-router.get('/analytics/trends', async (req, res) => {
+router.get('/analytics/performance-summary', async (req, res) => {
   try {
-    const result = await searchService.getSearchTrends(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/search_db/analytics/keywords
- * 키워드 성능 분석
- */
-router.get('/analytics/keywords', async (req, res) => {
-  try {
-    const result = await searchService.analyzeKeywordPerformance(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/search_db/analytics/user-behavior
- * 사용자 검색 행동 분석
- */
-router.get('/analytics/user-behavior', async (req, res) => {
-  try {
-    const result = await searchService.analyzeUserSearchBehavior(req.query);
+    const daysBack = req.query.days || 1;
+    const result = await searchService.getPerformanceSummary(daysBack);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -215,16 +203,18 @@ router.get('/analytics/user-behavior', async (req, res) => {
 });
 
 // ============================================================================
-// 🔌 API 사용량 추적 (7개 엔드포인트)
+// 👤 사용자 검색 패턴 분석 (3개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
- * POST /api/search_db/api-usage
- * API 사용량 기록
+ * GET /api/search_db/users/:userId/search-patterns
+ * 사용자 검색 패턴 분석
  */
-router.post('/api-usage', async (req, res) => {
+router.get('/users/:userId/search-patterns', async (req, res) => {
   try {
-    const result = await searchService.trackAPIUsage(req.body);
+    const { userId } = req.params;
+    const daysBack = req.query.days || 30;
+    const result = await searchService.analyzeUserSearchPatterns(userId, daysBack);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -232,12 +222,14 @@ router.post('/api-usage', async (req, res) => {
 });
 
 /**
- * GET /api/search_db/api-usage/stats
- * API 사용량 통계 조회
+ * GET /api/search_db/users/:userId/preferred-keywords
+ * 사용자 선호 키워드 분석
  */
-router.get('/api-usage/stats', async (req, res) => {
+router.get('/users/:userId/preferred-keywords', async (req, res) => {
   try {
-    const result = await searchService.getAPIUsageStats(req.query);
+    const { userId } = req.params;
+    const daysBack = req.query.days || 30;
+    const result = await searchService.getUserPreferredKeywords(userId, daysBack);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -245,64 +237,13 @@ router.get('/api-usage/stats', async (req, res) => {
 });
 
 /**
- * GET /api/search_db/api-usage/quota
- * API 할당량 현황 조회
+ * GET /api/search_db/sessions/:sessionId/analysis
+ * 검색 세션 분석
  */
-router.get('/api-usage/quota', async (req, res) => {
+router.get('/sessions/:sessionId/analysis', async (req, res) => {
   try {
-    const result = await searchService.getQuotaUsage(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/search_db/api-usage/limits
- * API 한도 모니터링
- */
-router.get('/api-usage/limits', async (req, res) => {
-  try {
-    const result = await searchService.monitorAPILimits();
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/search_db/api-usage/optimization
- * API 사용량 최적화 제안
- */
-router.get('/api-usage/optimization', async (req, res) => {
-  try {
-    const result = await searchService.getUsageOptimizationSuggestions();
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/search_db/api-usage/hourly
- * 시간대별 API 사용량 조회
- */
-router.get('/api-usage/hourly', async (req, res) => {
-  try {
-    const result = await searchService.getHourlyUsageStats(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/search_db/api-usage/daily
- * 일별 API 사용량 조회
- */
-router.get('/api-usage/daily', async (req, res) => {
-  try {
-    const result = await searchService.getDailyUsageStats(req.query);
+    const { sessionId } = req.params;
+    const result = await searchService.analyzeSearchSession(sessionId);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -310,16 +251,17 @@ router.get('/api-usage/daily', async (req, res) => {
 });
 
 // ============================================================================
-// 🎯 검색 패턴 분석 (5개 엔드포인트)
+// 🚨 검색 세션 및 에러 분석 (3개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
- * GET /api/search_db/patterns/seasonal
- * 계절별 검색 패턴 분석
+ * GET /api/search_db/analytics/errors
+ * 검색 에러 분석
  */
-router.get('/patterns/seasonal', async (req, res) => {
+router.get('/analytics/errors', async (req, res) => {
   try {
-    const result = await searchService.analyzeSeasonalPatterns(req.query);
+    const daysBack = req.query.days || 1;
+    const result = await searchService.analyzeSearchErrors(daysBack);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -327,12 +269,13 @@ router.get('/patterns/seasonal', async (req, res) => {
 });
 
 /**
- * GET /api/search_db/patterns/geographic
- * 지역별 검색 패턴 분석
+ * GET /api/search_db/analytics/quota-status
+ * 할당량 상태 모니터링
  */
-router.get('/patterns/geographic', async (req, res) => {
+router.get('/analytics/quota-status', async (req, res) => {
   try {
-    const result = await searchService.analyzeGeographicPatterns(req.query);
+    const hoursBack = req.query.hours || 24;
+    const result = await searchService.monitorQuotaStatus(hoursBack);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -340,38 +283,13 @@ router.get('/patterns/geographic', async (req, res) => {
 });
 
 /**
- * GET /api/search_db/patterns/demographic
- * 인구통계학적 검색 패턴 분석
+ * GET /api/search_db/sessions/realtime/:sessionId
+ * 실시간 검색 세션 상태 조회 (realtime-keyword-search.js 연동)
  */
-router.get('/patterns/demographic', async (req, res) => {
+router.get('/sessions/realtime/:sessionId', async (req, res) => {
   try {
-    const result = await searchService.analyzeDemographicPatterns(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/search_db/patterns/device
- * 디바이스별 검색 패턴 분석
- */
-router.get('/patterns/device', async (req, res) => {
-  try {
-    const result = await searchService.analyzeDevicePatterns(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/search_db/patterns/temporal
- * 시간대별 검색 패턴 분석
- */
-router.get('/patterns/temporal', async (req, res) => {
-  try {
-    const result = await searchService.analyzeTemporalPatterns(req.query);
+    const { sessionId } = req.params;
+    const result = await searchService.getRealtimeSearchSessionStatus(sessionId);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -379,7 +297,7 @@ router.get('/patterns/temporal', async (req, res) => {
 });
 
 // ============================================================================
-// 🧹 유틸리티 및 관리 기능 (4개 엔드포인트)
+// 🧹 유틸리티 및 관리 (3개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
@@ -388,7 +306,7 @@ router.get('/patterns/temporal', async (req, res) => {
  */
 router.delete('/cleanup/old-logs', async (req, res) => {
   try {
-    const result = await searchService.cleanupOldSearchLogs(req.query);
+    const result = await searchService.cleanupOldSearchLogs();
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -396,12 +314,14 @@ router.delete('/cleanup/old-logs', async (req, res) => {
 });
 
 /**
- * POST /api/search_db/analytics/aggregate
- * 검색 데이터 집계
+ * GET /api/search_db/statistics/:viewName
+ * 검색 로그 통계 조회 (뷰 기반)
  */
-router.post('/analytics/aggregate', async (req, res) => {
+router.get('/statistics/:viewName', async (req, res) => {
   try {
-    const result = await searchService.aggregateSearchData(req.body);
+    const { viewName } = req.params;
+    const limit = req.query.limit || 50;
+    const result = await searchService.getSearchLogStatistics(viewName, limit);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -409,25 +329,13 @@ router.post('/analytics/aggregate', async (req, res) => {
 });
 
 /**
- * GET /api/search_db/dashboard
- * 검색 서비스 대시보드 데이터
+ * GET /api/search_db/logs/:logId/exists
+ * 검색 로그 존재 여부 확인
  */
-router.get('/dashboard', async (req, res) => {
+router.get('/logs/:logId/exists', async (req, res) => {
   try {
-    const result = await searchService.getSearchDashboard();
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * POST /api/search_db/export
- * 검색 데이터 내보내기
- */
-router.post('/export', async (req, res) => {
-  try {
-    const result = await searchService.exportSearchData(req.body);
+    const { logId } = req.params;
+    const result = await searchService.searchLogExists(logId);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

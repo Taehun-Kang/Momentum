@@ -2,87 +2,39 @@
  * ⚙️ System Database Routes - 시스템 DB 서비스 API 엔드포인트
  * 
  * 경로: /api/system_db/*
- * 기능: systemService.js의 26개 함수를 모두 HTTP API로 노출
+ * 기능: systemService.js의 실제 구현된 24개 함수를 HTTP API로 노출
  * 
- * 엔드포인트 그룹:
- * - API 사용량 모니터링 (7개)
- * - 캐시 성능 관리 (6개)
- * - LLM 서비스 모니터링 (5개)
- * - 시스템 상태 관리 (4개)
- * - 유틸리티 및 관리 (4개)
+ * 실제 구현된 함수 그룹:
+ * - API 사용량 추적 (3개)
+ * - 캐시 성능 추적 (3개) 
+ * - LLM 처리 추적 (3개)
+ * - 시스템 성능 모니터링 (1개)
+ * - 자동화 작업 추적 (3개)
+ * - 사용자 행동 로깅 (2개)
+ * - 시스템 알림 관리 (3개)
+ * - 비즈니스 메트릭 (3개)
+ * - 시스템 관리 (3개)
  * 
  * @author AI Assistant
  * @version 1.0.0
  */
 
 import express from 'express';
-import systemService from '../../services/database/systemService.js';
+import * as systemService from '../../services/database/systemService.js';
 
 const router = express.Router();
 
 // ============================================================================
-// 🔌 API 사용량 모니터링 (7개 엔드포인트)
+// 🔌 API 사용량 추적 (3개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
  * POST /api/system_db/api-usage
- * API 사용량 로그 기록
+ * API 사용량 로그 저장
  */
 router.post('/api-usage', async (req, res) => {
   try {
-    const result = await systemService.logAPIUsage(req.body);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/system_db/api-usage/stats
- * API 사용량 통계 조회
- */
-router.get('/api-usage/stats', async (req, res) => {
-  try {
-    const result = await systemService.getAPIUsageStats(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/system_db/api-usage/current
- * 현재 API 사용량 조회
- */
-router.get('/api-usage/current', async (req, res) => {
-  try {
-    const result = await systemService.getCurrentAPIUsage();
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/system_db/api-usage/limits
- * API 한도 모니터링
- */
-router.get('/api-usage/limits', async (req, res) => {
-  try {
-    const result = await systemService.monitorAPILimits();
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/system_db/api-usage/hourly
- * 시간별 API 사용량 조회
- */
-router.get('/api-usage/hourly', async (req, res) => {
-  try {
-    const result = await systemService.getHourlyAPIStats(req.query);
+    const result = await systemService.logApiUsage(req.body);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -91,11 +43,12 @@ router.get('/api-usage/hourly', async (req, res) => {
 
 /**
  * GET /api/system_db/api-usage/daily
- * 일별 API 사용량 조회
+ * 일일 API 사용량 조회
  */
 router.get('/api-usage/daily', async (req, res) => {
   try {
-    const result = await systemService.getDailyAPIStats(req.query);
+    const targetDate = req.query.target_date || null;
+    const result = await systemService.getDailyApiUsage(targetDate);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -103,12 +56,12 @@ router.get('/api-usage/daily', async (req, res) => {
 });
 
 /**
- * POST /api/system_db/api-usage/alert
- * API 사용량 알림 설정
+ * GET /api/system_db/api-usage/current
+ * 실시간 API 사용량
  */
-router.post('/api-usage/alert', async (req, res) => {
+router.get('/api-usage/current', async (req, res) => {
   try {
-    const result = await systemService.setAPIUsageAlert(req.body);
+    const result = await systemService.getCurrentApiUsage();
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -116,16 +69,16 @@ router.post('/api-usage/alert', async (req, res) => {
 });
 
 // ============================================================================
-// 💾 캐시 성능 관리 (6개 엔드포인트)
+// 💾 캐시 성능 추적 (3개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
- * POST /api/system_db/cache/metrics
- * 캐시 성능 메트릭 기록
+ * POST /api/system_db/cache-performance
+ * 캐시 성능 로그 저장
  */
-router.post('/cache/metrics', async (req, res) => {
+router.post('/cache-performance', async (req, res) => {
   try {
-    const result = await systemService.logCacheMetrics(req.body);
+    const result = await systemService.logCachePerformance(req.body);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -133,12 +86,13 @@ router.post('/cache/metrics', async (req, res) => {
 });
 
 /**
- * GET /api/system_db/cache/stats
- * 캐시 성능 통계 조회
+ * GET /api/system_db/cache-performance/efficiency
+ * 캐시 효율성 리포트
  */
-router.get('/cache/stats', async (req, res) => {
+router.get('/cache-performance/efficiency', async (req, res) => {
   try {
-    const result = await systemService.getCachePerformanceStats(req.query);
+    const daysBack = req.query.days || 7;
+    const result = await systemService.getCacheEfficiencyReport(daysBack);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -146,51 +100,12 @@ router.get('/cache/stats', async (req, res) => {
 });
 
 /**
- * GET /api/system_db/cache/hit-rates
- * 캐시 적중률 분석
+ * GET /api/system_db/cache-performance/current
+ * 현재 캐시 효율성
  */
-router.get('/cache/hit-rates', async (req, res) => {
+router.get('/cache-performance/current', async (req, res) => {
   try {
-    const result = await systemService.analyzeCacheHitRates(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/system_db/cache/trends
- * 캐시 성능 트렌드 분석
- */
-router.get('/cache/trends', async (req, res) => {
-  try {
-    const result = await systemService.getCachePerformanceTrends(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * POST /api/system_db/cache/optimize
- * 캐시 최적화 제안
- */
-router.post('/cache/optimize', async (req, res) => {
-  try {
-    const result = await systemService.optimizeCacheSettings(req.body);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * DELETE /api/system_db/cache/cleanup
- * 캐시 데이터 정리
- */
-router.delete('/cache/cleanup', async (req, res) => {
-  try {
-    const result = await systemService.cleanupCacheMetrics(req.query);
+    const result = await systemService.getCurrentCacheEfficiency();
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -198,16 +113,16 @@ router.delete('/cache/cleanup', async (req, res) => {
 });
 
 // ============================================================================
-// 🤖 LLM 서비스 모니터링 (5개 엔드포인트)
+// 🤖 LLM 처리 추적 (3개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
- * POST /api/system_db/llm/requests
- * LLM 요청 로그 기록
+ * POST /api/system_db/llm-processing
+ * LLM 처리 로그 저장
  */
-router.post('/llm/requests', async (req, res) => {
+router.post('/llm-processing', async (req, res) => {
   try {
-    const result = await systemService.logLLMRequest(req.body);
+    const result = await systemService.logLlmProcessing(req.body);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -215,51 +130,26 @@ router.post('/llm/requests', async (req, res) => {
 });
 
 /**
- * GET /api/system_db/llm/stats
- * LLM 사용 통계 조회
- */
-router.get('/llm/stats', async (req, res) => {
-  try {
-    const result = await systemService.getLLMUsageStats(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/system_db/llm/performance
- * LLM 성능 분석
- */
-router.get('/llm/performance', async (req, res) => {
-  try {
-    const result = await systemService.analyzeLLMPerformance(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/system_db/llm/errors
- * LLM 에러 모니터링
- */
-router.get('/llm/errors', async (req, res) => {
-  try {
-    const result = await systemService.monitorLLMErrors(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/system_db/llm/costs
+ * GET /api/system_db/llm-processing/cost-analysis
  * LLM 비용 분석
  */
-router.get('/llm/costs', async (req, res) => {
+router.get('/llm-processing/cost-analysis', async (req, res) => {
   try {
-    const result = await systemService.analyzeLLMCosts(req.query);
+    const startDate = req.query.start_date || null;
+    const result = await systemService.getLlmCostAnalysis(startDate);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/system_db/llm-processing/current
+ * 현재 LLM 처리 상태
+ */
+router.get('/llm-processing/current', async (req, res) => {
+  try {
+    const result = await systemService.getCurrentLlmProcessing();
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -267,16 +157,16 @@ router.get('/llm/costs', async (req, res) => {
 });
 
 // ============================================================================
-// 🔧 시스템 상태 관리 (4개 엔드포인트)
+// 📊 시스템 성능 모니터링 (1개 엔드포인트) ✅ 구현됨
 // ============================================================================
 
 /**
- * POST /api/system_db/health/check
- * 시스템 상태 체크 기록
+ * POST /api/system_db/system-performance
+ * 시스템 성능 로그 저장
  */
-router.post('/health/check', async (req, res) => {
+router.post('/system-performance', async (req, res) => {
   try {
-    const result = await systemService.logSystemHealth(req.body);
+    const result = await systemService.logSystemPerformance(req.body);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -284,38 +174,13 @@ router.post('/health/check', async (req, res) => {
 });
 
 /**
- * GET /api/system_db/health/status
- * 시스템 상태 조회
+ * GET /api/system_db/system-performance/dashboard
+ * 시스템 성능 대시보드
  */
-router.get('/health/status', async (req, res) => {
+router.get('/system-performance/dashboard', async (req, res) => {
   try {
-    const result = await systemService.getSystemHealthStatus();
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/system_db/health/history
- * 시스템 상태 이력 조회
- */
-router.get('/health/history', async (req, res) => {
-  try {
-    const result = await systemService.getSystemHealthHistory(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * POST /api/system_db/health/alerts
- * 시스템 알림 설정
- */
-router.post('/health/alerts', async (req, res) => {
-  try {
-    const result = await systemService.configureHealthAlerts(req.body);
+    const hoursBack = req.query.hours || 24;
+    const result = await systemService.getSystemPerformanceDashboard(hoursBack);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -323,16 +188,16 @@ router.post('/health/alerts', async (req, res) => {
 });
 
 // ============================================================================
-// 🧹 유틸리티 및 관리 기능 (4개 엔드포인트)
+// 🤖 자동화 작업 추적 (3개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
- * GET /api/system_db/dashboard
- * 시스템 대시보드 데이터 조회
+ * POST /api/system_db/automated-jobs
+ * 자동화 작업 로그 저장
  */
-router.get('/dashboard', async (req, res) => {
+router.post('/automated-jobs', async (req, res) => {
   try {
-    const result = await systemService.getSystemDashboard();
+    const result = await systemService.logAutomatedJob(req.body);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -340,12 +205,13 @@ router.get('/dashboard', async (req, res) => {
 });
 
 /**
- * POST /api/system_db/maintenance
- * 시스템 유지보수 작업
+ * GET /api/system_db/automated-jobs/status-summary
+ * 작업 상태 요약
  */
-router.post('/maintenance', async (req, res) => {
+router.get('/automated-jobs/status-summary', async (req, res) => {
   try {
-    const result = await systemService.performSystemMaintenance(req.body);
+    const daysBack = req.query.days || 7;
+    const result = await systemService.getJobStatusSummary(daysBack);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -353,25 +219,162 @@ router.post('/maintenance', async (req, res) => {
 });
 
 /**
- * GET /api/system_db/reports/generate
- * 시스템 리포트 생성
+ * GET /api/system_db/automated-jobs/recent
+ * 최근 작업 상태
  */
-router.get('/reports/generate', async (req, res) => {
+router.get('/automated-jobs/recent', async (req, res) => {
   try {
-    const result = await systemService.generateSystemReport(req.query);
+    const result = await systemService.getRecentJobStatus();
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// ============================================================================
+// 👤 사용자 행동 로깅 (2개 엔드포인트) ✅ 모두 구현됨
+// ============================================================================
+
+/**
+ * POST /api/system_db/user-behavior
+ * 사용자 행동 로그 저장
+ */
+router.post('/user-behavior', async (req, res) => {
+  try {
+    const result = await systemService.logUserBehavior(req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/system_db/user-behavior/:userId/summary
+ * 사용자 행동 요약
+ */
+router.get('/user-behavior/:userId/summary', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await systemService.getUserBehaviorSummary(userId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================================================
+// 🚨 시스템 알림 관리 (3개 엔드포인트) ✅ 모두 구현됨
+// ============================================================================
+
+/**
+ * POST /api/system_db/alerts
+ * 시스템 알림 생성
+ */
+router.post('/alerts', async (req, res) => {
+  try {
+    const result = await systemService.createSystemAlert(req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/system_db/alerts/active
+ * 활성 시스템 알림 조회
+ */
+router.get('/alerts/active', async (req, res) => {
+  try {
+    const result = await systemService.getActiveSystemAlerts();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * PUT /api/system_db/alerts/:alertId
+ * 시스템 알림 업데이트
+ */
+router.put('/alerts/:alertId', async (req, res) => {
+  try {
+    const { alertId } = req.params;
+    const result = await systemService.updateSystemAlert(alertId, req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================================================
+// 💼 비즈니스 메트릭 (3개 엔드포인트) ✅ 모두 구현됨
+// ============================================================================
+
+/**
+ * POST /api/system_db/business-metrics
+ * 비즈니스 메트릭 로그 저장
+ */
+router.post('/business-metrics', async (req, res) => {
+  try {
+    const result = await systemService.logBusinessMetrics(req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/system_db/business-metrics/aggregate-daily
+ * 일일 비즈니스 메트릭 집계
+ */
+router.post('/business-metrics/aggregate-daily', async (req, res) => {
+  try {
+    const targetDate = req.body.target_date || null;
+    const result = await systemService.aggregateDailyBusinessMetrics(targetDate);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/system_db/business-metrics/daily-kpis
+ * 일일 비즈니스 KPI 조회
+ */
+router.get('/business-metrics/daily-kpis', async (req, res) => {
+  try {
+    const daysBack = req.query.days || 30;
+    const result = await systemService.getDailyBusinessKpis(daysBack);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================================================
+// 🧹 시스템 관리 (3개 엔드포인트) ✅ 모두 구현됨
+// ============================================================================
 
 /**
  * DELETE /api/system_db/cleanup/old-logs
- * 오래된 시스템 로그 정리
+ * 오래된 로그 정리
  */
 router.delete('/cleanup/old-logs', async (req, res) => {
   try {
-    const result = await systemService.cleanupOldSystemLogs(req.query);
+    const result = await systemService.cleanupOldLogs();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/system_db/aggregate/performance-metrics
+ * 성능 메트릭 집계
+ */
+router.post('/aggregate/performance-metrics', async (req, res) => {
+  try {
+    const result = await systemService.aggregatePerformanceMetrics();
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

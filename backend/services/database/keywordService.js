@@ -181,7 +181,7 @@ export async function getDailyKeywords(options = {}) {
 }
 
 /**
- * 키워드 상세 정보 조회
+ * 키워드 상세 정보 조회 (ID 기반)
  * @param {string} keywordId - 키워드 ID
  * @returns {Promise<Object>} 키워드 상세 정보
  */
@@ -207,7 +207,42 @@ export async function getKeywordById(keywordId) {
 }
 
 /**
- * 키워드 정보 업데이트
+ * 키워드 상세 정보 조회 (키워드명 기반)
+ * @param {string} keyword - 키워드명
+ * @returns {Promise<Object>} 키워드 상세 정보
+ */
+export async function getKeywordByName(keyword) {
+  try {
+    const { data, error } = await supabase
+      .from('daily_keywords')
+      .select('*')
+      .eq('keyword', keyword)
+      .single();
+
+    if (error) {
+      // 키워드가 없는 경우 더 명확한 메시지
+      if (error.code === 'PGRST116') {
+        return { 
+          success: false, 
+          error: `키워드 "${keyword}"를 찾을 수 없습니다.`,
+          code: 'KEYWORD_NOT_FOUND'
+        };
+      }
+      console.error('키워드명 기반 조회 실패:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`✅ 키워드명으로 조회 성공: ${keyword}`);
+    return { success: true, data };
+
+  } catch (error) {
+    console.error('키워드명 기반 조회 중 오류:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * 키워드 정보 업데이트 (ID 기반)
  * @param {string} keywordId - 키워드 ID
  * @param {Object} updateData - 업데이트 데이터
  * @returns {Promise<Object>} 업데이트 결과
@@ -233,6 +268,46 @@ export async function updateDailyKeyword(keywordId, updateData) {
 
   } catch (error) {
     console.error('키워드 업데이트 중 오류:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * 키워드 정보 업데이트 (키워드명 기반)
+ * @param {string} keyword - 키워드명
+ * @param {Object} updateData - 업데이트 데이터
+ * @returns {Promise<Object>} 업데이트 결과
+ */
+export async function updateDailyKeywordByName(keyword, updateData) {
+  try {
+    const { data, error } = await supabase
+      .from('daily_keywords')
+      .update({
+        ...updateData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('keyword', keyword)
+      .select('*')
+      .single();
+
+    if (error) {
+      // 키워드가 없는 경우 더 명확한 메시지
+      if (error.code === 'PGRST116') {
+        return { 
+          success: false, 
+          error: `키워드 "${keyword}"를 찾을 수 없습니다.`,
+          code: 'KEYWORD_NOT_FOUND'
+        };
+      }
+      console.error('키워드명 기반 업데이트 실패:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`✅ 키워드명으로 업데이트 성공: ${keyword}`);
+    return { success: true, data };
+
+  } catch (error) {
+    console.error('키워드명 기반 업데이트 중 오류:', error);
     return { success: false, error: error.message };
   }
 }
@@ -651,30 +726,31 @@ export async function searchKeywords(searchParams) {
  */
 export async function getCategoryStats() {
   try {
+    // 전체 활성 키워드 데이터 조회
     const { data, error } = await supabase
       .from('daily_keywords')
       .select(`
         category,
         priority_tier,
-        COUNT(*) as keyword_count,
-        AVG(success_rate) as avg_success_rate,
-        AVG(quality_score) as avg_quality_score,
-        SUM(total_videos_found) as total_videos_found
+        success_rate,
+        quality_score,
+        total_videos_found
       `)
-      .eq('is_active', true)
-      .group('category, priority_tier')
-      .order('category');
+      .eq('is_active', true);
 
     if (error) {
       console.error('카테고리별 통계 조회 실패:', error);
       return { success: false, error: error.message };
     }
 
-    // 카테고리별로 그룹화
+    // JavaScript에서 그룹화 처리
     const categoryStats = data.reduce((acc, row) => {
-      if (!acc[row.category]) {
-        acc[row.category] = {
-          category: row.category,
+      const category = row.category || '미분류';
+      const priorityTier = row.priority_tier || 'normal';
+
+      if (!acc[category]) {
+        acc[category] = {
+          category: category,
           tiers: {},
           totals: {
             keyword_count: 0,
@@ -685,18 +761,59 @@ export async function getCategoryStats() {
         };
       }
 
-      acc[row.category].tiers[row.priority_tier] = {
-        keyword_count: row.keyword_count,
-        avg_success_rate: parseFloat(row.avg_success_rate || 0),
-        avg_quality_score: parseFloat(row.avg_quality_score || 0),
-        total_videos_found: row.total_videos_found || 0
-      };
+      if (!acc[category].tiers[priorityTier]) {
+        acc[category].tiers[priorityTier] = {
+          keyword_count: 0,
+          success_rates: [],
+          quality_scores: [],
+          total_videos_found: 0
+        };
+      }
 
-      acc[row.category].totals.keyword_count += row.keyword_count;
-      acc[row.category].totals.total_videos_found += row.total_videos_found || 0;
+      // 티어별 데이터 누적
+      acc[category].tiers[priorityTier].keyword_count += 1;
+      acc[category].tiers[priorityTier].success_rates.push(row.success_rate || 0);
+      acc[category].tiers[priorityTier].quality_scores.push(row.quality_score || 0);
+      acc[category].tiers[priorityTier].total_videos_found += row.total_videos_found || 0;
+
+      // 전체 카테고리 합계
+      acc[category].totals.keyword_count += 1;
+      acc[category].totals.total_videos_found += row.total_videos_found || 0;
 
       return acc;
     }, {});
+
+    // 평균값 계산
+    Object.values(categoryStats).forEach(categoryData => {
+      let totalSuccessRates = [];
+      let totalQualityScores = [];
+
+      Object.values(categoryData.tiers).forEach(tierData => {
+        // 티어별 평균 계산
+        tierData.avg_success_rate = tierData.success_rates.length > 0 
+          ? tierData.success_rates.reduce((a, b) => a + b, 0) / tierData.success_rates.length 
+          : 0;
+        tierData.avg_quality_score = tierData.quality_scores.length > 0 
+          ? tierData.quality_scores.reduce((a, b) => a + b, 0) / tierData.quality_scores.length 
+          : 0;
+
+        // 전체 평균 계산용 배열 누적
+        totalSuccessRates.push(...tierData.success_rates);
+        totalQualityScores.push(...tierData.quality_scores);
+
+        // 임시 배열 제거
+        delete tierData.success_rates;
+        delete tierData.quality_scores;
+      });
+
+      // 카테고리 전체 평균 계산
+      categoryData.totals.avg_success_rate = totalSuccessRates.length > 0 
+        ? totalSuccessRates.reduce((a, b) => a + b, 0) / totalSuccessRates.length 
+        : 0;
+      categoryData.totals.avg_quality_score = totalQualityScores.length > 0 
+        ? totalQualityScores.reduce((a, b) => a + b, 0) / totalQualityScores.length 
+        : 0;
+    });
 
     return { success: true, data: Object.values(categoryStats) };
 
@@ -759,15 +876,46 @@ export async function getTodaysUpdateKeywords() {
 }
 
 /**
- * 키워드별 순서 재정렬
+ * 키워드별 순서 재정렬 (중복 키 제약조건 위반 방지)
  * @param {string} priorityTier - 우선순위 티어
  * @param {Array} keywordIds - 새로운 순서의 키워드 ID 배열
  * @returns {Promise<Object>} 재정렬 결과
  */
 export async function reorderKeywords(priorityTier, keywordIds) {
   try {
-    // 트랜잭션으로 순서 업데이트
-    const updates = keywordIds.map((keywordId, index) => 
+    console.log(`🔄 키워드 순서 재정렬 시작: ${priorityTier} 그룹 ${keywordIds.length}개`);
+
+    // 1단계: 해당 priority_tier의 모든 키워드를 임시 번호로 변경 (중복 방지)
+    const { data: existingKeywords, error: fetchError } = await supabase
+      .from('daily_keywords')
+      .select('id, sequence_number')
+      .eq('priority_tier', priorityTier)
+      .order('sequence_number');
+
+    if (fetchError) {
+      console.error('기존 키워드 조회 실패:', fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    // 2단계: 기존 키워드들을 임시로 큰 번호로 변경 (1000부터 시작)
+    const tempUpdates = existingKeywords.map((keyword, index) => 
+      supabase
+        .from('daily_keywords')
+        .update({ sequence_number: 1000 + index })
+        .eq('id', keyword.id)
+    );
+
+    console.log(`📝 임시 번호 변경: ${existingKeywords.length}개 키워드`);
+    const tempResults = await Promise.all(tempUpdates);
+    
+    const tempErrors = tempResults.filter(result => result.error);
+    if (tempErrors.length > 0) {
+      console.error('임시 번호 변경 실패:', tempErrors);
+      return { success: false, error: '임시 순서 변경에 실패했습니다.' };
+    }
+
+    // 3단계: 요청된 키워드들을 새로운 순서로 업데이트
+    const finalUpdates = keywordIds.map((keywordId, index) => 
       supabase
         .from('daily_keywords')
         .update({ sequence_number: index + 1 })
@@ -775,17 +923,40 @@ export async function reorderKeywords(priorityTier, keywordIds) {
         .eq('priority_tier', priorityTier)
     );
 
-    const results = await Promise.all(updates);
+    console.log(`🎯 최종 순서 적용: ${keywordIds.length}개 키워드`);
+    const finalResults = await Promise.all(finalUpdates);
     
-    // 에러 체크
-    const errors = results.filter(result => result.error);
-    if (errors.length > 0) {
-      console.error('키워드 순서 재정렬 실패:', errors);
-      return { success: false, error: '일부 키워드 순서 업데이트에 실패했습니다.' };
+    // 최종 결과 에러 체크
+    const finalErrors = finalResults.filter(result => result.error);
+    if (finalErrors.length > 0) {
+      console.error('키워드 순서 재정렬 실패:', finalErrors);
+      return { success: false, error: '일부 키워드 순서 업데이트에 실패했습니다.', details: finalErrors };
     }
 
-    console.log(`🔄 키워드 순서 재정렬 완료: ${priorityTier} 그룹 ${keywordIds.length}개`);
-    return { success: true, message: '키워드 순서가 재정렬되었습니다.' };
+    // 4단계: 재정렬되지 않은 기존 키워드들을 뒤쪽 순서로 재배치
+    const unorderedKeywords = existingKeywords.filter(
+      keyword => !keywordIds.includes(keyword.id)
+    );
+
+    if (unorderedKeywords.length > 0) {
+      const remainingUpdates = unorderedKeywords.map((keyword, index) => 
+        supabase
+          .from('daily_keywords')
+          .update({ sequence_number: keywordIds.length + index + 1 })
+          .eq('id', keyword.id)
+      );
+
+      console.log(`🔄 나머지 키워드 재배치: ${unorderedKeywords.length}개`);
+      await Promise.all(remainingUpdates);
+    }
+
+    console.log(`✅ 키워드 순서 재정렬 완료: ${priorityTier} 그룹 총 ${existingKeywords.length}개 처리`);
+    return { 
+      success: true, 
+      message: `키워드 순서가 재정렬되었습니다.`,
+      reorderedCount: keywordIds.length,
+      totalCount: existingKeywords.length
+    };
 
   } catch (error) {
     console.error('키워드 순서 재정렬 중 오류:', error);
@@ -804,7 +975,9 @@ export default {
   completeKeywordUpdate,
   getDailyKeywords,
   getKeywordById,
+  getKeywordByName,                    // 🆕 키워드명으로 조회
   updateDailyKeyword,
+  updateDailyKeywordByName,            // 🆕 키워드명으로 업데이트
   toggleKeywordStatus,
   deleteDailyKeyword,
   

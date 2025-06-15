@@ -88,19 +88,23 @@ router.post('/signup', checkSupabaseConnection, async (req, res) => {
     if (authData.user) {
       try {
         const profileResult = await userService.createUserProfile({
-          userId: authData.user.id,
-          email: authData.user.email,
-          name: authData.user.user_metadata?.name || name || email.split('@')[0],
-          userTier: 'free',
-          settings: {
+          user_id: authData.user.id,  // ✅ 수정: userId → user_id
+          display_name: authData.user.user_metadata?.name || name || email.split('@')[0],  // ✅ 수정: name → display_name
+          avatar_url: null,
+          bio: null,
+          user_tier: 'free',  // ✅ 수정: userTier → user_tier
+          preferences: {  // ✅ 수정: settings → preferences (DB 스키마에 맞춤)
             notifications: true,
             theme: 'light',
             language: 'ko'
-          },
-          timezone: 'Asia/Seoul'
+          }
         });
         
-        console.log(`✅ 사용자 프로필 생성 성공: ${authData.user.id}`);
+        if (profileResult.success) {
+          console.log(`✅ 사용자 프로필 생성 성공: ${authData.user.id}`);
+        } else {
+          console.error('❌ 사용자 프로필 생성 실패:', profileResult.error);
+        }
       } catch (profileError) {
         console.error('❌ 사용자 프로필 생성 실패:', profileError);
         // 프로필 생성 실패해도 회원가입은 성공으로 처리
@@ -164,14 +168,14 @@ router.post('/signin', checkSupabaseConnection, async (req, res) => {
     // 2️⃣ userService 로그인 활동 기록 (하이브리드 아키텍처!)
     if (authData.user) {
       try {
-        // 사용자 참여도 업데이트
-        await userService.updateUserEngagement(authData.user.id, {
-          loginCount: 1,
-          lastActiveAt: new Date().toISOString(),
-          sessionStart: new Date().toISOString()
-        });
+        // 사용자 활동 상태 업데이트 (로그인 카운트 증가)
+        const activityResult = await userService.updateUserActivity(authData.user.id);
         
-        console.log(`✅ 로그인 활동 기록: ${authData.user.id}`);
+        if (activityResult.success) {
+          console.log(`✅ 로그인 활동 기록: ${authData.user.id}`);
+        } else {
+          console.error('❌ 로그인 활동 기록 실패:', activityResult.error);
+        }
       } catch (engagementError) {
         console.error('❌ 로그인 활동 기록 실패:', engagementError);
         // 활동 기록 실패해도 로그인은 성공으로 처리
@@ -211,12 +215,16 @@ router.post('/signout', verifyToken, async (req, res) => {
     // 1️⃣ userService 세션 종료 기록 (하이브리드 아키텍처!)
     if (req.user?.id) {
       try {
-        await userService.updateUserEngagement(req.user.id, {
-          sessionEnd: new Date().toISOString(),
-          lastActiveAt: new Date().toISOString()
+        // 마지막 활동 시간 업데이트
+        const profileResult = await userService.updateUserProfile(req.user.id, {
+          last_active_at: new Date().toISOString()
         });
         
-        console.log(`✅ 로그아웃 활동 기록: ${req.user.id}`);
+        if (profileResult.success) {
+          console.log(`✅ 로그아웃 활동 기록: ${req.user.id}`);
+        } else {
+          console.error('❌ 로그아웃 활동 기록 실패:', profileResult.error);
+        }
       } catch (engagementError) {
         console.error('❌ 로그아웃 활동 기록 실패:', engagementError);
       }
@@ -420,12 +428,17 @@ router.put('/profile', verifyToken, async (req, res) => {
     if (req.user?.id) {
       try {
         const updateData = {
-          name: name.trim(),
-          ...(settings && { settings })
+          display_name: name.trim(),  // ✅ 수정: name → display_name
+          ...(settings && { preferences: settings })  // ✅ 수정: settings → preferences
         };
         
-        await userService.updateUserProfile(req.user.id, updateData);
-        console.log(`✅ userService 프로필 동기화: ${req.user.id}`);
+        const profileResult = await userService.updateUserProfile(req.user.id, updateData);
+        
+        if (profileResult.success) {
+          console.log(`✅ userService 프로필 동기화: ${req.user.id}`);
+        } else {
+          console.error('❌ userService 프로필 동기화 실패:', profileResult.error);
+        }
       } catch (profileError) {
         console.error('❌ userService 프로필 동기화 실패:', profileError);
         // userService 업데이트 실패해도 Supabase 업데이트는 성공으로 처리

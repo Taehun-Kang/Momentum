@@ -20,8 +20,8 @@ CREATE TABLE user_emotion_logs (
   -- 기본 식별자
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   
-  -- 사용자 연결
-  user_id uuid REFERENCES user_profiles(id) ON DELETE CASCADE,
+  -- 사용자 연결 (auth.users 직접 참조로 일관성 확보!)
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   
   -- =============================================================================
   -- 😊 감정 분석 결과 (natural-language-extractor.js 분석 결과)
@@ -95,8 +95,8 @@ CREATE TABLE emotion_keyword_preferences (
   -- 기본 식별자
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   
-  -- 관련 테이블 연결
-  user_id uuid REFERENCES user_profiles(id) ON DELETE CASCADE NOT NULL,
+  -- 관련 테이블 연결 (auth.users 직접 참조로 일관성 확보!)
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   emotion_log_id uuid REFERENCES user_emotion_logs(id) ON DELETE CASCADE NOT NULL,
   
   -- =============================================================================

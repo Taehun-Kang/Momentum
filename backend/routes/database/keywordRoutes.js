@@ -1,14 +1,14 @@
 /**
- * 🏷️ Keyword Database Routes - 키워드 DB 서비스 API 엔드포인트
+ * 🏷️ Keywords Database Routes - 키워드 DB 서비스 API 엔드포인트
  * 
  * 경로: /api/keywords_db/*
- * 기능: keywordService.js의 24개 함수를 모두 HTTP API로 노출
+ * 기능: keywordService.js의 실제 구현된 21개 함수를 HTTP API로 노출
  * 
- * 엔드포인트 그룹:
+ * 실제 구현된 함수 그룹:
  * - 일일 키워드 관리 (8개)
- * - 키워드 실행 관리 (6개)
- * - 키워드 분석 및 통계 (5개)
- * - 키워드 검색 및 필터링 (3개)
+ * - 키워드 스케줄링 (4개) 
+ * - 성과 추적 및 분석 (4개)
+ * - 검색 및 통계 (3개)
  * - 유틸리티 및 관리 (2개)
  * 
  * @author AI Assistant
@@ -16,21 +16,21 @@
  */
 
 import express from 'express';
-import keywordService from '../../services/database/keywordService.js';
+import * as keywordService from '../../services/database/keywordService.js';
 
 const router = express.Router();
 
 // ============================================================================
-// 📅 일일 키워드 관리 (8개 엔드포인트)
+// 📅 일일 키워드 관리 (8개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
  * POST /api/keywords_db/daily
- * 일일 키워드 생성
+ * 일일 키워드 추가
  */
 router.post('/daily', async (req, res) => {
   try {
-    const result = await keywordService.createDailyKeywords(req.body);
+    const result = await keywordService.addDailyKeyword(req.body);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -38,13 +38,65 @@ router.post('/daily', async (req, res) => {
 });
 
 /**
- * GET /api/keywords_db/daily/:date
- * 특정 날짜 키워드 조회
+ * GET /api/keywords_db/daily/today
+ * 오늘 실행할 키워드 조회
  */
-router.get('/daily/:date', async (req, res) => {
+router.get('/daily/today', async (req, res) => {
   try {
-    const { date } = req.params;
-    const result = await keywordService.getDailyKeywords(date, req.query);
+    const result = await keywordService.getTodaysKeywords();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/keywords_db/daily/today/update
+ * 오늘 업데이트할 키워드 조회
+ */
+router.get('/daily/today/update', async (req, res) => {
+  try {
+    const result = await keywordService.getTodaysUpdateKeywords();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/keywords_db/daily/complete-update
+ * 키워드 업데이트 완료 처리
+ */
+router.post('/daily/complete-update', async (req, res) => {
+  try {
+    const result = await keywordService.completeKeywordUpdate(req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/keywords_db/daily
+ * 일일 키워드 목록 조회
+ */
+router.get('/daily', async (req, res) => {
+  try {
+    const result = await keywordService.getDailyKeywords(req.query);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/keywords_db/daily/:keywordId
+ * 키워드 ID로 상세 조회
+ */
+router.get('/daily/:keywordId', async (req, res) => {
+  try {
+    const { keywordId } = req.params;
+    const result = await keywordService.getKeywordById(keywordId);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -53,7 +105,7 @@ router.get('/daily/:date', async (req, res) => {
 
 /**
  * PUT /api/keywords_db/daily/:keywordId
- * 일일 키워드 업데이트
+ * 키워드 정보 업데이트
  */
 router.put('/daily/:keywordId', async (req, res) => {
   try {
@@ -67,7 +119,7 @@ router.put('/daily/:keywordId', async (req, res) => {
 
 /**
  * DELETE /api/keywords_db/daily/:keywordId
- * 일일 키워드 삭제
+ * 키워드 삭제
  */
 router.delete('/daily/:keywordId', async (req, res) => {
   try {
@@ -79,13 +131,18 @@ router.delete('/daily/:keywordId', async (req, res) => {
   }
 });
 
+// ============================================================================
+// 🆕 키워드명 직접 접근 (2개 엔드포인트) ✅ 새로 추가됨
+// ============================================================================
+
 /**
- * GET /api/keywords_db/daily/today/list
- * 오늘의 키워드 목록 조회
+ * GET /api/keywords_db/daily/by-name/:keyword
+ * 키워드명으로 상세 조회 (URL 인코딩 필요)
  */
-router.get('/daily/today/list', async (req, res) => {
+router.get('/daily/by-name/:keyword', async (req, res) => {
   try {
-    const result = await keywordService.getTodayKeywords(req.query);
+    const keyword = decodeURIComponent(req.params.keyword);
+    const result = await keywordService.getKeywordByName(keyword);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -93,38 +150,13 @@ router.get('/daily/today/list', async (req, res) => {
 });
 
 /**
- * POST /api/keywords_db/daily/bulk
- * 일일 키워드 일괄 생성
+ * PUT /api/keywords_db/daily/by-name/:keyword
+ * 키워드명으로 정보 업데이트 (URL 인코딩 필요)
  */
-router.post('/daily/bulk', async (req, res) => {
+router.put('/daily/by-name/:keyword', async (req, res) => {
   try {
-    const result = await keywordService.bulkCreateDailyKeywords(req.body);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/keywords_db/daily/range
- * 날짜 범위별 키워드 조회
- */
-router.get('/daily/range', async (req, res) => {
-  try {
-    const result = await keywordService.getKeywordsByDateRange(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/keywords_db/daily/active
- * 활성 키워드 조회
- */
-router.get('/daily/active', async (req, res) => {
-  try {
-    const result = await keywordService.getActiveKeywords(req.query);
+    const keyword = decodeURIComponent(req.params.keyword);
+    const result = await keywordService.updateDailyKeywordByName(keyword, req.body);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -132,16 +164,16 @@ router.get('/daily/active', async (req, res) => {
 });
 
 // ============================================================================
-// ⚙️ 키워드 실행 관리 (6개 엔드포인트)
+// ⏰ 키워드 스케줄링 (4개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
- * POST /api/keywords_db/execution
- * 키워드 실행 기록
+ * POST /api/keywords_db/schedule
+ * 키워드 스케줄 생성
  */
-router.post('/execution', async (req, res) => {
+router.post('/schedule', async (req, res) => {
   try {
-    const result = await keywordService.logKeywordExecution(req.body);
+    const result = await keywordService.scheduleKeywordUpdate(req.body);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -149,13 +181,12 @@ router.post('/execution', async (req, res) => {
 });
 
 /**
- * GET /api/keywords_db/execution/:executionId
- * 키워드 실행 로그 조회
+ * GET /api/keywords_db/schedule/pending
+ * 대기 중인 스케줄 조회
  */
-router.get('/execution/:executionId', async (req, res) => {
+router.get('/schedule/pending', async (req, res) => {
   try {
-    const { executionId } = req.params;
-    const result = await keywordService.getExecutionLog(executionId);
+    const result = await keywordService.getPendingSchedules();
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -163,53 +194,85 @@ router.get('/execution/:executionId', async (req, res) => {
 });
 
 /**
- * GET /api/keywords_db/execution/keyword/:keywordId
- * 키워드별 실행 히스토리 조회
+ * PUT /api/keywords_db/schedule/:scheduleId
+ * 스케줄 상태 업데이트
  */
-router.get('/execution/keyword/:keywordId', async (req, res) => {
+router.put('/schedule/:scheduleId', async (req, res) => {
+  try {
+    const { scheduleId } = req.params;
+    const result = await keywordService.updateScheduleStatus(scheduleId, req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/keywords_db/schedule/cleanup
+ * 오래된 스케줄 정리
+ */
+router.delete('/schedule/cleanup', async (req, res) => {
+  try {
+    const result = await keywordService.cleanupOldSchedules();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================================================
+// 📊 성과 추적 및 분석 (4개 엔드포인트) ✅ 모두 구현됨
+// ============================================================================
+
+/**
+ * POST /api/keywords_db/performance/log
+ * 키워드 성과 기록
+ */
+router.post('/performance/log', async (req, res) => {
+  try {
+    const result = await keywordService.logKeywordPerformance(req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/keywords_db/performance/stats
+ * 키워드 성과 통계 조회
+ */
+router.get('/performance/stats', async (req, res) => {
+  try {
+    const daysBack = req.query.days || 7;
+    const result = await keywordService.getKeywordPerformanceStats(daysBack);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/keywords_db/performance/dashboard
+ * 키워드 성과 대시보드
+ */
+router.get('/performance/dashboard', async (req, res) => {
+  try {
+    const result = await keywordService.getKeywordPerformanceDashboard();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/keywords_db/performance/:keywordId/history
+ * 키워드별 성과 히스토리
+ */
+router.get('/performance/:keywordId/history', async (req, res) => {
   try {
     const { keywordId } = req.params;
-    const result = await keywordService.getKeywordExecutionHistory(keywordId, req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * PUT /api/keywords_db/execution/:executionId
- * 키워드 실행 로그 업데이트
- */
-router.put('/execution/:executionId', async (req, res) => {
-  try {
-    const { executionId } = req.params;
-    const result = await keywordService.updateExecutionLog(executionId, req.body);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * POST /api/keywords_db/rotation/update
- * 키워드 로테이션 업데이트
- */
-router.post('/rotation/update', async (req, res) => {
-  try {
-    const result = await keywordService.updateKeywordRotation(req.body);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/keywords_db/rotation/next
- * 다음 실행할 키워드 조회
- */
-router.get('/rotation/next', async (req, res) => {
-  try {
-    const result = await keywordService.getNextExecutionKeywords(req.query);
+    const daysBack = req.query.days || 30;
+    const result = await keywordService.getKeywordPerformanceHistory(keywordId, daysBack);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -217,76 +280,7 @@ router.get('/rotation/next', async (req, res) => {
 });
 
 // ============================================================================
-// 📊 키워드 분석 및 통계 (5개 엔드포인트)
-// ============================================================================
-
-/**
- * GET /api/keywords_db/analytics/performance
- * 키워드 성능 분석
- */
-router.get('/analytics/performance', async (req, res) => {
-  try {
-    const result = await keywordService.analyzeKeywordPerformance(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/keywords_db/analytics/trends
- * 키워드 트렌드 분석
- */
-router.get('/analytics/trends', async (req, res) => {
-  try {
-    const result = await keywordService.getKeywordTrends(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/keywords_db/analytics/stats
- * 키워드 통계 조회
- */
-router.get('/analytics/stats', async (req, res) => {
-  try {
-    const result = await keywordService.getKeywordStats(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/keywords_db/analytics/execution-stats
- * 키워드 실행 통계 조회
- */
-router.get('/analytics/execution-stats', async (req, res) => {
-  try {
-    const result = await keywordService.getExecutionStats(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/keywords_db/analytics/effectiveness
- * 키워드 효과성 분석
- */
-router.get('/analytics/effectiveness', async (req, res) => {
-  try {
-    const result = await keywordService.analyzeKeywordEffectiveness(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// ============================================================================
-// 🔍 키워드 검색 및 필터링 (3개 엔드포인트)
+// 🔍 검색 및 통계 (3개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
@@ -303,13 +297,12 @@ router.get('/search', async (req, res) => {
 });
 
 /**
- * GET /api/keywords_db/category/:category
- * 카테고리별 키워드 조회
+ * GET /api/keywords_db/category/stats
+ * 카테고리별 통계
  */
-router.get('/category/:category', async (req, res) => {
+router.get('/category/stats', async (req, res) => {
   try {
-    const { category } = req.params;
-    const result = await keywordService.getKeywordsByCategory(category, req.query);
+    const result = await keywordService.getCategoryStats();
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -317,12 +310,14 @@ router.get('/category/:category', async (req, res) => {
 });
 
 /**
- * GET /api/keywords_db/filter
- * 키워드 필터링
+ * PUT /api/keywords_db/daily/:keywordId/toggle-status
+ * 키워드 활성화/비활성화 토글
  */
-router.get('/filter', async (req, res) => {
+router.put('/daily/:keywordId/toggle-status', async (req, res) => {
   try {
-    const result = await keywordService.filterKeywords(req.query);
+    const { keywordId } = req.params;
+    const { isActive } = req.body;
+    const result = await keywordService.toggleKeywordStatus(keywordId, isActive);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -330,16 +325,16 @@ router.get('/filter', async (req, res) => {
 });
 
 // ============================================================================
-// 🧹 유틸리티 및 관리 기능 (2개 엔드포인트)
+// 🧹 유틸리티 및 관리 기능 (2개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**
- * DELETE /api/keywords_db/cleanup/old-keywords
- * 오래된 키워드 정리
+ * POST /api/keywords_db/initialize-dates
+ * 키워드 실행 날짜 초기화
  */
-router.delete('/cleanup/old-keywords', async (req, res) => {
+router.post('/initialize-dates', async (req, res) => {
   try {
-    const result = await keywordService.cleanupOldKeywords(req.query);
+    const result = await keywordService.initializeKeywordExecutionDates();
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -347,12 +342,13 @@ router.delete('/cleanup/old-keywords', async (req, res) => {
 });
 
 /**
- * GET /api/keywords_db/dashboard
- * 키워드 서비스 대시보드 데이터
+ * PUT /api/keywords_db/reorder
+ * 키워드 순서 재정렬
  */
-router.get('/dashboard', async (req, res) => {
+router.put('/reorder', async (req, res) => {
   try {
-    const result = await keywordService.getKeywordDashboard();
+    const { priorityTier, keywordIds } = req.body;
+    const result = await keywordService.reorderKeywords(priorityTier, keywordIds);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
