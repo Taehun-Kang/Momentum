@@ -5,9 +5,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 /**
- * Supabase 인증 미들웨어 (핵심 기능만)
+ * Supabase 인증 미들웨어 (핵심 기능 + Database Routes 보안)
  * - verifyToken: 필수 인증
  * - optionalAuth: 선택적 인증
+ * - verifyDbAccess: Database Routes 접근 제어 (신규)
+ * - verifyOwnership: 본인 데이터만 접근 (신규)
+ * - verifyAdmin: 관리자 권한 체크 (신규)
  */
 class AuthMiddleware {
   constructor() {
@@ -117,10 +120,145 @@ class AuthMiddleware {
       next();
     }
   };
+
+  /**
+   * 🔒 Database Routes 접근 제어 (신규)
+   * 인증된 사용자만 Database API에 접근 가능
+   */
+  verifyDbAccess = async (req, res, next) => {
+    try {
+      // 개발 환경에서는 인증 우회 옵션
+      if (process.env.NODE_ENV === 'development' && process.env.BYPASS_DB_AUTH === 'true') {
+        console.log('🧪 개발 모드: DB 인증 우회');
+        return next();
+      }
+
+      // 기본 토큰 검증 먼저 실행
+      await this.verifyToken(req, res, (error) => {
+        if (error) return;
+        
+        // 추가 DB 접근 권한 체크
+        if (!req.user) {
+          return res.status(401).json({
+            success: false,
+            error: 'DB_ACCESS_DENIED',
+            message: 'Database API 접근 권한이 없습니다'
+          });
+        }
+
+        console.log(`🔒 DB 접근 허용: ${req.user.email} → ${req.method} ${req.originalUrl}`);
+        next();
+      });
+    } catch (error) {
+      console.error('DB 접근 권한 확인 오류:', error);
+      res.status(500).json({
+        success: false,
+        error: 'DB_ACCESS_ERROR',
+        message: 'DB 접근 권한 확인 중 오류가 발생했습니다'
+      });
+    }
+  };
+
+  /**
+   * 👤 본인 데이터 접근 검증 (신규)
+   * URL의 userId가 현재 사용자와 일치하는지 확인
+   */
+  verifyOwnership = async (req, res, next) => {
+    try {
+      const { userId } = req.params;
+      
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: '인증이 필요합니다'
+        });
+      }
+
+      if (userId && userId !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          error: 'ACCESS_FORBIDDEN',
+          message: '본인의 데이터만 접근할 수 있습니다'
+        });
+      }
+
+      console.log(`👤 본인 데이터 접근 허용: ${req.user.email}`);
+      next();
+    } catch (error) {
+      console.error('소유권 확인 오류:', error);
+      res.status(500).json({
+        success: false,
+        error: 'OWNERSHIP_ERROR',
+        message: '소유권 확인 중 오류가 발생했습니다'
+      });
+    }
+  };
+
+  /**
+   * 🛡️ 관리자 권한 체크 (신규)
+   * 시스템 관리 API 접근용
+   */
+  verifyAdmin = async (req, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: '인증이 필요합니다'
+        });
+      }
+
+      // 관리자 이메일 체크 (환경변수로 설정)
+      const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(email => email.trim());
+      const isAdmin = adminEmails.includes(req.user.email) || req.user.role === 'admin';
+
+      if (!isAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'ADMIN_REQUIRED',
+          message: '관리자 권한이 필요합니다'
+        });
+      }
+
+      console.log(`🛡️ 관리자 접근 허용: ${req.user.email} → ${req.originalUrl}`);
+      next();
+    } catch (error) {
+      console.error('관리자 권한 확인 오류:', error);
+      res.status(500).json({
+        success: false,
+        error: 'ADMIN_ERROR',
+        message: '관리자 권한 확인 중 오류가 발생했습니다'
+      });
+    }
+  };
+
+  /**
+   * 🔄 Rate Limiting for Database APIs (신규)
+   * Database API 전용 속도 제한
+   */
+  rateLimit = {
+    windowMs: 15 * 60 * 1000, // 15분
+    max: 1000, // IP당 최대 요청 수 (Database API는 더 높게)
+    message: {
+      success: false,
+      error: 'RATE_LIMIT_EXCEEDED',
+      message: 'Too many database requests, please try again later.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  };
 }
 
 // 싱글톤 인스턴스 생성
 const authMiddleware = new AuthMiddleware();
 
+// 기존 미들웨어 내보내기
 export const verifyToken = authMiddleware.verifyToken;
-export const optionalAuth = authMiddleware.optionalAuth; 
+export const optionalAuth = authMiddleware.optionalAuth;
+
+// 신규 Database Routes 보안 미들웨어 내보내기
+export const verifyDbAccess = authMiddleware.verifyDbAccess;
+export const verifyOwnership = authMiddleware.verifyOwnership;
+export const verifyAdmin = authMiddleware.verifyAdmin;
+export const dbRateLimit = authMiddleware.rateLimit; 

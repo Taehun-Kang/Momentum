@@ -88,26 +88,55 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     status: 'healthy',
     endpoints: {
-      auth: '/api/v1/auth',
-      trends: '/api/v1/trends',
-      llm: '/api/v1/llm',
-      search: '/api/v1/search',
+      // 🔵 비즈니스 로직 API (29개)
+      auth: '/api/v1/auth',           // 7개 인증 엔드포인트 
+      trends: '/api/v1/trends',       // 8개 트렌드 엔드포인트
+      llm: '/api/v1/llm',            // 7개 LLM 엔드포인트
+      search: '/api/v1/search',       // 7개 검색 엔드포인트
+      
+      // 🗄️ Database API (179개) - 직접 데이터베이스 접근
+      users_db: '/api/v1/users_db',         // 32개 사용자 관리
+      videos_db: '/api/v1/videos_db',       // 21개 영상 관리
+      search_db: '/api/v1/search_db',       // 30개 검색 데이터
+      trends_db: '/api/v1/trends_db',       // 22개 트렌드 데이터
+      system_db: '/api/v1/system_db',       // 26개 시스템 관리
+      keywords_db: '/api/v1/keywords_db',   // 24개 키워드 관리
+      emotions_db: '/api/v1/emotions_db',   // 24개 감정 분석 데이터
+      
+      // 🔧 시스템
       health: '/health'
     },
     features: [
       '🔥 실시간 트렌드 영상 큐레이션',
       '🎬 4단계 워크플로우 (Google Trends → 뉴스 정제 → YouTube 검색 → 채널 필터링)',
       '📊 고품질 채널 필터링 (5만+ 구독자)',
-      '🎯 개인화 감성 분석 API (신규)',
+      '🎯 개인화 감성 분석 API',
       '🗣️ 자연어 감정 분석 및 키워드 추출',
       '💬 AI 감성 문장 큐레이션',
-      '🔍 매일 키워드 갱신 서비스 (신규)',
+      '🔍 매일 키워드 갱신 서비스',
       '🤖 AI 기반 영상 분류 및 태깅',
-      '⚡ 실시간 키워드 검색 서비스 (신규)',
+      '⚡ 실시간 키워드 검색 서비스',
       '🔍 사용자 요청 즉시 처리',
       '🔐 Supabase 인증 시스템',
-      '⚡ Railway 배포 최적화'
-    ]
+      '⚡ Railway 배포 최적화',
+      '🗄️ 완전한 Database API (179개 엔드포인트)',
+      '👤 사용자 프로필 및 선호도 관리',
+      '📈 실시간 통계 및 분석 대시보드',
+      '🔒 3단계 보안 전략 (개발 중)'
+    ],
+    // ⚠️ 보안 상태 정보
+    security: {
+      status: 'development',
+      protected_endpoints: 4,    // auth API만 보안 적용
+      unprotected_endpoints: 179, // Database API 전체 무보안
+      warning: '🚨 Database API는 현재 테스트를 위해 보안이 비활성화되어 있습니다',
+      planned_security: '3단계 보안 전략 계획됨 (Critical → High → Medium)'
+    },
+    database: {
+      tables: 8,
+      total_functions: 179,
+      services: ['users', 'videos', 'search', 'trends', 'system', 'keywords', 'emotions']
+    }
   });
 });
 
@@ -125,13 +154,31 @@ app.get('/health', (req, res) => {
       claude_api: process.env.ANTHROPIC_API_KEY ? 'configured' : 'missing',
       supabase: process.env.SUPABASE_URL ? 'configured' : 'missing'
     },
-    activeApis: [
-      'User Authentication',
-      'Trend Video Curation',
-      'Trend Keywords',
-      'LLM Analysis',
-      'Search Services'
-    ]
+    // 🔵 비즈니스 로직 API (29개)
+    businessApis: [
+      'User Authentication (7 endpoints)',
+      'Trend Video Curation (8 endpoints)', 
+      'LLM Emotion Analysis (7 endpoints)',
+      'Search Services (7 endpoints)'
+    ],
+    // 🗄️ Database API (179개)
+    databaseApis: [
+      'Users Management (32 endpoints)',
+      'Videos Management (21 endpoints)',
+      'Search Data (30 endpoints)', 
+      'Trends Data (22 endpoints)',
+      'System Management (26 endpoints)',
+      'Keywords Management (24 endpoints)',
+      'Emotions Data (24 endpoints)'
+    ],
+    // ⚠️ 보안 상태
+    security: {
+      protected: 4,      // auth API만
+      unprotected: 179,  // Database API 전체
+      status: 'development_mode',
+      bypass_auth: process.env.BYPASS_DB_AUTH === 'true'
+    },
+    totalEndpoints: 208  // 29 (business) + 179 (database)
   };
 
   res.json(health);
@@ -149,7 +196,10 @@ app.get('/api/test', (req, res) => {
   res.json({ success: true, message: '테스트 라우트 작동!' });
 });
 
-console.log('📡 API 라우트 등록 완료: auth, trends, llm, search');
+console.log('📡 API 라우트 등록 완료: 총 208개 엔드포인트');
+console.log('   🔵 비즈니스 API: auth(7), trends(8), llm(7), search(7)');
+console.log('   🗄️ Database API: users_db(32), videos_db(21), search_db(30), trends_db(22), system_db(26), keywords_db(24), emotions_db(24)');
+console.log('   ⚠️ 보안 상태: 4개 보안 적용, 179개 무보안 (테스트 모드)');
 
 // ============================================
 // 에러 처리 미들웨어
@@ -161,23 +211,36 @@ app.use('*', (req, res) => {
     success: false,
     error: 'NOT_FOUND',
     message: `요청하신 경로 ${req.originalUrl}을 찾을 수 없습니다`,
-    availableEndpoints: [
+    hint: '전체 208개 엔드포인트 목록은 GET / 를 확인하세요',
+    popularEndpoints: [
+      // 🔧 시스템
       'GET /',
-      'GET /health',
+      'GET /health', 
       'GET /api/test',
+      
+      // 🔵 인증 (보안 적용됨)
       'POST /api/v1/auth/signup',
       'POST /api/v1/auth/signin',
-      'POST /api/v1/auth/signout',
-      'POST /api/v1/auth/refresh',
       'GET /api/v1/auth/me',
-      'PUT /api/v1/auth/profile',
-      'POST /api/v1/auth/reset-password',
+      
+      // 🔵 비즈니스 로직 (무보안)
       'GET /api/v1/trends/videos',
       'GET /api/v1/trends/keywords',
-      'GET /api/v1/trends/stats',
       'POST /api/v1/llm/analyze',
-      'GET /api/v1/search/health'
-    ]
+      'GET /api/v1/search/health',
+      
+      // 🗄️ Database API 예시 (현재 무보안!)
+      'GET /api/v1/users_db/all',
+      'GET /api/v1/videos_db/all',
+      'GET /api/v1/search_db/logs',
+      'GET /api/v1/trends_db/keywords',
+      'GET /api/v1/system_db/health'
+    ],
+    endpointCategories: {
+      business_apis: '29개 비즈니스 로직 API',
+      database_apis: '179개 데이터베이스 직접 접근 API (⚠️ 현재 무보안)',
+      total: '208개 엔드포인트'
+    }
   });
 });
 
@@ -238,7 +301,10 @@ function startServer() {
     console.log('🚀 Momentum Backend Server 시작!');
     console.log(`📍 서버 주소: http://${HOST}:${PORT}`);
     console.log(`🌍 환경: ${process.env.NODE_ENV || 'development'}`);
-    console.log('🔧 활성화된 API: auth, trends, llm, search');
+    console.log('🔧 활성화된 API:');
+    console.log('   └─ 🔵 비즈니스: auth(7), trends(8), llm(7), search(7) = 29개');
+    console.log('   └─ 🗄️ Database: users_db(32), videos_db(21), search_db(30), trends_db(22), system_db(26), keywords_db(24), emotions_db(24) = 179개');
+    console.log('   └─ 📊 총 208개 엔드포인트 활성화');
     
     // API 키 상태 확인
     const apiKeyStatus = [];
@@ -253,8 +319,17 @@ function startServer() {
       console.log('✅ 모든 API 키 설정 완료');
     }
     
+    // 보안 상태 경고
+    console.log('🔒 보안 상태:');
+    console.log('   ✅ 4개 엔드포인트 보안 적용 (auth API)');
+    console.log('   ⚠️ 179개 엔드포인트 무보안 (Database API - 테스트 모드)');
+    if (process.env.BYPASS_DB_AUTH === 'true') {
+      console.log('   🧪 개발 모드: Database 인증 우회 활성화');
+    }
+    
     console.log(`🎯 헬스 체크: GET ${HOST}:${PORT}/health`);
     console.log(`🔐 인증 API: POST ${HOST}:${PORT}/api/v1/auth/signin`);
+    console.log(`🗄️ Database API 예시: GET ${HOST}:${PORT}/api/v1/users_db/all`);
   });
 }
 
@@ -336,6 +411,60 @@ curl -X GET "http://localhost:3002/api/v1/search/health"
 
 // 테스트 라우트
 curl -X GET "http://localhost:3002/api/test"
+
+// 🗄️ Database API 테스트 (179개 엔드포인트 - 현재 무보안!)
+
+// Users Database API (32개)
+curl -X GET "http://localhost:3002/api/v1/users_db/all"
+curl -X GET "http://localhost:3002/api/v1/users_db/:userId/profile"
+curl -X POST "http://localhost:3002/api/v1/users_db/create" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","name":"테스트 사용자"}'
+
+// Videos Database API (21개)  
+curl -X GET "http://localhost:3002/api/v1/videos_db/all"
+curl -X GET "http://localhost:3002/api/v1/videos_db/by-category/먹방"
+curl -X POST "http://localhost:3002/api/v1/videos_db/create" \
+  -H "Content-Type: application/json" \
+  -d '{"videoId":"test123","title":"테스트 영상","category":"먹방"}'
+
+// Search Database API (30개)
+curl -X GET "http://localhost:3002/api/v1/search_db/logs"
+curl -X GET "http://localhost:3002/api/v1/search_db/popular-keywords"
+curl -X POST "http://localhost:3002/api/v1/search_db/log-search" \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"user123","keyword":"먹방","resultsCount":10}'
+
+// Trends Database API (22개)
+curl -X GET "http://localhost:3002/api/v1/trends_db/keywords"
+curl -X GET "http://localhost:3002/api/v1/trends_db/current-trends"
+curl -X POST "http://localhost:3002/api/v1/trends_db/add-trend" \
+  -H "Content-Type: application/json" \
+  -d '{"keyword":"브이로그","category":"라이프스타일","trendScore":85}'
+
+// System Database API (26개) - ⚠️ 관리자 권한 필요 (보안 적용 시)
+curl -X GET "http://localhost:3002/api/v1/system_db/health"
+curl -X GET "http://localhost:3002/api/v1/system_db/stats"
+curl -X GET "http://localhost:3002/api/v1/system_db/logs"
+
+// Keywords Database API (24개)
+curl -X GET "http://localhost:3002/api/v1/keywords_db/all"
+curl -X GET "http://localhost:3002/api/v1/keywords_db/by-category/먹방"
+curl -X POST "http://localhost:3002/api/v1/keywords_db/create" \
+  -H "Content-Type: application/json" \
+  -d '{"keyword":"ASMR","category":"힐링","popularity":75}'
+
+// Emotions Database API (24개)
+curl -X GET "http://localhost:3002/api/v1/emotions_db/all"
+curl -X GET "http://localhost:3002/api/v1/emotions_db/:userId/history"
+curl -X POST "http://localhost:3002/api/v1/emotions_db/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"user123","input":"오늘 기분이 좋아","emotion":"happy"}'
+
+⚠️ 주의사항:
+- Database API는 현재 보안이 비활성화되어 있습니다 (테스트 모드)
+- 실제 배포 시에는 JWT 토큰 인증이 필요합니다
+- 관리자 API (system_db)는 관리자 권한이 필요합니다
 
 ===============================================
 */ 

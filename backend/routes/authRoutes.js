@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import { verifyToken, optionalAuth } from '../middleware/authMiddleware.js';
 import dotenv from 'dotenv';
 
+// 🔗 Database Service 연동 (하이브리드 아키텍처)
+import userService from '../services/database/userService.js';
+
 // 환경변수 로드
 dotenv.config();
 
@@ -24,7 +27,10 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
  * 간소화된 인증 API 라우트
  * 핵심 기능만 유지: 회원가입, 로그인, 로그아웃, 토큰 갱신, 기본 프로필
  * 
- * 보안 헤더는 server.js의 helmet과 cors에서 전역 처리됨
+ * 🔗 userService 연동:
+ * - 회원가입 성공 → 상세 프로필 생성
+ * - 로그인 성공 → 사용자 활동 기록
+ * - 프로필 업데이트 → 양쪽 시스템 동기화
  */
 
 // Supabase 연결 상태 확인 미들웨어
@@ -40,12 +46,12 @@ const checkSupabaseConnection = (req, res, next) => {
 };
 
 // ============================================
-// 1. 핵심 인증 기능
+// 1. 핵심 인증 기능 (userService 연동 강화)
 // ============================================
 
 /**
  * POST /api/v1/auth/signup
- * 회원가입
+ * 회원가입 + 상세 프로필 생성
  */
 router.post('/signup', checkSupabaseConnection, async (req, res) => {
   try {
@@ -59,7 +65,7 @@ router.post('/signup', checkSupabaseConnection, async (req, res) => {
       });
     }
 
-    // Supabase 회원가입
+    // 1️⃣ Supabase 회원가입
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -76,6 +82,29 @@ router.post('/signup', checkSupabaseConnection, async (req, res) => {
         error: authError.code || 'SIGNUP_FAILED',
         message: authError.message || '회원가입에 실패했습니다'
       });
+    }
+
+    // 2️⃣ userService 상세 프로필 생성 (하이브리드 아키텍처!)
+    if (authData.user) {
+      try {
+        const profileResult = await userService.createUserProfile({
+          userId: authData.user.id,
+          email: authData.user.email,
+          name: authData.user.user_metadata?.name || name || email.split('@')[0],
+          userTier: 'free',
+          settings: {
+            notifications: true,
+            theme: 'light',
+            language: 'ko'
+          },
+          timezone: 'Asia/Seoul'
+        });
+        
+        console.log(`✅ 사용자 프로필 생성 성공: ${authData.user.id}`);
+      } catch (profileError) {
+        console.error('❌ 사용자 프로필 생성 실패:', profileError);
+        // 프로필 생성 실패해도 회원가입은 성공으로 처리
+      }
     }
 
     res.status(201).json({
@@ -104,7 +133,7 @@ router.post('/signup', checkSupabaseConnection, async (req, res) => {
 
 /**
  * POST /api/v1/auth/signin
- * 로그인
+ * 로그인 + 사용자 활동 기록
  */
 router.post('/signin', checkSupabaseConnection, async (req, res) => {
   try {
@@ -118,7 +147,7 @@ router.post('/signin', checkSupabaseConnection, async (req, res) => {
       });
     }
 
-    // Supabase 로그인
+    // 1️⃣ Supabase 로그인
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -130,6 +159,23 @@ router.post('/signin', checkSupabaseConnection, async (req, res) => {
         error: authError.code || 'SIGNIN_FAILED',
         message: authError.message || '로그인에 실패했습니다'
       });
+    }
+
+    // 2️⃣ userService 로그인 활동 기록 (하이브리드 아키텍처!)
+    if (authData.user) {
+      try {
+        // 사용자 참여도 업데이트
+        await userService.updateUserEngagement(authData.user.id, {
+          loginCount: 1,
+          lastActiveAt: new Date().toISOString(),
+          sessionStart: new Date().toISOString()
+        });
+        
+        console.log(`✅ 로그인 활동 기록: ${authData.user.id}`);
+      } catch (engagementError) {
+        console.error('❌ 로그인 활동 기록 실패:', engagementError);
+        // 활동 기록 실패해도 로그인은 성공으로 처리
+      }
     }
 
     res.json({
@@ -158,10 +204,25 @@ router.post('/signin', checkSupabaseConnection, async (req, res) => {
 
 /**
  * POST /api/v1/auth/signout
- * 로그아웃
+ * 로그아웃 + 세션 종료 기록
  */
 router.post('/signout', verifyToken, async (req, res) => {
   try {
+    // 1️⃣ userService 세션 종료 기록 (하이브리드 아키텍처!)
+    if (req.user?.id) {
+      try {
+        await userService.updateUserEngagement(req.user.id, {
+          sessionEnd: new Date().toISOString(),
+          lastActiveAt: new Date().toISOString()
+        });
+        
+        console.log(`✅ 로그아웃 활동 기록: ${req.user.id}`);
+      } catch (engagementError) {
+        console.error('❌ 로그아웃 활동 기록 실패:', engagementError);
+      }
+    }
+
+    // 2️⃣ Supabase 로그아웃
     if (!supabase) {
       return res.json({
         success: true,
@@ -245,12 +306,12 @@ router.post('/refresh', checkSupabaseConnection, async (req, res) => {
 });
 
 // ============================================
-// 2. 기본 사용자 정보
+// 2. 기본 사용자 정보 (userService 연동)
 // ============================================
 
 /**
  * GET /api/v1/auth/me
- * 현재 사용자 정보 (토큰 있으면 조회, 없으면 null)
+ * 현재 사용자 정보 (userService 통합 조회)
  */
 router.get('/me', optionalAuth, async (req, res) => {
   try {
@@ -261,7 +322,7 @@ router.get('/me', optionalAuth, async (req, res) => {
       });
     }
 
-    // Supabase에서 최신 사용자 정보 조회
+    // 1️⃣ Supabase에서 인증 정보 조회
     const { data: { user }, error } = await supabase.auth.getUser(
       req.headers.authorization?.substring(7)
     );
@@ -273,15 +334,37 @@ router.get('/me', optionalAuth, async (req, res) => {
       });
     }
 
+    // 2️⃣ userService에서 상세 프로필 조회 (하이브리드 아키텍처!)
+    let userProfile = null;
+    try {
+      const profileResult = await userService.getUserProfile(user.id);
+      if (profileResult.success) {
+        userProfile = profileResult.data;
+      }
+    } catch (profileError) {
+      console.error('❌ 사용자 프로필 조회 실패:', profileError);
+    }
+
+    // 3️⃣ 통합된 사용자 정보 반환
     res.json({
       success: true,
       data: {
         user: {
+          // Supabase 인증 정보
           id: user.id,
           email: user.email,
           name: user.user_metadata?.name,
           emailConfirmed: user.email_confirmed_at != null,
-          createdAt: user.created_at
+          createdAt: user.created_at,
+          
+          // userService 프로필 정보 (있는 경우)
+          ...(userProfile && {
+            userTier: userProfile.user_tier,
+            settings: userProfile.settings,
+            totalVideosWatched: userProfile.total_videos_watched,
+            totalSearches: userProfile.total_searches,
+            lastActiveAt: userProfile.last_active_at
+          })
         }
       }
     });
@@ -298,7 +381,7 @@ router.get('/me', optionalAuth, async (req, res) => {
 
 /**
  * PUT /api/v1/auth/profile
- * 기본 프로필 업데이트
+ * 기본 프로필 업데이트 (양쪽 시스템 동기화)
  */
 router.put('/profile', verifyToken, async (req, res) => {
   try {
@@ -310,7 +393,7 @@ router.put('/profile', verifyToken, async (req, res) => {
       });
     }
 
-    const { name } = req.body;
+    const { name, settings } = req.body;
 
     if (!name || name.trim().length === 0) {
       return res.status(400).json({
@@ -320,7 +403,7 @@ router.put('/profile', verifyToken, async (req, res) => {
       });
     }
 
-    // Supabase 사용자 메타데이터 업데이트
+    // 1️⃣ Supabase 사용자 메타데이터 업데이트
     const { data, error } = await supabase.auth.updateUser({
       data: { name: name.trim() }
     });
@@ -331,6 +414,22 @@ router.put('/profile', verifyToken, async (req, res) => {
         error: error.code || 'UPDATE_FAILED',
         message: error.message || '프로필 업데이트에 실패했습니다'
       });
+    }
+
+    // 2️⃣ userService 프로필 동기화 (하이브리드 아키텍처!)
+    if (req.user?.id) {
+      try {
+        const updateData = {
+          name: name.trim(),
+          ...(settings && { settings })
+        };
+        
+        await userService.updateUserProfile(req.user.id, updateData);
+        console.log(`✅ userService 프로필 동기화: ${req.user.id}`);
+      } catch (profileError) {
+        console.error('❌ userService 프로필 동기화 실패:', profileError);
+        // userService 업데이트 실패해도 Supabase 업데이트는 성공으로 처리
+      }
     }
 
     res.json({
