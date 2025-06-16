@@ -60,7 +60,8 @@ app.use(helmet({
 
 // CORS 설정 (Railway 배포 지원)
 const allowedOrigins = [
-  'http://localhost:3001',
+  'http://localhost:3000',  // 프론트엔드 서버
+  'http://localhost:3001',  // 백업 포트
   'https://momentum-production-68bb.up.railway.app',
   process.env.CORS_ORIGIN
 ].filter(Boolean);

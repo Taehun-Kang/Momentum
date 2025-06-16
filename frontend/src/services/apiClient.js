@@ -1,10 +1,13 @@
 // API 호출을 위한 기본 클라이언트
 class ApiClient {
   constructor() {
-    // 개발 환경에서는 localhost:3002, 배포 시에는 실제 도메인
-    this.baseURL = process.env.NODE_ENV === 'production' 
-      ? 'https://your-railway-domain.com' 
-      : 'http://localhost:3002'
+    // 🔧 임시 수정: 개발 중이므로 localhost로 강제 설정
+    this.baseURL = 'http://localhost:3002'
+    
+    // 원래 코드 (나중에 복원 필요):
+    // this.baseURL = process.env.NODE_ENV === 'production' 
+    //   ? 'https://your-railway-domain.com' 
+    //   : 'http://localhost:3002'
     
     this.defaultHeaders = {
       'Content-Type': 'application/json',

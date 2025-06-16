@@ -29,28 +29,28 @@ router.get('/videos', async (req, res) => {
   try {
     console.log('🔥 트렌드 영상 API 호출:', req.query);
 
-    // 🔧 쿼리 파라미터 파싱
+    // 🔧 쿼리 파라미터 파싱 (대용량 데이터 수집 최적화)
     const {
       // 트렌드 수집 옵션
-      maxKeywords = 20,
+      maxKeywords = 50,        // 20→50 증가
       region = 'KR',
       noCache = false,
       
       // 키워드 정제 옵션
-      finalKeywords = 8,
-      timeout = 30000,
+      finalKeywords = 20,      // 8→20 대폭 증가
+      timeout = 45000,         // 30→45초 증가
       
       // 영상 검색 옵션
-      maxResults = 30,
+      maxResults = 50,         // 30→50 증가
       timeRange = '24h',
       
       // 채널 필터 옵션
-      minSubscribers = 50000,
+      minSubscribers = 30000,  // 5만→3만 완화
       
       // 응답 옵션
       includeStats = true,
       includeSample = true,
-      sampleSize = 5
+      sampleSize = 10          // 5→10 증가
     } = req.query;
 
     // 🎯 설정 구성
@@ -166,8 +166,8 @@ router.get('/keywords', async (req, res) => {
     console.log('🎨 트렌드 키워드 API 호출:', req.query);
 
     const {
-      maxKeywords = 20,
-      finalKeywords = 10,
+      maxKeywords = 50,        // 20→50 증가
+      finalKeywords = 25,      // 10→25 대폭 증가
       region = 'KR',
       noCache = false,
       includeContext = false
@@ -255,16 +255,16 @@ router.get('/videos/quick', async (req, res) => {
     console.log('⚡ 빠른 트렌드 영상 API 호출');
 
     const {
-      limit = 20,
-      minSubscribers = 50000,
-      maxAge = 3600 // 1시간
+      limit = 50,              // 20→50 증가
+      minSubscribers = 30000,  // 5만→3만 완화
+      maxAge = 3600            // 1시간
     } = req.query;
 
-    // 🔧 캐시 우선 설정
+    // 🔧 캐시 우선 설정 (제한 완화)
     const config = {
       trends: { noCache: false },
-      refiner: { maxFinalKeywords: 5 },
-      search: { maxResults: 20 },
+      refiner: { maxFinalKeywords: 15 }, // 5→15 대폭 증가
+      search: { maxResults: 50 },        // 20→50 증가
       channelFilter: { minSubscribers: parseInt(minSubscribers) },
       quick: true,
       maxCacheAge: parseInt(maxAge)
@@ -339,26 +339,26 @@ router.post('/videos/custom', async (req, res) => {
       response = {}
     } = req.body;
 
-    // 🔧 기본값과 병합
+    // 🔧 기본값과 병합 (대용량 데이터 수집 최적화)
     const config = {
       trends: {
-        maxKeywords: 20,
+        maxKeywords: 50,         // 20→50 증가
         region: 'KR',
         noCache: false,
         ...trends
       },
       refiner: {
-        maxFinalKeywords: 8,
-        timeout: 30000,
+        maxFinalKeywords: 20,    // 8→20 대폭 증가
+        timeout: 45000,          // 30→45초 증가
         ...refiner
       },
       search: {
-        maxResults: 30,
+        maxResults: 50,          // 30→50 증가
         timeRange: '24h',
         ...search
       },
       channelFilter: {
-        minSubscribers: 50000,
+        minSubscribers: 30000,   // 5만→3만 완화
         ...channelFilter
       }
     };

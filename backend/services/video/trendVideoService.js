@@ -55,11 +55,11 @@ class TrendVideoService {
     this.serpApiKey = process.env.SERP_API_KEY;
     this.claudeApiKey = process.env.ANTHROPIC_API_KEY;
     
-    // 서비스 설정 (트렌드 특화)
+    // 서비스 설정 (트렌드 특화) - 대용량 데이터 수집 최적화
     this.config = {
       // 1단계: 트렌드 수집 설정
       trends: {
-        maxKeywords: 50,        // 최대 트렌드 키워드 수
+        maxKeywords: 100,       // 최대 트렌드 키워드 수 (50→100 증가)
         activeOnly: true,       // 활성 키워드만
         region: 'KR',           // 한국 지역만
         noCache: false          // 캐시 사용 (1시간)
@@ -67,18 +67,18 @@ class TrendVideoService {
       
       // 2단계: 키워드 정제 설정
       refiner: {
-        maxFinalKeywords: 10,   // 최종 10개로 정제
+        maxFinalKeywords: 25,   // 최종 25개로 정제 (10→25 대폭 증가)
         newsPerKeyword: 3,      // 키워드당 뉴스 3개
         removeDuplicates: true, // 중복 제거
         addContext: true,       // 맥락 추가 ("키워드 + 한 단어")
-        timeout: 30000          // 30초 타임아웃
+        timeout: 45000          // 45초 타임아웃 (30→45초 증가)
       },
       
       // 3단계: YouTube 검색 설정 (트렌드 특화)
       search: {
         part: 'snippet',
         videoDuration: 'short',    // Shorts만
-        maxResults: 50,            // 키워드당 50개
+        maxResults: 50,            // 키워드당 50개 (유지)
         type: 'video',
         regionCode: 'KR',
         relevanceLanguage: 'ko',
@@ -91,7 +91,7 @@ class TrendVideoService {
       
       // 4단계: 채널 필터링 설정
       channelFilter: {
-        minSubscribers: 50000,     // 5만명 이상
+        minSubscribers: 30000,     // 3만명 이상 (5만→3만 완화)
         includeBranding: false,    // 브랜딩 정보 불필요
         includeTopics: false,      // 주제 정보 불필요
         language: 'ko'             // 한국어
@@ -1118,12 +1118,12 @@ export function getTrendVideoStats() {
  */
 export async function getQuickTrendKeywords(options = {}) {
   const {
-    maxKeywords = 20,
-    finalKeywords = 10,
+    maxKeywords = 50,        // 20→50 증가
+    finalKeywords = 25,      // 10→25 대폭 증가
     region = 'KR',
     noCache = false,
     includeContext = false,
-    timeout = 30000
+    timeout = 45000          // 30→45초 증가
   } = options;
 
   const startTime = Date.now();
@@ -1197,8 +1197,8 @@ export function validateConfig(config) {
   try {
     // 트렌드 설정 검증
     if (config.trends) {
-      if (config.trends.maxKeywords && (config.trends.maxKeywords < 1 || config.trends.maxKeywords > 100)) {
-        errors.push('maxKeywords는 1-100 사이여야 합니다');
+      if (config.trends.maxKeywords && (config.trends.maxKeywords < 1 || config.trends.maxKeywords > 200)) {
+        errors.push('maxKeywords는 1-200 사이여야 합니다');
       }
       
       if (config.trends.region && !/^[A-Z]{2}$/.test(config.trends.region)) {
@@ -1208,12 +1208,12 @@ export function validateConfig(config) {
 
     // 정제 설정 검증
     if (config.refiner) {
-      if (config.refiner.maxFinalKeywords && (config.refiner.maxFinalKeywords < 1 || config.refiner.maxFinalKeywords > 50)) {
-        errors.push('maxFinalKeywords는 1-50 사이여야 합니다');
+      if (config.refiner.maxFinalKeywords && (config.refiner.maxFinalKeywords < 1 || config.refiner.maxFinalKeywords > 100)) {
+        errors.push('maxFinalKeywords는 1-100 사이여야 합니다');
       }
       
-      if (config.refiner.timeout && (config.refiner.timeout < 5000 || config.refiner.timeout > 120000)) {
-        errors.push('timeout은 5000-120000ms 사이여야 합니다');
+      if (config.refiner.timeout && (config.refiner.timeout < 5000 || config.refiner.timeout > 180000)) {
+        errors.push('timeout은 5000-180000ms 사이여야 합니다');
       }
     }
 
