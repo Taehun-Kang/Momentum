@@ -392,8 +392,11 @@ app.use((error, req, res, next) => {
 
 // 서버 시작 함수
 function startServer() {
-  const PORT = process.env.PORT || 3002;  // 실제 사용 중인 포트로 변경
+  // Railway 환경에서는 8080, 로컬에서는 3002
+  const PORT = process.env.PORT || (process.env.RAILWAY_ENVIRONMENT ? 8080 : 3002);
   const HOST = process.env.HOST || '0.0.0.0';
+  
+  console.log(`🔧 포트 설정: ${PORT} (Railway: ${!!process.env.RAILWAY_ENVIRONMENT}, ENV PORT: ${process.env.PORT})`);
 
   app.listen(PORT, HOST, () => {
     console.log('🚀 Momentum Backend Server 시작!');
