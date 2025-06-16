@@ -151,9 +151,9 @@ class VideoTagger {
         this.updateStats(batch.length, false, 0);
       }
 
-      // API 부하 방지를 위한 대기 (배치간 1초)
+      // API 부하 방지를 위한 대기 (배치간 3초) - Claude 과부하 방지
       if (i + batchSize < videosData.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
       }
     }
 
@@ -235,37 +235,133 @@ ${videoPrompts}
       this.stats.apiCallCount++;
       const startTime = Date.now();
 
-      const response = await this.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 3000,
-        messages: [{ role: 'user', content: prompt }]
-      });
+      // Claude API 과부하 재시도 로직
+      let response;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount <= maxRetries) {
+        try {
+          response = await this.anthropic.messages.create({
+            model: 'claude-3-5-sonnet-20241022',
+            max_tokens: Math.min(4000, 300 * videosData.length + 1000), // 영상당 300토큰 + 여유분
+            messages: [{ role: 'user', content: prompt }]
+          });
+          
+          break; // 성공 시 루프 탈출
+          
+        } catch (apiError) {
+          if (apiError.status === 529 && retryCount < maxRetries) {
+            retryCount++;
+            const waitTime = 5000 * retryCount; // 5초, 10초, 15초 대기
+            console.log(`   ⏳ Claude API 과부하, ${waitTime/1000}초 대기 후 재시도 (${retryCount}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+          } else {
+            throw apiError; // 재시도 한도 초과 또는 다른 에러
+          }
+        }
+      }
 
       const processingTime = Date.now() - startTime;
       const content = response.content[0].text;
       
-      // JSON 추출
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      // 🔧 개선된 JSON 추출 및 파싱
+      let parsed = null;
       
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        
-        // 응답 검증
-        if (parsed.classifications && Array.isArray(parsed.classifications)) {
-          console.log(`✅ LLM 분류 성공: ${parsed.classifications.length}개 영상`);
-          
-          return {
-            success: true,
-            classifications: parsed.classifications,
-            processingTime,
-            rawResponse: content
-          };
-        } else {
-          throw new Error('잘못된 JSON 구조');
+      try {
+        // 1차 시도: ```json 블록 추출
+        const jsonBlockMatch = content.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+        if (jsonBlockMatch) {
+          parsed = JSON.parse(jsonBlockMatch[1].trim());
         }
-      } else {
-        throw new Error('JSON 응답을 찾을 수 없음');
+      } catch (error) {
+        // 무시하고 다음 방법 시도
       }
+      
+      if (!parsed) {
+        try {
+          // 2차 시도: 첫 번째 { 부터 마지막 } 까지 추출
+          const startIndex = content.indexOf('{');
+          const endIndex = content.lastIndexOf('}');
+          
+          if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+            const jsonString = content.substring(startIndex, endIndex + 1);
+            parsed = JSON.parse(jsonString);
+          }
+        } catch (error) {
+          // 무시하고 다음 방법 시도
+        }
+      }
+      
+      if (!parsed) {
+        try {
+          // 3차 시도: 각 라인별로 JSON 찾기
+          const lines = content.split('\n');
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('{')) {
+              try {
+                parsed = JSON.parse(trimmed);
+                break;
+              } catch (e) {
+                continue;
+              }
+            }
+          }
+        } catch (error) {
+          // 무시하고 다음 방법 시도
+        }
+      }
+      
+      if (!parsed) {
+        try {
+          // 4차 시도: 불완전한 JSON 복구 시도 (응답 잘림 대비)
+          const startIndex = content.indexOf('{');
+          if (startIndex !== -1) {
+            let jsonContent = content.substring(startIndex);
+            
+            // 불완전한 JSON 감지 및 복구
+            if (!jsonContent.endsWith('}')) {
+              // 마지막 완전한 객체까지만 추출
+              let braceCount = 0;
+              let lastCompleteIndex = -1;
+              
+              for (let i = 0; i < jsonContent.length; i++) {
+                if (jsonContent[i] === '{') braceCount++;
+                if (jsonContent[i] === '}') {
+                  braceCount--;
+                  if (braceCount === 0) {
+                    lastCompleteIndex = i;
+                  }
+                }
+              }
+              
+              if (lastCompleteIndex > 0) {
+                jsonContent = jsonContent.substring(0, lastCompleteIndex + 1);
+              }
+            }
+            
+            parsed = JSON.parse(jsonContent);
+          }
+        } catch (error) {
+          // 최종 실패
+        }
+      }
+      
+      // JSON 파싱 성공 여부만 간단히 로그
+      
+      if (parsed && parsed.classifications && Array.isArray(parsed.classifications)) {
+        console.log(`✅ LLM 분류 성공: ${parsed.classifications.length}개 영상`);
+        
+        return {
+          success: true,
+          classifications: parsed.classifications,
+          processingTime,
+          rawResponse: content
+        };
+              } else {
+          throw new Error('JSON 파싱 실패 또는 잘못된 구조');
+        }
 
     } catch (error) {
       console.error('❌ LLM 분류 실패:', error.message);
@@ -281,7 +377,6 @@ ${videoPrompts}
    * 🔄 폴백 태그 생성 (LLM 실패 시)
    */
   generateFallbackTags(videoData) {
-    console.log(`🔄 폴백 태그 생성: ${videoData.videoId}`);
 
     const title = videoData.title || '';
     const description = videoData.description || '';

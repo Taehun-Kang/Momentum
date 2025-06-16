@@ -40,13 +40,10 @@ class PaginationHandler {
       hasNextPageToken: currentResults.hasNextPageToken || false
     };
 
-    console.log(`🔄 페이지네이션 조건 확인: ${pageData.currentResultCount}/${mergedConfig.targetResults}개 (${pageData.pagesSearched}페이지)`);
-
     // 1. 기본 중단 조건들
     const stopConditions = this.checkStopConditions(pageData, mergedConfig);
     
     if (stopConditions.shouldStop) {
-      console.log(`  ⛔ 중단: ${stopConditions.reason}`);
       return {
         shouldContinue: false,
         reason: stopConditions.reason,
@@ -55,7 +52,6 @@ class PaginationHandler {
     }
 
     // 2. 계속 진행 가능
-    console.log(`  ✅ 계속 진행: ${stopConditions.reason}`);
     return {
       shouldContinue: true,
       reason: stopConditions.reason,

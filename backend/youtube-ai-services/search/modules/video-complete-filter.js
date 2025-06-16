@@ -80,8 +80,6 @@ class VideoCompleteFilter {
     const batches = this.createBatches(videoIds, 50);
     let allVideos = [];
 
-    console.log(`📦 배치 처리: ${batches.length}개 배치`);
-
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
       
@@ -97,8 +95,6 @@ class VideoCompleteFilter {
 
         const batchVideos = response.data.items || [];
         allVideos.push(...batchVideos);
-
-        console.log(`  ✅ 배치 ${i + 1}: ${batchVideos.length}개 성공`);
 
         if (i < batches.length - 1) {
           await this.delay(100);
@@ -189,28 +185,7 @@ class VideoCompleteFilter {
    * 📊 필터링 단계별 통계 출력
    */
   printFilteringStats(stats) {
-    console.log(`  📊 필터링 단계별 통계:`);
-    console.log(`    🎬 전체 영상: ${stats.total}개`);
-    console.log(`    ✅ 임베드 가능: ${stats.embeddablePass}개 (${(stats.embeddablePass/stats.total*100).toFixed(1)}%)`);
-    console.log(`    🔓 공개 영상: ${stats.publicPass}개 (${(stats.publicPass/stats.total*100).toFixed(1)}%)`);
-    console.log(`    ⏱️ Shorts 길이: ${stats.durationPass}개 (${(stats.durationPass/stats.total*100).toFixed(1)}%)`);
-    console.log(`    👀 조회수 기준: ${stats.viewCountPass}개 (${(stats.viewCountPass/stats.total*100).toFixed(1)}%)`);
-    console.log(`    💝 참여도 기준: ${stats.engagementPass}개 (${(stats.engagementPass/stats.total*100).toFixed(1)}%)`);
-    console.log(`    🎯 최종 통과: ${stats.finalPass}개 (${(stats.finalPass/stats.total*100).toFixed(1)}%)`);
-    
-    // 각 단계별 필터링 효과
-    const embeddableFilter = stats.total - stats.embeddablePass;
-    const publicFilter = stats.embeddablePass - stats.publicPass;
-    const durationFilter = stats.publicPass - stats.durationPass;
-    const viewCountFilter = stats.durationPass - stats.viewCountPass;
-    const engagementFilter = stats.viewCountPass - stats.engagementPass;
-    
-    console.log(`  🔍 단계별 필터링 효과:`);
-    console.log(`    ❌ 임베드 불가: ${embeddableFilter}개 제거`);
-    console.log(`    ❌ 비공개: ${publicFilter}개 제거`);
-    console.log(`    ❌ 길이 부적합: ${durationFilter}개 제거`);
-    console.log(`    ❌ 조회수 부족: ${viewCountFilter}개 제거`);
-    console.log(`    ❌ 참여도 부족: ${engagementFilter}개 제거`);
+    console.log(`📊 필터링 결과: ${stats.finalPass}/${stats.total}개 통과 (${(stats.finalPass/stats.total*100).toFixed(1)}%)`);
   }
 
   /**

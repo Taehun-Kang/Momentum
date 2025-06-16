@@ -65,13 +65,13 @@ import {
  * 📅 오늘 갱신할 키워드 목록 조회
  * ❌ 기존: 목업 데이터 (라인 89 근처)
  * ✅ 수정: 실제 Keywords DB 조회
- */
-async getTodaysKeywords() {
-  try {
+   */
+  async getTodaysKeywords() {
+    try {
     console.log('📅 오늘 갱신할 키워드 조회 중...');
 
     // 🔗 실제 DB 조회 (keywordService는 100% 테스트 완료)
-    const result = await getTodaysKeywords({
+      const result = await getTodaysKeywords({
       limit: 50,           // 오늘 처리할 키워드 수
       isActive: true,      // 활성 키워드만
       includeMetrics: true // 성과 지표 포함
@@ -88,19 +88,19 @@ async getTodaysKeywords() {
         lastUpdated: keyword.last_updated,
         performanceScore: keyword.performance_score || 0.5
       }));
-    } else {
+      } else {
       console.warn('⚠️ 오늘 갱신할 키워드가 없습니다. 기본 키워드 사용');
 
       // 폴백: 기본 키워드 목록
-      return [
+        return [
         { keyword: '브이로그', category: '라이프스타일', priority: 'high' },
         { keyword: '먹방', category: '먹방', priority: 'high' },
         { keyword: '댄스', category: '음악', priority: 'medium' },
         { keyword: 'ASMR', category: '힐링', priority: 'medium' },
         { keyword: '운동', category: '건강', priority: 'medium' }
-      ];
-    }
-  } catch (error) {
+        ];
+      }
+    } catch (error) {
     console.error('❌ 키워드 조회 실패:', error);
 
     // 에러 시 안전한 기본값 반환
@@ -117,41 +117,41 @@ async getTodaysKeywords() {
 /**
  * 🎬 영상 데이터 DB 저장 (TODO 2 → 활성화)
  * ❌ 기존: 주석 처리됨 (라인 400 근처)
- * ✅ 수정: 실제 DB 저장 기능
- */
-async saveVideoToDB(videoData) {
-  try {
+   * ✅ 수정: 실제 DB 저장 기능
+   */
+  async saveVideoToDB(videoData) {
+    try {
     // 💾 실제 DB 저장 (videoService는 100% 테스트 완료)
-    const result = await cacheVideoData({
-      video_id: videoData.id,
-      title: videoData.title,
-      description: videoData.description,
-      channel_id: videoData.channelId,
-      channel_title: videoData.channelTitle,
-      published_at: videoData.publishedAt,
-      view_count: videoData.viewCount || 0,
-      like_count: videoData.likeCount || 0,
-      comment_count: videoData.commentCount || 0,
-      duration: videoData.duration || 0,
-      thumbnail_url: videoData.thumbnail,
-      search_keyword: videoData.searchKeyword,
+      const result = await cacheVideoData({
+        video_id: videoData.id,
+        title: videoData.title,
+        description: videoData.description,
+        channel_id: videoData.channelId,
+        channel_title: videoData.channelTitle,
+        published_at: videoData.publishedAt,
+        view_count: videoData.viewCount || 0,
+        like_count: videoData.likeCount || 0,
+        comment_count: videoData.commentCount || 0,
+        duration: videoData.duration || 0,
+        thumbnail_url: videoData.thumbnail,
+        search_keyword: videoData.searchKeyword,
 
       // 🤖 LLM 분류 결과 포함 (이미 완성된 로직)
-      llm_classification: {
-        topic_tags: videoData.tags || [],
-        mood_tags: videoData.moodTags || [],
-        context_tags: videoData.contextTags || [],
-        genre_tags: videoData.genreTags || [],
-        confidence: videoData.classification_confidence || 0.8,
-        engine: "claude_api",
+        llm_classification: {
+          topic_tags: videoData.tags || [],
+          mood_tags: videoData.moodTags || [],
+          context_tags: videoData.contextTags || [],
+          genre_tags: videoData.genreTags || [],
+          confidence: videoData.classification_confidence || 0.8,
+          engine: "claude_api",
         processed_at: new Date().toISOString()
-      },
+        },
 
       // 📊 품질 정보 (이미 완성된 로직)
-      quality_score: videoData.qualityGrade || 0.5,
-      engagement_score: videoData.engagement || null,
-      is_playable: videoData.isPlayable !== false,
-      processed_at: new Date().toISOString(),
+        quality_score: videoData.qualityGrade || 0.5,
+        engagement_score: videoData.engagement || null,
+        is_playable: videoData.isPlayable !== false,
+        processed_at: new Date().toISOString(),
 
       // 🔍 검색 컨텍스트
       collection_context: {
@@ -160,52 +160,52 @@ async saveVideoToDB(videoData) {
         api_cost: 107, // search.list(100) + videos.list(7)
         filter_applied: true
       }
-    });
+      });
 
-    if (result.success) {
-      console.log(`✅ 영상 DB 저장 성공: ${videoData.id}`);
+      if (result.success) {
+        console.log(`✅ 영상 DB 저장 성공: ${videoData.id}`);
 
       // 📈 성과 추적을 위한 추가 로깅
       this.stats.videosSaved++;
 
-      return true;
-    } else {
-      console.error(`❌ 영상 DB 저장 실패: ${result.error}`);
+        return true;
+      } else {
+        console.error(`❌ 영상 DB 저장 실패: ${result.error}`);
       this.stats.videoSaveErrors++;
-      return false;
-    }
-  } catch (error) {
+        return false;
+      }
+    } catch (error) {
     console.error("❌ 영상 DB 저장 오류:", error);
     this.stats.videoSaveErrors++;
-    return false;
+      return false;
+    }
   }
-}
 ```
 
 #### **🔧 1.4 saveChannelToDB() 활성화 (TODO 3)**
 
 ```javascript
-/**
+  /**
  * 📺 채널 데이터 DB 저장 (TODO 3 → 활성화)
  * ❌ 기존: 주석 처리됨 (라인 447 근처)
- * ✅ 수정: 실제 DB 저장 기능
- */
-async saveChannelToDB(channelData) {
-  try {
+   * ✅ 수정: 실제 DB 저장 기능
+   */
+  async saveChannelToDB(channelData) {
+    try {
     // 💾 실제 DB 저장 (videoService는 100% 테스트 완료)
-    const result = await saveChannelInfo({
-      channel_id: channelData.channelId,
-      channel_title: channelData.channelTitle,
-      channel_description: channelData.channelDescription || null,
-      channel_icon_url: channelData.channelIcon || null,
-      subscriber_count: channelData.subscriberCount || 0,
-      subscriber_count_formatted: channelData.subscriberCountFormatted || "0",
-      video_count: channelData.videoCount || 0,
-      video_count_formatted: channelData.videoCountFormatted || "0",
-      country: "KR",
-      default_language: "ko",
-      quality_grade: channelData.qualityGrade || "C",
-      collected_at: new Date().toISOString(),
+      const result = await saveChannelInfo({
+        channel_id: channelData.channelId,
+        channel_title: channelData.channelTitle,
+        channel_description: channelData.channelDescription || null,
+        channel_icon_url: channelData.channelIcon || null,
+        subscriber_count: channelData.subscriberCount || 0,
+        subscriber_count_formatted: channelData.subscriberCountFormatted || "0",
+        video_count: channelData.videoCount || 0,
+        video_count_formatted: channelData.videoCountFormatted || "0",
+        country: "KR",
+        default_language: "ko",
+        quality_grade: channelData.qualityGrade || "C",
+        collected_at: new Date().toISOString(),
 
       // 📊 품질 메트릭 (이미 완성된 로직)
       statistics: {
@@ -221,25 +221,25 @@ async saveChannelToDB(channelData) {
         include_topics: false,
         api_units_consumed: 5 // channels.list 기본 비용
       }
-    });
+      });
 
-    if (result.success) {
-      console.log(`✅ 채널 DB 저장 성공: ${channelData.channelId}`);
+      if (result.success) {
+        console.log(`✅ 채널 DB 저장 성공: ${channelData.channelId}`);
 
       // 📈 성과 추적
       this.stats.channelsSaved++;
 
-      return true;
-    } else {
-      console.error(`❌ 채널 DB 저장 실패: ${result.error}`);
+        return true;
+      } else {
+        console.error(`❌ 채널 DB 저장 실패: ${result.error}`);
       this.stats.channelSaveErrors++;
-      return false;
-    }
-  } catch (error) {
+        return false;
+      }
+    } catch (error) {
     console.error("❌ 채널 DB 저장 오류:", error);
     this.stats.channelSaveErrors++;
-    return false;
-  }
+      return false;
+    }
 }
 ```
 
@@ -347,13 +347,13 @@ async saveExecutionReport(summaryStats) {
 
     console.log('✅ 실행 리포트 저장 완료');
     return true;
-  } catch (error) {
+    } catch (error) {
     console.error('❌ 실행 리포트 저장 실패:', error);
     return false;
+    }
   }
-}
 
-/**
+  /**
  * 🔄 연쇄 업데이트 처리 (TODO 6-7 → 구현)
  * ❌ 기존: 미구현
  * ✅ 추가: 다른 DB들에 미치는 영향 처리
@@ -389,10 +389,10 @@ async processChainedUpdates(processedData) {
 
     console.log('✅ 연쇄 업데이트 완료');
     return true;
-  } catch (error) {
+    } catch (error) {
     console.error('❌ 연쇄 업데이트 실패:', error);
     return false;
-  }
+    }
 }
 ```
 
@@ -467,7 +467,7 @@ async getUserAnalysisContext(userId) {
 
     console.log('✅ 사용자 컨텍스트 조회 완료');
     return context;
-  } catch (error) {
+    } catch (error) {
     console.error('❌ 사용자 컨텍스트 조회 실패:', error);
 
     // 폴백: 최소한의 기본 컨텍스트
@@ -618,7 +618,7 @@ async handleCurationClick(userId, clickData) {
 
     console.log('✅ 클릭 추적 및 업데이트 완료');
     return { success: true };
-  } catch (error) {
+    } catch (error) {
     console.error('❌ 클릭 추적 실패:', error);
     return { success: false, error: error.message };
   }
@@ -711,7 +711,7 @@ async saveTrendCollectionResults(collectionData) {
 
     console.log('✅ 트렌드 분석 결과 저장 완료');
     return { success: true };
-  } catch (error) {
+    } catch (error) {
     console.error('❌ 트렌드 수집 결과 저장 실패:', error);
     return { success: false, error: error.message };
   }
@@ -830,7 +830,7 @@ async savePerformanceMetrics(performanceData) {
 
     console.log('✅ 성능 메트릭 저장 완료');
     return { success: true };
-  } catch (error) {
+    } catch (error) {
     console.error('❌ 성능 메트릭 저장 실패:', error);
     return { success: false, error: error.message };
   }
@@ -877,7 +877,7 @@ async processAdvancedAnalytics(analyticsData) {
 
     console.log('✅ 고급 분석 처리 완료');
     return { success: true };
-  } catch (error) {
+    } catch (error) {
     console.error('❌ 고급 분석 처리 실패:', error);
     return { success: false, error: error.message };
   }

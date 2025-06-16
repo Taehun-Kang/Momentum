@@ -75,9 +75,6 @@ class YouTubeSearchEngine {
     this.stats.totalRequests++;
 
     try {
-      console.log('\n🎬 YouTube API 검색 시작');
-      console.log('📡 API URL:', `${this.youtubeApiUrl}/search`);
-      console.log('📋 전달받은 파라미터:', JSON.stringify(apiParams, null, 2));
 
       // JSON의 apiParams에 API 키 추가
       const searchParams = {
@@ -133,24 +130,7 @@ class YouTubeSearchEngine {
    * 📊 검색 결과 요약 출력
    */
   printSearchSummary(result) {
-    console.log('\n📊 검색 결과 요약:');
-    console.log(`   🎬 발견된 영상: ${result.data.items?.length || 0}개`);
-    console.log(`   📋 총 가능 결과: ${result.totalResults.toLocaleString()}개`);
-    console.log(`   📄 페이지당 결과: ${result.resultsPerPage}개`);
-    console.log(`   🔗 다음 페이지: ${result.nextPageToken ? 'O' : 'X'}`);
-    console.log(`   ⏱️ 응답 시간: ${result.responseTime}ms`);
-    console.log(`   💰 API 비용: ${result.apiCost} units`);
-
-    // 영상 샘플 출력 (처음 3개)
-    if (result.data.items && result.data.items.length > 0) {
-      console.log('\n🎬 영상 샘플 (처음 3개):');
-      result.data.items.slice(0, 3).forEach((video, index) => {
-        console.log(`   ${index + 1}. ${video.snippet?.title}`);
-        console.log(`      ID: ${video.id?.videoId}`);
-        console.log(`      채널: ${video.snippet?.channelTitle}`);
-        console.log(`      게시일: ${video.snippet?.publishedAt}`);
-      });
-    }
+    console.log(`🎬 검색 완료: ${result.data.items?.length || 0}개 발견 (${result.responseTime}ms, ${result.apiCost} units)`);
   }
 
   /**

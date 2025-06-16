@@ -24,7 +24,7 @@ class ChannelInfoCollector {
       totalApiUnits: 0
     };
     
-    console.log(`📺 채널 정보 수집기 초기화 완료 (${this.defaultParts.length + 1} units per request)`);
+
   }
 
   /**
@@ -87,8 +87,6 @@ class ChannelInfoCollector {
     let allChannels = [];
     let totalApiCost = 0;
 
-    console.log(`📦 배치 처리: ${batches.length}개 배치`);
-
     // 요청할 part 파라미터 결정
     const parts = [...this.defaultParts];
     if (options.includeBranding) parts.push('brandingSettings');
@@ -119,8 +117,6 @@ class ChannelInfoCollector {
         this.stats.totalChannelsProcessed += batchChannels.length;
         this.stats.totalApiUnits += costPerRequest;
 
-        console.log(`  ✅ 배치 ${i + 1}: ${batchChannels.length}개 성공 (${costPerRequest} units)`);
-
         // API 제한 고려한 대기 (마지막 배치 제외)
         if (i < batches.length - 1) {
           await this.delay(100);
@@ -131,8 +127,6 @@ class ChannelInfoCollector {
         throw error;
       }
     }
-
-    console.log(`📊 전체 API 비용: ${totalApiCost} units`);
 
     return { 
       channels: allChannels, 
