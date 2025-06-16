@@ -55,6 +55,20 @@ router.put('/logs/:logId', async (req, res) => {
 });
 
 /**
+ * GET /api/search_db/logs/popular
+ * 인기 키워드 상세 분석 (DB 함수 활용)
+ * ⚠️ 주의: 반드시 /logs/:logId보다 먼저 정의해야 함!
+ */
+router.get('/logs/popular', async (req, res) => {
+  try {
+    const result = await searchService.getPopularKeywordsDetailed(req.query);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * GET /api/search_db/logs/:logId
  * 검색 로그 조회 (ID로)
  */
@@ -62,6 +76,21 @@ router.get('/logs/:logId', async (req, res) => {
   try {
     const { logId } = req.params;
     const result = await searchService.getSearchLogById(logId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/search_db/logs/:logId/exists
+ * 검색 로그 존재 여부 확인
+ * ⚠️ 주의: 반드시 /logs/:logId보다 먼저 정의해야 함!
+ */
+router.get('/logs/:logId/exists', async (req, res) => {
+  try {
+    const { logId } = req.params;
+    const result = await searchService.searchLogExists(logId);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -85,19 +114,6 @@ router.get('/users/:userId/logs', async (req, res) => {
 // ============================================================================
 // 📊 인기 키워드 및 트렌드 분석 (4개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
-
-/**
- * GET /api/search_db/logs/popular
- * 인기 키워드 상세 분석 (DB 함수 활용)
- */
-router.get('/logs/popular', async (req, res) => {
-  try {
-    const result = await searchService.getPopularKeywordsDetailed(req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
 
 /**
  * GET /api/search_db/keywords/realtime-trends
@@ -328,19 +344,7 @@ router.get('/statistics/:viewName', async (req, res) => {
   }
 });
 
-/**
- * GET /api/search_db/logs/:logId/exists
- * 검색 로그 존재 여부 확인
- */
-router.get('/logs/:logId/exists', async (req, res) => {
-  try {
-    const { logId } = req.params;
-    const result = await searchService.searchLogExists(logId);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
+
 
 // ============================================================================
 // 🎯 라우터 내보내기

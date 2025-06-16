@@ -258,9 +258,9 @@ CREATE INDEX idx_search_logs_user_success_time
 ON search_logs(user_id, search_failed, created_at DESC) 
 WHERE search_failed = false;
 
-CREATE INDEX idx_search_logs_popular_queries_24h 
-ON search_logs(search_query, created_at) 
-WHERE created_at > (now() - interval '24 hours');
+-- ✅ 수정된 인덱스 (시간 조건 제거)
+CREATE INDEX idx_search_logs_popular_queries
+ON search_logs(search_query, created_at DESC);
 
 CREATE INDEX idx_search_logs_api_efficiency 
 ON search_logs(api_units_consumed, results_count, created_at DESC) 
@@ -273,8 +273,9 @@ CREATE INDEX idx_search_logs_filters_applied ON search_logs USING GIN(filters_ap
 CREATE INDEX idx_search_logs_search_options ON search_logs USING GIN(search_options);
 CREATE INDEX idx_search_logs_browser_info ON search_logs USING GIN(browser_info);
 
--- 전문 검색 인덱스 (검색어 텍스트 검색용)
-CREATE INDEX idx_search_logs_query_trgm ON search_logs USING gin(search_query gin_trgm_ops);
+-- 전문 검색 인덱스 (검색어 텍스트 검색용) - pg_trgm 확장 필요시 활성화
+-- CREATE EXTENSION IF NOT EXISTS pg_trgm;
+-- CREATE INDEX idx_search_logs_query_trgm ON search_logs USING gin(search_query gin_trgm_ops);
 
 -- =============================================================================
 -- 🔄 트리거 및 함수
@@ -337,7 +338,7 @@ BEGIN
     MAX(sl.created_at) as last_searched
   FROM search_logs sl
   WHERE 
-    sl.created_at >= (now() - (days_back || ' days')::interval)
+    sl.created_at >= (CURRENT_TIMESTAMP - (days_back || ' days')::interval)
     AND sl.search_query IS NOT NULL
     AND LENGTH(sl.search_query) > 1
   GROUP BY sl.search_query
@@ -376,7 +377,7 @@ BEGIN
     ROUND(AVG(sl.new_videos_found), 2) as avg_new_videos
   FROM search_logs sl
   WHERE 
-    sl.created_at >= (now() - (hours_back || ' hours')::interval)
+    sl.created_at >= (CURRENT_TIMESTAMP - (hours_back || ' hours')::interval)
     AND sl.search_query IS NOT NULL
     AND sl.search_failed = false
   GROUP BY sl.search_query
@@ -415,7 +416,7 @@ BEGIN
       END, 2
     ) as efficiency_score
   FROM search_logs sl
-  WHERE sl.created_at >= (now() - (days_back || ' days')::interval)
+  WHERE sl.created_at >= (CURRENT_TIMESTAMP - (days_back || ' days')::interval)
   GROUP BY DATE_TRUNC('hour', sl.created_at)
   ORDER BY date_hour DESC;
 END;
@@ -447,7 +448,7 @@ BEGIN
   FROM search_logs sl
   WHERE 
     sl.user_id = target_user_id
-    AND sl.created_at >= (now() - (days_back || ' days')::interval)
+    AND sl.created_at >= (CURRENT_TIMESTAMP - (days_back || ' days')::interval)
   GROUP BY sl.user_id;
 END;
 $$ LANGUAGE plpgsql;
@@ -461,7 +462,7 @@ BEGIN
   -- 90일 이상 된 검색 로그 삭제 (사용자 데이터는 보존)
   DELETE FROM search_logs 
   WHERE 
-    created_at < (now() - interval '90 days')
+    created_at < (CURRENT_TIMESTAMP - interval '90 days')
     AND user_id IS NULL; -- 익명 사용자만 삭제
   
   GET DIAGNOSTICS deleted_count = ROW_COUNT;
@@ -491,10 +492,10 @@ FROM search_logs sl
 WHERE 
   sl.search_failed = false
   AND sl.results_count > 0
-  AND sl.created_at > (now() - interval '7 days')
+  AND sl.created_at > (CURRENT_TIMESTAMP - interval '7 days')
 ORDER BY sl.created_at DESC;
 
--- 실시간 인기 검색어 뷰 (1시간 기준)
+-- 실시간 인기 검색어 뷰 (최근 기준)
 CREATE VIEW trending_searches_1h AS
 SELECT 
   sl.search_query,
@@ -504,9 +505,9 @@ SELECT
   MAX(sl.created_at) as last_searched
 FROM search_logs sl
 WHERE 
-  sl.created_at > (now() - interval '1 hour')
-  AND sl.search_failed = false
+  sl.search_failed = false
   AND LENGTH(sl.search_query) > 1
+  AND sl.created_at > (CURRENT_TIMESTAMP - interval '1 hour')
 GROUP BY sl.search_query
 HAVING COUNT(*) >= 2
 ORDER BY search_count DESC, unique_users DESC
@@ -522,7 +523,7 @@ SELECT
   ROUND((COUNT(*) FILTER (WHERE sl.cache_hit = true)::decimal / COUNT(*)) * 100, 2) as cache_hit_rate,
   AVG(sl.response_time) as avg_response_time
 FROM search_logs sl
-WHERE sl.created_at > (now() - interval '24 hours')
+WHERE sl.created_at > (CURRENT_TIMESTAMP - interval '24 hours')
 GROUP BY DATE_TRUNC('hour', sl.created_at)
 ORDER BY hour DESC;
 

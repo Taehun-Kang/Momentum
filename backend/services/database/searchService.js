@@ -360,23 +360,48 @@ export async function getPopularKeywordsByCategory(category, options = {}) {
       limit = 20
     } = options;
 
+    // 원시 데이터 조회 (JavaScript에서 집계)
     const { data, error } = await supabase
       .from('search_logs')
-      .select('search_query, COUNT(*) as search_count, COUNT(DISTINCT user_id) as unique_users')
+      .select('search_query, user_id')
       .eq('keyword_category', category)
       .eq('search_failed', false)
       .gte('created_at', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString())
-      .not('search_query', 'is', null)
-      .group('search_query')
-      .order('search_count', { ascending: false })
-      .limit(limit);
+      .not('search_query', 'is', null);
 
     if (error) {
       console.error('카테고리별 인기 키워드 조회 실패:', error);
       return { success: false, error: error.message };
     }
 
-    return { success: true, data, count: data.length };
+    // JavaScript에서 집계 처리
+    const keywordStats = {};
+    data.forEach(row => {
+      const query = row.search_query;
+      if (!keywordStats[query]) {
+        keywordStats[query] = {
+          search_query: query,
+          search_count: 0,
+          unique_users: new Set()
+        };
+      }
+      keywordStats[query].search_count++;
+      if (row.user_id) {
+        keywordStats[query].unique_users.add(row.user_id);
+      }
+    });
+
+    // Set을 크기로 변환하고 정렬
+    const result = Object.values(keywordStats)
+      .map(stat => ({
+        search_query: stat.search_query,
+        search_count: stat.search_count,
+        unique_users: stat.unique_users.size
+      }))
+      .sort((a, b) => b.search_count - a.search_count)
+      .slice(0, limit);
+
+    return { success: true, data: result, count: result.length };
 
   } catch (error) {
     console.error('카테고리별 인기 키워드 조회 중 오류:', error);
@@ -392,22 +417,33 @@ export async function getPopularKeywordsByCategory(category, options = {}) {
  */
 export async function getSearchAutocompleteSuggestions(prefix, limit = 10) {
   try {
+    // 원시 데이터 조회 (JavaScript에서 집계)
     const { data, error } = await supabase
       .from('search_logs')
-      .select('search_query, COUNT(*) as frequency')
+      .select('search_query')
       .ilike('search_query', `${prefix}%`)
       .eq('search_failed', false)
-      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
-      .group('search_query')
-      .order('frequency', { ascending: false })
-      .limit(limit);
+      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
     if (error) {
       console.error('자동완성 후보 조회 실패:', error);
       return { success: false, error: error.message };
     }
 
-    return { success: true, data: data.map(item => item.search_query) };
+    // JavaScript에서 빈도 계산
+    const frequency = {};
+    data.forEach(row => {
+      const query = row.search_query;
+      frequency[query] = (frequency[query] || 0) + 1;
+    });
+
+    // 빈도순으로 정렬하고 limit 적용
+    const result = Object.entries(frequency)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([query]) => query);
+
+    return { success: true, data: result };
 
   } catch (error) {
     console.error('자동완성 후보 조회 중 오류:', error);
@@ -451,24 +487,49 @@ export async function analyzeApiUsage(daysBack = 1) {
  */
 export async function getQuotaUsageByCategory(daysBack = 1) {
   try {
+    // 원시 데이터 조회 (JavaScript에서 집계)
     const { data, error } = await supabase
       .from('search_logs')
-      .select(`
-        quota_category,
-        SUM(api_units_consumed) as total_units,
-        COUNT(*) as total_searches,
-        AVG(response_time) as avg_response_time
-      `)
-      .gte('created_at', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString())
-      .group('quota_category')
-      .order('total_units', { ascending: false });
+      .select('quota_category, api_units_consumed, response_time')
+      .gte('created_at', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString());
 
     if (error) {
       console.error('할당량 카테고리별 사용량 조회 실패:', error);
       return { success: false, error: error.message };
     }
 
-    return { success: true, data };
+    // JavaScript에서 집계 처리
+    const categoryStats = {};
+    data.forEach(row => {
+      const category = row.quota_category || 'unknown';
+      if (!categoryStats[category]) {
+        categoryStats[category] = {
+          quota_category: category,
+          total_units: 0,
+          total_searches: 0,
+          response_times: []
+        };
+      }
+      categoryStats[category].total_units += row.api_units_consumed || 0;
+      categoryStats[category].total_searches++;
+      if (row.response_time) {
+        categoryStats[category].response_times.push(row.response_time);
+      }
+    });
+
+    // 평균 계산 및 정렬
+    const result = Object.values(categoryStats)
+      .map(stat => ({
+        quota_category: stat.quota_category,
+        total_units: stat.total_units,
+        total_searches: stat.total_searches,
+        avg_response_time: stat.response_times.length > 0 
+          ? stat.response_times.reduce((a, b) => a + b, 0) / stat.response_times.length 
+          : null
+      }))
+      .sort((a, b) => b.total_units - a.total_units);
+
+    return { success: true, data: result };
 
   } catch (error) {
     console.error('할당량 카테고리별 사용량 조회 중 오류:', error);
@@ -483,31 +544,75 @@ export async function getQuotaUsageByCategory(daysBack = 1) {
  */
 export async function analyzeCacheEfficiency(daysBack = 1) {
   try {
+    // 원시 데이터 조회 (JavaScript에서 집계)
     const { data, error } = await supabase
       .from('search_logs')
-      .select(`
-        DATE_TRUNC('hour', created_at) as hour,
-        COUNT(*) as total_searches,
-        COUNT(*) FILTER (WHERE cache_hit = true) as cache_hits,
-        AVG(response_time) as avg_response_time,
-        AVG(response_time) FILTER (WHERE cache_hit = true) as avg_cache_response_time,
-        AVG(response_time) FILTER (WHERE cache_hit = false) as avg_api_response_time
-      `)
+      .select('created_at, cache_hit, response_time')
       .gte('created_at', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString())
-      .group('DATE_TRUNC(hour, created_at)')
-      .order('hour', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('캐시 효율성 분석 실패:', error);
       return { success: false, error: error.message };
     }
 
-    // 캐시 적중률 계산
-    const processedData = data.map(row => ({
-      ...row,
-      cache_hit_rate: row.total_searches > 0 ? 
-        (row.cache_hits / row.total_searches * 100).toFixed(2) : 0
-    }));
+    // JavaScript에서 시간별 집계
+    const hourlyStats = {};
+    data.forEach(row => {
+      // 시간으로 truncate (YYYY-MM-DD HH:00:00)
+      const hour = new Date(row.created_at);
+      hour.setMinutes(0, 0, 0);
+      const hourKey = hour.toISOString();
+
+      if (!hourlyStats[hourKey]) {
+        hourlyStats[hourKey] = {
+          hour: hourKey,
+          total_searches: 0,
+          cache_hits: 0,
+          response_times: [],
+          cache_response_times: [],
+          api_response_times: []
+        };
+      }
+
+      const stats = hourlyStats[hourKey];
+      stats.total_searches++;
+      
+      if (row.cache_hit) {
+        stats.cache_hits++;
+        if (row.response_time) {
+          stats.cache_response_times.push(row.response_time);
+        }
+      } else {
+        if (row.response_time) {
+          stats.api_response_times.push(row.response_time);
+        }
+      }
+      
+      if (row.response_time) {
+        stats.response_times.push(row.response_time);
+      }
+    });
+
+    // 평균 계산 및 캐시 적중률
+    const processedData = Object.values(hourlyStats)
+      .map(stat => ({
+        hour: stat.hour,
+        total_searches: stat.total_searches,
+        cache_hits: stat.cache_hits,
+        avg_response_time: stat.response_times.length > 0 
+          ? stat.response_times.reduce((a, b) => a + b, 0) / stat.response_times.length 
+          : null,
+        avg_cache_response_time: stat.cache_response_times.length > 0 
+          ? stat.cache_response_times.reduce((a, b) => a + b, 0) / stat.cache_response_times.length 
+          : null,
+        avg_api_response_time: stat.api_response_times.length > 0 
+          ? stat.api_response_times.reduce((a, b) => a + b, 0) / stat.api_response_times.length 
+          : null,
+        cache_hit_rate: stat.total_searches > 0 ? 
+          (stat.cache_hits / stat.total_searches * 100).toFixed(2) : 0
+      }))
+      .sort((a, b) => new Date(b.hour) - new Date(a.hour));
 
     return { success: true, data: processedData };
 
@@ -524,35 +629,65 @@ export async function analyzeCacheEfficiency(daysBack = 1) {
  */
 export async function getPerformanceSummary(daysBack = 1) {
   try {
+    // 원시 데이터 조회 (JavaScript에서 집계)
     const { data, error } = await supabase
       .from('search_logs')
-      .select(`
-        COUNT(*) as total_searches,
-        COUNT(*) FILTER (WHERE search_failed = false) as successful_searches,
-        COUNT(*) FILTER (WHERE cache_hit = true) as cache_hits,
-        AVG(response_time) as avg_response_time,
-        AVG(api_units_consumed) as avg_api_units,
-        SUM(api_units_consumed) as total_api_units,
-        AVG(ai_cost_usd) as avg_ai_cost,
-        SUM(ai_cost_usd) as total_ai_cost
-      `)
-      .gte('created_at', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString())
-      .single();
+      .select('search_failed, cache_hit, response_time, api_units_consumed, ai_cost_usd')
+      .gte('created_at', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString());
 
     if (error) {
       console.error('성능 지표 요약 조회 실패:', error);
       return { success: false, error: error.message };
     }
 
-    // 계산된 지표 추가
+    // JavaScript에서 집계 처리
+    let total_searches = data.length;
+    let successful_searches = 0;
+    let cache_hits = 0;
+    let response_times = [];
+    let api_units = [];
+    let ai_costs = [];
+
+    data.forEach(row => {
+      if (!row.search_failed) {
+        successful_searches++;
+      }
+      if (row.cache_hit) {
+        cache_hits++;
+      }
+      if (row.response_time !== null && row.response_time !== undefined) {
+        response_times.push(row.response_time);
+      }
+      if (row.api_units_consumed !== null && row.api_units_consumed !== undefined) {
+        api_units.push(row.api_units_consumed);
+      }
+      if (row.ai_cost_usd !== null && row.ai_cost_usd !== undefined) {
+        ai_costs.push(row.ai_cost_usd);
+      }
+    });
+
+    // 계산된 지표
     const summary = {
-      ...data,
-      success_rate: data.total_searches > 0 ? 
-        (data.successful_searches / data.total_searches * 100).toFixed(2) : 0,
-      cache_hit_rate: data.total_searches > 0 ? 
-        (data.cache_hits / data.total_searches * 100).toFixed(2) : 0,
-      api_efficiency: data.total_api_units > 0 ? 
-        (data.successful_searches / data.total_api_units).toFixed(4) : 0
+      total_searches,
+      successful_searches,
+      cache_hits,
+      avg_response_time: response_times.length > 0 
+        ? response_times.reduce((a, b) => a + b, 0) / response_times.length 
+        : null,
+      avg_api_units: api_units.length > 0 
+        ? api_units.reduce((a, b) => a + b, 0) / api_units.length 
+        : null,
+      total_api_units: api_units.reduce((a, b) => a + b, 0),
+      avg_ai_cost: ai_costs.length > 0 
+        ? ai_costs.reduce((a, b) => a + b, 0) / ai_costs.length 
+        : null,
+      total_ai_cost: ai_costs.reduce((a, b) => a + b, 0),
+      success_rate: total_searches > 0 ? 
+        (successful_searches / total_searches * 100).toFixed(2) : 0,
+      cache_hit_rate: total_searches > 0 ? 
+        (cache_hits / total_searches * 100).toFixed(2) : 0,
+      api_efficiency: api_units.reduce((a, b) => a + b, 0) > 0 ? 
+        (successful_searches / api_units.reduce((a, b) => a + b, 0)).toFixed(4) : 0
     };
 
     return { success: true, data: summary };
@@ -602,29 +737,59 @@ export async function analyzeUserSearchPatterns(userId, daysBack = 30) {
  */
 export async function getUserPreferredKeywords(userId, daysBack = 30) {
   try {
+    // 원시 데이터 조회 (JavaScript에서 집계)
     const { data, error } = await supabase
       .from('search_logs')
-      .select(`
-        search_query,
-        keyword_category,
-        COUNT(*) as search_count,
-        AVG(user_satisfaction_rating) as avg_satisfaction,
-        AVG(results_clicked) as avg_clicks
-      `)
+      .select('search_query, keyword_category, user_satisfaction_rating, results_clicked')
       .eq('user_id', userId)
       .eq('search_failed', false)
       .gte('created_at', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString())
-      .not('search_query', 'is', null)
-      .group('search_query, keyword_category')
-      .order('search_count', { ascending: false })
-      .limit(20);
+      .not('search_query', 'is', null);
 
     if (error) {
       console.error('사용자 선호 키워드 조회 실패:', error);
       return { success: false, error: error.message };
     }
 
-    return { success: true, data };
+    // JavaScript에서 집계 처리
+    const keywordStats = {};
+    data.forEach(row => {
+      const key = `${row.search_query}|${row.keyword_category || 'unknown'}`;
+      if (!keywordStats[key]) {
+        keywordStats[key] = {
+          search_query: row.search_query,
+          keyword_category: row.keyword_category,
+          search_count: 0,
+          satisfaction_ratings: [],
+          clicks: []
+        };
+      }
+      keywordStats[key].search_count++;
+      if (row.user_satisfaction_rating) {
+        keywordStats[key].satisfaction_ratings.push(row.user_satisfaction_rating);
+      }
+      if (row.results_clicked) {
+        keywordStats[key].clicks.push(row.results_clicked);
+      }
+    });
+
+    // 평균 계산 및 정렬
+    const result = Object.values(keywordStats)
+      .map(stat => ({
+        search_query: stat.search_query,
+        keyword_category: stat.keyword_category,
+        search_count: stat.search_count,
+        avg_satisfaction: stat.satisfaction_ratings.length > 0 
+          ? stat.satisfaction_ratings.reduce((a, b) => a + b, 0) / stat.satisfaction_ratings.length 
+          : null,
+        avg_clicks: stat.clicks.length > 0 
+          ? stat.clicks.reduce((a, b) => a + b, 0) / stat.clicks.length 
+          : null
+      }))
+      .sort((a, b) => b.search_count - a.search_count)
+      .slice(0, 20);
+
+    return { success: true, data: result };
 
   } catch (error) {
     console.error('사용자 선호 키워드 조회 중 오류:', error);
@@ -681,26 +846,49 @@ export async function analyzeSearchSession(sessionId) {
  */
 export async function analyzeSearchErrors(daysBack = 1) {
   try {
+    // 원시 데이터 조회 (JavaScript에서 집계)
     const { data, error } = await supabase
       .from('search_logs')
-      .select(`
-        error_type,
-        api_error_code,
-        failure_reason,
-        COUNT(*) as error_count,
-        COUNT(DISTINCT user_id) as affected_users
-      `)
+      .select('error_type, api_error_code, failure_reason, user_id')
       .eq('error_occurred', true)
-      .gte('created_at', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString())
-      .group('error_type, api_error_code, failure_reason')
-      .order('error_count', { ascending: false });
+      .gte('created_at', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString());
 
     if (error) {
       console.error('검색 에러 분석 실패:', error);
       return { success: false, error: error.message };
     }
 
-    return { success: true, data };
+    // JavaScript에서 집계 처리
+    const errorStats = {};
+    data.forEach(row => {
+      const key = `${row.error_type || 'unknown'}|${row.api_error_code || ''}|${row.failure_reason || ''}`;
+      if (!errorStats[key]) {
+        errorStats[key] = {
+          error_type: row.error_type,
+          api_error_code: row.api_error_code,
+          failure_reason: row.failure_reason,
+          error_count: 0,
+          affected_users: new Set()
+        };
+      }
+      errorStats[key].error_count++;
+      if (row.user_id) {
+        errorStats[key].affected_users.add(row.user_id);
+      }
+    });
+
+    // Set을 크기로 변환하고 정렬
+    const result = Object.values(errorStats)
+      .map(stat => ({
+        error_type: stat.error_type,
+        api_error_code: stat.api_error_code,
+        failure_reason: stat.failure_reason,
+        error_count: stat.error_count,
+        affected_users: stat.affected_users.size
+      }))
+      .sort((a, b) => b.error_count - a.error_count);
+
+    return { success: true, data: result };
 
   } catch (error) {
     console.error('검색 에러 분석 중 오류:', error);
@@ -715,21 +903,38 @@ export async function analyzeSearchErrors(daysBack = 1) {
  */
 export async function monitorQuotaStatus(hoursBack = 24) {
   try {
+    // 원시 데이터 조회 (JavaScript에서 집계)
     const { data, error } = await supabase
       .from('search_logs')
-      .select(`
-        quota_category,
-        SUM(api_units_consumed) as total_units,
-        COUNT(*) FILTER (WHERE quota_exceeded = true) as quota_exceeded_count,
-        MAX(created_at) as last_quota_exceeded
-      `)
-      .gte('created_at', new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString())
-      .group('quota_category');
+      .select('quota_category, api_units_consumed, quota_exceeded, created_at')
+      .gte('created_at', new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString());
 
     if (error) {
       console.error('할당량 모니터링 실패:', error);
       return { success: false, error: error.message };
     }
+
+    // JavaScript에서 집계 처리
+    const quotaStats = {};
+    data.forEach(row => {
+      const category = row.quota_category || 'unknown';
+      if (!quotaStats[category]) {
+        quotaStats[category] = {
+          quota_category: category,
+          total_units: 0,
+          quota_exceeded_count: 0,
+          last_quota_exceeded: null
+        };
+      }
+      quotaStats[category].total_units += row.api_units_consumed || 0;
+      if (row.quota_exceeded) {
+        quotaStats[category].quota_exceeded_count++;
+        if (!quotaStats[category].last_quota_exceeded || 
+            new Date(row.created_at) > new Date(quotaStats[category].last_quota_exceeded)) {
+          quotaStats[category].last_quota_exceeded = row.created_at;
+        }
+      }
+    });
 
     // 할당량 한도와 비교
     const quotaLimits = {
@@ -739,8 +944,11 @@ export async function monitorQuotaStatus(hoursBack = 24) {
       emergency_reserve: 2000
     };
 
-    const quotaStatus = data.map(category => ({
-      ...category,
+    const quotaStatus = Object.values(quotaStats).map(category => ({
+      quota_category: category.quota_category,
+      total_units: category.total_units,
+      quota_exceeded_count: category.quota_exceeded_count,
+      last_quota_exceeded: category.last_quota_exceeded,
       quota_limit: quotaLimits[category.quota_category] || 0,
       usage_percentage: category.total_units / (quotaLimits[category.quota_category] || 1) * 100,
       is_approaching_limit: (category.total_units / (quotaLimits[category.quota_category] || 1)) > 0.8

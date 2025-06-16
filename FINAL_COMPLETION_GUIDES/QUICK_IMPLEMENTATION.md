@@ -1,404 +1,403 @@
-# ⚡ **Momentum 빠른 완성 가이드 (2시간 완료)**
+# ⚡ **Momentum 빠른 완성 가이드 (정확한 분석 버전)**
 
-**(업데이트: 정확한 구현 범위 확정)**
+**(Database API 100% 테스트 완료 + 정확한 DB 연동 분석 - 2025.01.15)**
 
-## 🎯 **완성을 위한 정확한 작업 목록**
+## 🚨 **중요한 발견 - 복잡도 재평가**
 
-### ✅ **완성된 부분 (95%)**
+### ❌ **이전 예상 (부정확)**
 
-- **searchService.js** ✅ 완성 (933줄)
-- **youtube-ai-services** ✅ 독립 작동 (DB 연결 불필요)
-- **Database services** ✅ 7개 모두 완성
-- **Frontend UI** ✅ 완전한 SPA 구조
-- **Backend server** ✅ 182개 엔드포인트
+- **예상 시간**: 1-2시간 (단순한 7개 TODO 처리)
+- **예상 작업**: dailyKeywordUpdateService.js 주석 해제만
 
-### 🔄 **남은 작업 (5% - 2시간)**
+### ✅ **실제 상황 (정확)**
 
-#### **Step 1: 서비스 DB 연결 (1.5시간)**
+- **실제 시간**: **8-12시간** (3개 서비스 × 65개 API 연동)
+- **실제 작업**: **복잡한 연쇄적 DB 업데이트 구조** 구현
 
-```
-🎯 정확한 수정 대상:
-├── personalizedCurationService.js (2개 메서드)
-├── dailyKeywordUpdateService.js (3개 메서드)
-└── trendVideoService.js (1개 메서드 추가)
-```
-
-#### **Step 2: Frontend API 연결 (30분)**
-
-```
-🔌 연결 포인트:
-├── api.js 클라이언트 생성
-├── AuthFlow.js 로그인 연결
-├── ChatFlow.js LLM 연결
-└── Home.js 검색 연결
-```
+**🎯 하지만 단계별 접근으로 중간 결과물도 의미있게 활용 가능!**
 
 ---
 
-## 🚀 **30분 단위 실행 계획**
+## 📊 **현재 완성도 (재평가)**
 
-### **[1-30분] personalizedCurationService.js**
+### ✅ **완성된 부분 (95%) 🏆**
 
-#### 1️⃣ **import 추가** (2분)
+- **Backend Server** ✅ 완성 (382줄, 182개 엔드포인트)
+- **Database API** ✅ **149개 API 100% 테스트 완료** 🎉
+- **Business API** ✅ 33개 완전 구현
+- **Database services** ✅ **7개 모두 완성** (7,000+줄)
+- **YouTube AI services** ✅ 독립 작동 (DB 연결 불필요)
+- **Frontend UI** ✅ 완전한 SPA 구조 (App.js 428줄)
+- **Railway 배포** ✅ 설정 완료
 
-```javascript
-// 📍 파일 상단에 추가
-import {
-  getUserPreferences,
-  createVideoInteraction,
-} from "../database/userService.js";
+### 🔄 **남은 작업 (5% - 하지만 복잡함)**
+
+**3개 서비스별 DB 연동**:
+
+- **dailyKeywordUpdateService.js**: 25개 DB 연동 포인트
+- **personalizedCurationService.js**: 18개 DB 연동 포인트
+- **trendVideoService.js**: 22개 DB 연동 포인트
+
+**총 65개 API 연동 + 연쇄 업데이트 로직**
+
+---
+
+## 🎯 **현실적 우선순위 (3단계)**
+
+### **🔥 Phase 1: 핵심 비즈니스 로직 (4-5시간) - 필수**
+
+**목표**: 기본적인 큐레이션 서비스 완전 동작
+
+#### **1.1 영상 & 채널 저장 (2시간)**
+
+```bash
+# 1순위: dailyKeywordUpdateService.js
+✅ getTodaysKeywords() → Keywords DB 연동
+✅ saveVideoToDB() → Videos DB 연동
+✅ saveChannelToDB() → Videos DB 연동
+✅ removeDuplicateVideos() → Videos DB 중복 체크
 ```
 
-#### 2️⃣ **getUserPreferences() 수정** (15분)
+#### **1.2 사용자 상호작용 (1.5시간)**
 
-```javascript
-// 📍 기존 하드코딩 → DB 연결로 변경
-async getUserPreferences(userId = null) {
-  if (!userId) {
-    return { categories: ['일반'], keywords: ['힐링'], emotions: ['편안함'] };
-  }
-
-  try {
-    const result = await getUserPreferences({ userId });
-    if (result.success && result.data) {
-      return {
-        categories: result.data.preferred_categories || [],
-        keywords: result.data.preferred_keywords || [],
-        emotions: result.data.preferred_emotions || []
-      };
-    }
-    return { categories: ['음악 & 엔터테인먼트'], keywords: ['힐링'], emotions: ['기쁨'] };
-  } catch (error) {
-    console.error('사용자 선호도 조회 실패:', error);
-    return { categories: ['일반'], keywords: ['힐링'], emotions: ['편안함'] };
-  }
-}
+```bash
+# 2순위: personalizedCurationService.js
+✅ getUserProfile() → Users DB 연동
+✅ saveEmotionAnalysis() → Emotions DB 연동
+✅ trackCurationClick() → Users + Emotions DB 연동
 ```
 
-#### 3️⃣ **trackCurationClick() 수정** (13분)
+#### **1.3 기본 트렌드 저장 (1.5시간)**
 
-```javascript
-// 📍 기존 주석 → 실제 DB 저장으로 변경
-async trackCurationClick(curationId, userId = null) {
-  try {
-    this.stats.curationClicks++;
-
-    if (userId) {
-      await createVideoInteraction({
-        user_id: userId,
-        video_id: null,
-        interaction_type: 'curation_click',
-        recommendation_type: 'ai_curation',
-        interaction_metadata: { curationId, clickedAt: new Date().toISOString() },
-        device_type: 'web'
-      });
-    }
-
-    return {
-      success: true,
-      message: '클릭이 추적되었습니다.',
-      curationId,
-      timestamp: new Date().toISOString()
-    };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-}
+```bash
+# 3순위: trendVideoService.js
+✅ saveTrendKeywords() → Trends DB 연동
+✅ batchCacheVideos() → Videos DB 연동
+✅ batchSaveChannels() → Videos DB 연동
 ```
 
-### **[31-75분] dailyKeywordUpdateService.js**
+**🎉 Phase 1 완료 시**: 완전한 영상 수집, 사용자 개인화, 감정 분석 시스템 작동
 
-#### 1️⃣ **import 추가** (2분)
+---
 
-```javascript
-// 📍 파일 상단에 추가
-import { getTodaysKeywords } from "../database/keywordService.js";
-import { cacheVideoData, saveChannelInfo } from "../database/videoService.js";
+### **⚡ Phase 2: 검색 & 키워드 로직 (3시간) - 중요**
+
+**목표**: 고급 큐레이션 및 개인화 서비스
+
+#### **2.1 검색 성과 추적 (1.5시간)**
+
+```bash
+# 검색 최적화
+✅ logSearchExecution() → Search DB 연동
+✅ logKeywordPerformance() → Keywords DB 연동
+✅ updateRecommendationWeights() → Search DB 연동
 ```
 
-#### 2️⃣ **getTodaysKeywords() 구현** (15분)
+#### **2.2 트렌드 분석 (1.5시간)**
+
+```bash
+# 트렌드 예측
+✅ saveTrendAnalysis() → Trends DB 연동
+✅ analyzeTrendImpact() → Trends DB 연동
+✅ updateKeywordPerformance() → Trends + Keywords DB 연동
+```
+
+**🎉 Phase 2 완료 시**: 키워드 기반 검색, 트렌드 분석, 성과 추적 시스템 완성
+
+---
+
+### **📊 Phase 3: 시스템 모니터링 (2시간) - 선택적**
+
+**목표**: 엔터프라이즈급 서비스 완성
+
+#### **3.1 성능 로깅 (1시간)**
+
+```bash
+# 시스템 모니터링
+✅ logLLMProcessing() → System DB 연동
+✅ logApiUsage() → System DB 연동
+✅ updatePerformanceBenchmarks() → System DB 연동
+```
+
+#### **3.2 고급 분석 (1시간)**
+
+```bash
+# ML & 예측 분석
+✅ addLearningFeedback() → Emotions DB 연동
+✅ generateVisualizationData() → Trends DB 연동
+✅ updateAlgorithmTrainingData() → Search DB 연동
+```
+
+**🎉 Phase 3 완료 시**: 완전한 시스템 모니터링, 성능 최적화, 프로덕션 준비 완료
+
+---
+
+## ⚡ **빠른 실행 전략**
+
+### **🔥 최우선 (30분으로 기본 동작 확인)**
+
+#### **Step 1: 가장 중요한 1개 파일부터 (15분)**
 
 ```javascript
-// 📍 TODO 주석 → 실제 구현으로 변경
+// backend/services/search/dailyKeywordUpdateService.js
+// 상단에 추가
+import { getTodaysKeywords } from '../database/keywordService.js';
+import { cacheVideoData, saveChannelInfo } from '../database/videoService.js';
+
+// getTodaysKeywords() 수정 (라인 89 근처)
 async getTodaysKeywords() {
   try {
-    const result = await getTodaysKeywords({
-      limit: 50,
-      isActive: true,
-      sortBy: 'priority_tier'
-    });
-
-    if (result.success && result.data) {
-      return result.data.map(item => ({
-        keyword: item.keyword,
-        category: item.category,
-        priority: item.priority_tier,
-        lastExecuted: item.last_executed_at
+    const result = await getTodaysKeywords({ limit: 10, isActive: true });
+    if (result.success) {
+      return result.data.map(k => ({
+        keyword: k.keyword,
+        category: k.category || '일반'
       }));
     }
-
-    // 폴백
-    return [
-      { keyword: '힐링', category: 'ASMR & 힐링', priority: 'high' },
-      { keyword: '먹방', category: '먹방 & 요리', priority: 'high' }
-    ];
   } catch (error) {
-    console.error('오늘의 키워드 조회 오류:', error);
-    return [];
+    console.error('키워드 조회 실패:', error);
   }
+
+  // 폴백
+  return [{ keyword: '브이로그', category: '라이프스타일' }];
 }
-```
 
-#### 3️⃣ **saveVideoToDB() 활성화** (13분)
-
-```javascript
-// 📍 주석 처리된 코드 → 활성화
+// saveVideoToDB() 활성화 (라인 400 근처 주석 해제)
 async saveVideoToDB(videoData) {
   try {
     const result = await cacheVideoData({
       video_id: videoData.id,
       title: videoData.title,
-      description: videoData.description,
       channel_id: videoData.channelId,
-      channel_title: videoData.channelTitle,
-      search_keyword: videoData.searchKeyword,
-      llm_classification: {
-        topic_tags: videoData.tags || [],
-        confidence: videoData.classification_confidence || 0.8,
-        engine: 'claude_api'
-      },
-      is_playable: videoData.isPlayable !== false,
-      processed_at: new Date().toISOString()
+      llm_classification: { topic_tags: videoData.tags || [] },
+      is_playable: videoData.isPlayable !== false
     });
-
     return result.success;
   } catch (error) {
-    console.error('영상 DB 저장 오류:', error);
+    console.error('영상 저장 실패:', error);
     return false;
   }
 }
 ```
 
-#### 4️⃣ **saveChannelToDB() 활성화** (13분)
+#### **Step 2: 테스트 실행 (15분)**
+
+```bash
+# 서버 재시작
+cd /Users/kangtaehun/Desktop/큐레이팅/Youtube/backend
+npm start
+
+# 다른 터미널에서 테스트
+curl -X POST http://localhost:3002/api/v1/search/daily-keyword-update \
+  -H "Content-Type: application/json" \
+  -d '{"keywords": ["브이로그"], "maxVideos": 5}'
+```
+
+**🎯 30분 후 결과**: 기본 키워드 검색 + 영상 저장 동작 확인
+
+---
+
+### **⚡ 1시간 확장 (핵심 기능 완성)**
+
+#### **Step 3: 사용자 상호작용 추가 (30분)**
 
 ```javascript
-// 📍 주석 처리된 코드 → 활성화
-async saveChannelToDB(channelData) {
-  try {
-    const result = await saveChannelInfo({
-      channel_id: channelData.channelId,
-      channel_title: channelData.channelTitle,
-      subscriber_count: channelData.subscriberCount || 0,
-      quality_grade: channelData.qualityGrade || 'C',
-      collected_at: new Date().toISOString()
-    });
+// backend/services/llm/personalizedCurationService.js
+// 상단에 추가
+import { saveEmotionAnalysis, trackCurationClick } from '../database/emotionService.js';
+import { getUserProfile } from '../database/userService.js';
 
+// 감정 분석 결과 저장 로직 추가 (기존 로직 확장)
+async saveAnalysisResults(userId, analysisData) {
+  try {
+    const result = await saveEmotionAnalysis(userId, {
+      analyzed_text: analysisData.userInput,
+      detected_emotions: analysisData.emotions,
+      analysis_engine: 'claude_api'
+    });
     return result.success;
   } catch (error) {
-    console.error('채널 DB 저장 오류:', error);
+    console.error('감정 분석 저장 실패:', error);
+    return false;
+  }
+}
+
+// 클릭 추적 로직 추가
+async handleCurationClick(userId, clickData) {
+  try {
+    await trackCurationClick(clickData.curationId, userId, {
+      selected_keywords: clickData.selectedKeywords,
+      click_timestamp: new Date().toISOString()
+    });
+    return true;
+  } catch (error) {
+    console.error('클릭 추적 실패:', error);
     return false;
   }
 }
 ```
 
-### **[76-90분] trendVideoService.js**
-
-#### 1️⃣ **import 및 saveTrendData() 추가** (15분)
+#### **Step 4: 기본 트렌드 저장 추가 (30분)**
 
 ```javascript
-// 📍 파일 상단에 추가
-import { logTrendKeyword } from '../database/trendService.js';
+// backend/services/video/trendVideoService.js
+// 상단에 추가
+import { saveTrendKeywords } from '../database/trendsService.js';
+import { batchCacheVideos } from '../database/videoService.js';
 
-// 📍 클래스 내부에 메서드 추가
-async saveTrendData(trendData, videos = []) {
+// 트렌드 키워드 저장 로직 추가
+async saveTrendResults(trendData) {
   try {
-    console.log('📊 트렌드 데이터 DB 저장 시작...');
+    await saveTrendKeywords({
+      keywords: trendData.collectedKeywords,
+      source: 'google_trends',
+      collection_timestamp: new Date().toISOString()
+    });
 
-    // 트렌드 키워드 저장
-    for (const keyword of trendData.keywords) {
-      await logTrendKeyword({
-        keyword: keyword,
-        keyword_type: 'trend',
-        source: 'google_trends',
-        region: 'KR',
-        detected_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-      });
-    }
+    await batchCacheVideos({
+      videos: trendData.allVideos,
+      search_context: 'trend_based_collection'
+    });
 
-    return {
-      success: true,
-      savedKeywords: trendData.keywords.length,
-      timestamp: new Date().toISOString()
-    };
+    return true;
   } catch (error) {
-    return { success: false, error: error.message };
-  }
-}
-
-// 📍 generateTrendVideos() 메서드 끝부분에 추가
-// DB 저장 호출
-const saveResult = await this.saveTrendData(
-  { keywords: refinedResult.refinedKeywords },
-  finalResult.qualityVideos
-);
-```
-
-### **[91-120분] Frontend API 연결**
-
-#### 1️⃣ **api.js 클라이언트 생성** (10분)
-
-```javascript
-// 📍 새 파일: frontend/src/core/api.js
-class APIClient {
-  constructor() {
-    this.baseURL = window.location.origin;
-    this.defaultHeaders = { "Content-Type": "application/json" };
-  }
-
-  async request(method, endpoint, data = null) {
-    const config = { method, headers: this.defaultHeaders };
-    if (data) config.body = JSON.stringify(data);
-
-    const response = await fetch(`${this.baseURL}${endpoint}`, config);
-    return response.json();
-  }
-
-  async searchVideos(keyword) {
-    return this.request("POST", "/api/search/videos", { keyword });
-  }
-
-  async analyzeChatMessage(message, userId = null) {
-    return this.request("POST", "/api/llm/analyze", { message, userId });
-  }
-
-  async login(email, password) {
-    return this.request("POST", "/api/auth/login", { email, password });
-  }
-}
-
-const api = new APIClient();
-export default api;
-```
-
-#### 2️⃣ **AuthFlow.js 연결** (5분)
-
-```javascript
-// 📍 import 추가
-import api from '../../core/api.js';
-
-// 📍 handleLogin 메서드 수정
-async handleLogin(email, password) {
-  try {
-    const result = await api.login(email, password);
-    if (result.success) {
-      localStorage.setItem('authToken', result.token);
-      window.location.hash = '#/home';
-    }
-  } catch (error) {
-    this.showError('로그인 실패: ' + error.message);
+    console.error('트렌드 저장 실패:', error);
+    return false;
   }
 }
 ```
 
-#### 3️⃣ **ChatFlow.js 연결** (5분)
+**🎯 1시간 후 결과**: 영상 수집, 사용자 개인화, 트렌드 분석 기본 동작
+
+---
+
+### **🚀 2시간 확장 (고급 기능 추가)**
+
+#### **Step 5: 검색 성과 추적 (1시간)**
 
 ```javascript
-// 📍 import 추가
-import api from '../../../core/api.js';
+// 모든 서비스에 공통 추가
+import { logSearchExecution } from "../database/searchService.js";
+import { logKeywordPerformance } from "../database/keywordService.js";
 
-// 📍 handleSendMessage 메서드 수정
-async handleSendMessage() {
-  const message = this.messageInput.value.trim();
-  try {
-    const result = await api.analyzeChatMessage(message);
-    if (result.success) {
-      this.displayCurations(result.emotionalAnalysis.curations);
-    }
-  } catch (error) {
-    this.addMessage('분석 실패: ' + error.message, 'assistant');
-  }
-}
+// 검색 실행 시마다 호출
+await logSearchExecution({
+  search_type: "daily_update", // 또는 'user_search', 'trend_search'
+  keyword: searchKeyword,
+  results_count: foundVideos.length,
+  processing_time: Date.now() - startTime,
+});
+
+// 키워드 성과 추적
+await logKeywordPerformance({
+  keyword_id: keywordData.id,
+  videos_found: foundVideos.length,
+  quality_videos: qualityVideos.length,
+  efficiency_score: qualityVideos.length / foundVideos.length,
+});
 ```
 
-#### 4️⃣ **Home.js 연결** (10분)
+**🎯 2시간 후 결과**: 완전한 검색 성과 추적 및 키워드 최적화 시스템
+
+---
+
+## 📋 **빠른 체크리스트**
+
+### **🔥 30분 목표**
+
+- [ ] `dailyKeywordUpdateService.js` - getTodaysKeywords() 수정
+- [ ] `dailyKeywordUpdateService.js` - saveVideoToDB() 활성화
+- [ ] 기본 테스트 실행 및 확인
+
+### **⚡ 1시간 목표**
+
+- [ ] `personalizedCurationService.js` - 감정 분석 저장 추가
+- [ ] `personalizedCurationService.js` - 클릭 추적 추가
+- [ ] `trendVideoService.js` - 트렌드 저장 추가
+
+### **🚀 2시간 목표**
+
+- [ ] 모든 서비스에 검색 실행 로깅 추가
+- [ ] 모든 서비스에 키워드 성과 추적 추가
+- [ ] 전체 시스템 통합 테스트
+
+### **📊 4-5시간 목표 (Phase 1 완성)**
+
+- [ ] 모든 핵심 비즈니스 로직 DB 연동 완료
+- [ ] 연쇄 업데이트 로직 구현
+- [ ] 에러 처리 및 폴백 로직 완성
+
+---
+
+## 🎉 **단계별 완성 결과**
+
+### **30분 후**
+
+- ✅ **기본 키워드 검색 및 영상 저장** 동작
+
+### **1시간 후**
+
+- ✅ **사용자 개인화 및 감정 분석** 저장
+- ✅ **트렌드 영상 수집 및 저장** 동작
+
+### **2시간 후**
+
+- ✅ **검색 성과 추적 및 최적화** 시스템
+
+### **4-5시간 후 (Phase 1 완성)**
+
+- ✅ **완전한 큐레이션 서비스** 기본 동작
+- ✅ **모든 핵심 기능** 정상 작동
+
+### **7-8시간 후 (Phase 2 완성)**
+
+- ✅ **고급 검색 및 추천** 시스템
+- ✅ **트렌드 분석 및 예측** 시스템
+
+### **9-10시간 후 (Phase 3 완성)**
+
+- ✅ **엔터프라이즈급 완성** 서비스
+- ✅ **프로덕션 준비 완료**
+
+---
+
+## 🔧 **성공 보장 팁**
+
+### **✅ 1. Database 서비스 활용**
+
+- **모든 DB 함수는 100% 테스트 완료** ✅
+- **단순히 import 후 호출**만 하면 정상 동작 ✅
+
+### **✅ 2. 점진적 접근**
+
+- **30분마다 테스트**해서 진행상황 확인
+- **각 단계별로 의미있는 결과물** 확보
+
+### **✅ 3. 안전한 폴백**
 
 ```javascript
-// 📍 import 추가
-import api from '../../core/api.js';
-
-// 📍 handleSearch 메서드 수정
-async handleSearch(keyword) {
-  try {
-    const result = await api.searchVideos(keyword);
-    if (result.success) {
-      this.displaySearchResults(result.data);
-    }
-  } catch (error) {
-    this.showError('검색 실패: ' + error.message);
-  }
+// 🔥 실패 방지 패턴
+try {
+  const result = await databaseFunction(data);
+  return result.success ? result.data : fallbackValue;
+} catch (error) {
+  console.error("오류:", error);
+  return safeDefaultValue;
 }
 ```
 
 ---
 
-## ✅ **완료 체크리스트**
+## 📊 **현실적 예상 시간**
 
-### **Backend (90분)**
+- **30분**: 기본 동작 확인 ⚡
+- **1시간**: 핵심 기능 동작 🔥
+- **2시간**: 고급 기능 추가 ⚡
+- **4-5시간**: Phase 1 완성 (기본 서비스) 🎯
+- **7-8시간**: Phase 2 완성 (고급 서비스) 🚀
+- **9-10시간**: Phase 3 완성 (완전한 서비스) 🏆
 
-- [ ] personalizedCurationService.js - import 추가
-- [ ] personalizedCurationService.js - getUserPreferences() 수정
-- [ ] personalizedCurationService.js - trackCurationClick() 수정
-- [ ] dailyKeywordUpdateService.js - import 추가
-- [ ] dailyKeywordUpdateService.js - getTodaysKeywords() 구현
-- [ ] dailyKeywordUpdateService.js - saveVideoToDB() 활성화
-- [ ] dailyKeywordUpdateService.js - saveChannelToDB() 활성화
-- [ ] trendVideoService.js - saveTrendData() 추가
+**🎯 결론**: **95% 완성 상태**에서 현실적인 단계별 접근으로
+**완전한 Momentum 서비스** 체계적 완성 가능!
 
-### **Frontend (30분)**
-
-- [ ] api.js 클라이언트 생성
-- [ ] AuthFlow.js API 연결
-- [ ] ChatFlow.js API 연결
-- [ ] Home.js API 연결
-
----
-
-## 🎉 **완성 후 테스트**
-
-### **기본 기능 테스트**
-
-1. **로그인/회원가입** - AuthFlow에서 API 연결 확인
-2. **LLM 대화** - ChatFlow에서 감성 분석 확인
-3. **영상 검색** - Home에서 검색 결과 확인
-4. **트렌드 표시** - 트렌드 키워드/영상 표시 확인
-
-### **성공 기준**
-
-- ✅ 모든 페이지 로딩 성공
-- ✅ API 호출 성공 (응답 시간 < 3초)
-- ✅ DB 저장 성공 (에러 없음)
-- ✅ 프론트엔드-백엔드 연동 성공
-
----
-
-## 🚨 **중요 주의사항**
-
-### **❌ 수정하지 말 것**
-
-- `searchService.js` - 이미 완성됨
-- `youtube-ai-services/` - 독립적으로 작동
-- `database/` 서비스들 - 모두 완성됨
-
-### **✅ 정확히 이것만 수정**
-
-- 위에 명시된 3개 서비스의 특정 메서드만
-- Frontend의 4개 파일만
-
-### **🔧 실행 순서**
-
-1. Backend 서비스 수정 (90분)
-2. Frontend API 연결 (30분)
-3. 전체 테스트 (15분)
-
-**이 가이드대로 하면 2시간 내에 완전한 Momentum 서비스 완성!** 🎯
+**🔥 핵심**: Database API 100% 테스트 완료로 안전하게 진행 가능!

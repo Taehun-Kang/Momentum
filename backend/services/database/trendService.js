@@ -37,14 +37,33 @@ const supabase = createClient(
  */
 export async function createRawTrendData(trendsData) {
   try {
+    // ✅ 필수 필드 검증 및 필드명 매핑 (테스트에서 발견된 문제 해결)
+    if (!trendsData.keyword) {
+      console.error('❌ 필수 필드 누락: keyword');
+      return { 
+        success: false, 
+        error: 'keyword는 필수 필드입니다.' 
+      };
+    }
+
+    // rank 필드명 매핑 처리 (rank_position → rank)
+    const rankValue = trendsData.rank || trendsData.rank_position || trendsData.rankPosition;
+    if (rankValue === undefined || rankValue === null) {
+      console.error('❌ 필수 필드 누락: rank');
+      return { 
+        success: false, 
+        error: 'rank 필드는 필수입니다. rank_position 또는 rankPosition으로 전송하셔도 됩니다.' 
+      };
+    }
+
     const { data, error } = await supabase
       .from('trends_raw_data')
       .insert([{
-        // Google Trends 기본 정보
+        // Google Trends 기본 정보 (camelCase/snake_case 지원)
         keyword: trendsData.keyword,
-        rank: trendsData.rank,
-        trend_score: trendsData.trendScore || 0.0,
-        normalized_score: trendsData.normalizedScore || 0.0,
+        rank: rankValue,  // ✅ rank_position, rankPosition 모두 지원
+        trend_score: trendsData.trend_score || trendsData.trendScore || 0.0,
+        normalized_score: trendsData.normalized_score || trendsData.normalizedScore || 0.0,
         
         // 지역 및 언어
         region_code: trendsData.regionCode || 'KR',
@@ -99,25 +118,31 @@ export async function createRawTrendData(trendsData) {
  */
 export async function createRawTrendDataBatch(trendsArray, batchId) {
   try {
-    const trendsData = trendsArray.map(trend => ({
-      keyword: trend.keyword,
-      rank: trend.rank,
-      trend_score: trend.trendScore || 0.0,
-      region_code: trend.regionCode || 'KR',
-      language_code: trend.languageCode || 'ko',
-      search_volume: trend.searchVolume,
-      increase_percentage: trend.increasePercentage,
-      categories: trend.categories || [],
-      primary_category: trend.primaryCategory || 'general',
-      related_terms: trend.relatedTerms || [],
-      is_active: trend.isActive || false,
-      confidence_score: trend.confidenceScore || 0.50,
-      collection_source: trend.collectionSource || 'serp_api',
-      collection_batch_id: batchId,
-      api_units_consumed: trend.apiUnitsConsumed || 1,
-      raw_google_data: trend.rawGoogleData || {},
-      detected_at: new Date().toISOString()
-    }));
+    // ✅ 배치 데이터 필수 필드 검증 및 매핑 (테스트에서 발견된 문제 해결)
+    const trendsData = trendsArray.map(trend => {
+      // rank 필드명 매핑 처리
+      const rankValue = trend.rank || trend.rank_position || trend.rankPosition;
+      
+      return {
+        keyword: trend.keyword,
+        rank: rankValue,  // ✅ rank_position, rankPosition 모두 지원
+        trend_score: trend.trend_score || trend.trendScore || 0.0,
+        region_code: trend.region_code || trend.regionCode || 'KR',
+        language_code: trend.languageCode || 'ko',
+        search_volume: trend.searchVolume,
+        increase_percentage: trend.increasePercentage,
+        categories: trend.categories || [],
+        primary_category: trend.primaryCategory || 'general',
+        related_terms: trend.relatedTerms || [],
+        is_active: trend.isActive || false,
+        confidence_score: trend.confidenceScore || 0.50,
+        collection_source: trend.collectionSource || 'serp_api',
+        collection_batch_id: batchId,
+        api_units_consumed: trend.apiUnitsConsumed || 1,
+        raw_google_data: trend.rawGoogleData || {},
+        detected_at: new Date().toISOString()
+      };
+    });
 
     const { data, error } = await supabase
       .from('trends_raw_data')
@@ -243,16 +268,33 @@ export async function getTrendsByRank(options = {}) {
  */
 export async function createRefinedKeyword(refinedData) {
   try {
+    // ✅ 필수 필드 검증 (테스트에서 발견된 문제 해결)
+    if (!refinedData.original_keyword && !refinedData.originalKeyword) {
+      console.error('❌ 필수 필드 누락: original_keyword');
+      return { 
+        success: false, 
+        error: 'original_keyword는 필수 필드입니다. NULL 제약조건 위반을 방지하기 위해 반드시 포함해야 합니다.' 
+      };
+    }
+
+    if (!refinedData.refined_keyword && !refinedData.refinedKeyword) {
+      console.error('❌ 필수 필드 누락: refined_keyword');
+      return { 
+        success: false, 
+        error: 'refined_keyword는 필수 필드입니다.' 
+      };
+    }
+
     const { data, error } = await supabase
       .from('trends_refined_keywords')
       .insert([{
         // 원본 트렌드 연결
-        original_trend_ids: refinedData.originalTrendIds || [],
+        original_trend_ids: refinedData.originalTrendIds || refinedData.original_trend_ids || [],
         
-        // 정제된 키워드 정보
-        original_keyword: refinedData.originalKeyword,
-        refined_keyword: refinedData.refinedKeyword,
-        refinement_type: refinedData.refinementType || 'news_context',
+        // 정제된 키워드 정보 (camelCase/snake_case 모두 지원)
+        original_keyword: refinedData.original_keyword || refinedData.originalKeyword,
+        refined_keyword: refinedData.refined_keyword || refinedData.refinedKeyword,
+        refinement_type: refinedData.refinement_type || refinedData.refinementType || 'news_context',
         
         // 뉴스 분석 결과
         news_articles_count: refinedData.newsArticlesCount || 0,
@@ -364,12 +406,35 @@ export async function getRefinementStats(targetDate = null) {
  */
 export async function updateRefinedKeywordPerformance(refinedKeywordId, performanceData) {
   try {
+    // ✅ 키워드 존재 여부 확인 (테스트에서 발견된 문제 해결)
+    const { data: existingKeyword, error: checkError } = await supabase
+      .from('trends_refined_keywords')
+      .select('id, original_keyword, refined_keyword')
+      .eq('id', refinedKeywordId)
+      .single();
+
+    if (checkError || !existingKeyword) {
+      console.error('❌ 존재하지 않는 정제 키워드:', refinedKeywordId);
+      return { 
+        success: false, 
+        error: `정제 키워드 ID '${refinedKeywordId}'를 찾을 수 없습니다. 먼저 POST /refined-keywords로 키워드를 생성해야 합니다.`,
+        code: 'KEYWORD_NOT_FOUND'
+      };
+    }
+
+    console.log(`✅ 정제 키워드 존재 확인: ${existingKeyword.refined_keyword}`);
+
     const { data, error } = await supabase
       .from('trends_refined_keywords')
       .update({
-        youtube_search_count: performanceData.youtubeSearchCount,
-        video_found_count: performanceData.videoFoundCount,
-        user_interaction_count: performanceData.userInteractionCount,
+        // camelCase/snake_case 모두 지원
+        youtube_search_count: performanceData.youtube_search_count || performanceData.youtubeSearchCount,
+        video_found_count: performanceData.video_found_count || performanceData.videoFoundCount,
+        user_interaction_count: performanceData.user_interaction_count || performanceData.userInteractionCount,
+        youtube_video_count: performanceData.youtube_video_count || performanceData.youtubeVideoCount,
+        avg_view_count: performanceData.avg_view_count || performanceData.avgViewCount,
+        avg_engagement_rate: performanceData.avg_engagement_rate || performanceData.avgEngagementRate,
+        success_score: performanceData.success_score || performanceData.successScore,
         updated_at: new Date().toISOString()
       })
       .eq('id', refinedKeywordId)
@@ -381,6 +446,7 @@ export async function updateRefinedKeywordPerformance(refinedKeywordId, performa
       return { success: false, error: error.message };
     }
 
+    console.log(`✅ 정제 키워드 성과 업데이트 성공: ${data.refined_keyword}`);
     return { success: true, data };
 
   } catch (error) {

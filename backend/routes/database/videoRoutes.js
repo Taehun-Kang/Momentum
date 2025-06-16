@@ -155,36 +155,8 @@ router.post('/channels', async (req, res) => {
 });
 
 /**
- * GET /api/videos_db/channels/:channelId
- * 채널 정보 조회
- */
-router.get('/channels/:channelId', async (req, res) => {
-  try {
-    const { channelId } = req.params;
-    const result = await videoService.getChannelInfo(channelId);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/videos_db/channels/:channelId/videos
- * 채널별 영상 조회
- */
-router.get('/channels/:channelId/videos', async (req, res) => {
-  try {
-    const { channelId } = req.params;
-    const result = await videoService.getVideosByChannel(channelId, req.query);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
  * GET /api/videos_db/channels/high-quality
- * 고품질 채널 조회
+ * 고품질 채널 조회 (⚠️ 파라미터 라우터보다 먼저 정의 필요)
  */
 router.get('/channels/high-quality', async (req, res) => {
   try {
@@ -197,7 +169,7 @@ router.get('/channels/high-quality', async (req, res) => {
 
 /**
  * GET /api/videos_db/channels/active-shorts
- * 활발한 Shorts 채널 조회
+ * 활발한 Shorts 채널 조회 (⚠️ 파라미터 라우터보다 먼저 정의 필요)
  */
 router.get('/channels/active-shorts', async (req, res) => {
   try {
@@ -211,7 +183,7 @@ router.get('/channels/active-shorts', async (req, res) => {
 
 /**
  * GET /api/videos_db/channels/stats-summary
- * 채널 통계 요약
+ * 채널 통계 요약 (⚠️ 파라미터 라우터보다 먼저 정의 필요)
  */
 router.get('/channels/stats-summary', async (req, res) => {
   try {
@@ -223,8 +195,36 @@ router.get('/channels/stats-summary', async (req, res) => {
 });
 
 /**
+ * GET /api/videos_db/channels/:channelId
+ * 채널 정보 조회 (⚠️ 파라미터 라우터는 마지막에 정의)
+ */
+router.get('/channels/:channelId', async (req, res) => {
+  try {
+    const { channelId } = req.params;
+    const result = await videoService.getChannelInfo(channelId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/videos_db/channels/:channelId/videos
+ * 채널별 영상 조회 (⚠️ 파라미터 라우터는 마지막에 정의)
+ */
+router.get('/channels/:channelId/videos', async (req, res) => {
+  try {
+    const { channelId } = req.params;
+    const result = await videoService.getVideosByChannel(channelId, req.query);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * PUT /api/videos_db/channels/:channelId/block
- * 채널 차단/해제
+ * 채널 차단/해제 (⚠️ 파라미터 라우터는 마지막에 정의)
  */
 router.put('/channels/:channelId/block', async (req, res) => {
   try {
@@ -287,7 +287,7 @@ router.put('/:videoId/playability', async (req, res) => {
 });
 
 // ============================================================================
-// 🧹 유틸리티 및 관리 (3개 엔드포인트) ✅ 모두 구현됨
+// 🎯 유틸리티 및 관리 (3개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
 
 /**

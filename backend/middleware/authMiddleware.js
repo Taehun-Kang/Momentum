@@ -255,7 +255,7 @@ const authMiddleware = new AuthMiddleware();
 
 // 기존 미들웨어 내보내기
 export const verifyToken = authMiddleware.verifyToken;
-export const optionalAuth = authMiddleware.optionalAuth;
+export const optionalAuth = authMiddleware.optionalAuth; 
 
 // 신규 Database Routes 보안 미들웨어 내보내기
 export const verifyDbAccess = authMiddleware.verifyDbAccess;

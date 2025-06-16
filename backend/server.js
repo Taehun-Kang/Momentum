@@ -238,7 +238,7 @@ app.use('*', (req, res) => {
     popularEndpoints: [
       // 🔧 시스템
       'GET /',
-      'GET /health', 
+      'GET /health',
       'GET /api/test',
       
       // 🔵 인증 (보안 적용됨)
@@ -379,4 +379,4 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-export default app; 
+export default app;

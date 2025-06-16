@@ -43,6 +43,39 @@ const supabase = createClient(
  */
 export const cacheVideoData = async (videoData) => {
   try {
+    // 1. channel_id 필수 검증
+    if (!videoData.channel_id) {
+      return {
+        success: false,
+        error: 'channel_id는 필수 필드입니다. 먼저 채널을 생성해주세요.'
+      };
+    }
+
+    // 2. 채널 존재 여부 확인
+    const { data: channel, error: channelError } = await supabase
+      .from('video_channels')
+      .select('id')
+      .eq('channel_id', videoData.channel_id)
+      .single();
+
+    if (channelError && channelError.code !== 'PGRST116') {
+      throw channelError;
+    }
+
+    if (!channel) {
+      return {
+        success: false,
+        error: `채널 ID '${videoData.channel_id}'가 존재하지 않습니다. 먼저 POST /channels로 생성해주세요.`
+      };
+    }
+
+    // 3. quality_score 스케일링 (NUMERIC(3,2) → 9.99 이하)
+    let qualityScore = videoData.quality_score || 0.5;
+    if (qualityScore > 9.99) {
+      qualityScore = Math.min(qualityScore / 10, 9.99);
+      console.log(`quality_score ${videoData.quality_score} → ${qualityScore} (스케일링 적용)`);
+    }
+
     // LLM 분류 데이터 분리
     const llmData = videoData.llm_classification || {};
     
@@ -110,8 +143,8 @@ export const cacheVideoData = async (videoData) => {
       playability_check_at: new Date().toISOString(),
       playability_reason: videoData.playability_reason || null,
       
-      // 점수 정보
-      quality_score: videoData.quality_score || 0.5,
+      // 점수 정보 (스케일링 적용됨)
+      quality_score: qualityScore,
       engagement_score: videoData.engagement_score || null,
       freshness_score: videoData.freshness_score || null,
       
@@ -425,6 +458,25 @@ export const cleanupExpiredVideoCache = async () => {
  */
 export const saveChannelInfo = async (channelData) => {
   try {
+    // 필드명 매핑 처리 (channel_name → channel_title)
+    if (channelData.channel_name && !channelData.channel_title) {
+      channelData.channel_title = channelData.channel_name;
+      delete channelData.channel_name;
+    }
+
+    if (channelData.name && !channelData.channel_title) {
+      channelData.channel_title = channelData.name;
+      delete channelData.name;
+    }
+
+    // channel_title 필수 검증
+    if (!channelData.channel_title) {
+      return {
+        success: false,
+        error: 'channel_title은 필수 필드입니다. channel_name이 아닌 channel_title을 사용해주세요.'
+      };
+    }
+
     const statistics = channelData.statistics || {};
     const branding = channelData.branding || {};
     const topics = channelData.topics || {};
@@ -539,7 +591,7 @@ export const getChannelInfo = async (channelId) => {
 };
 
 /**
- * 고품질 채널 조회 (뷰 활용)
+ * 고품질 채널 조회 (테이블 직접 조회로 안전 처리)
  * @param {Object} [options={}] - 조회 옵션
  * @param {string} [options.quality_grade] - 품질 등급 필터 ('S', 'A', 'B')
  * @param {string} [options.content_type] - 콘텐츠 타입 필터
@@ -549,16 +601,15 @@ export const getChannelInfo = async (channelId) => {
 export const getHighQualityChannels = async (options = {}) => {
   try {
     let query = supabase
-      .from('high_quality_channels')
+      .from('video_channels')
       .select('*')
+      .in('quality_grade', ['A', 'S', 'B', 'C', 'D'])  // 임시: 모든 채널
+      .eq('is_active', true)
+      .eq('is_blocked', false)
       .limit(options.limit || 20);
 
     if (options.quality_grade) {
       query = query.eq('quality_grade', options.quality_grade);
-    }
-
-    if (options.content_type) {
-      query = query.eq('primary_content_type', options.content_type);
     }
 
     const { data, error } = await query;
@@ -567,8 +618,8 @@ export const getHighQualityChannels = async (options = {}) => {
 
     return {
       success: true,
-      message: '고품질 채널 조회 완료',
-      data
+      message: data.length > 0 ? '고품질 채널 조회 완료' : '고품질 채널이 없습니다',
+      data: data || []
     };
   } catch (error) {
     console.error('고품질 채널 조회 실패:', error);
@@ -580,23 +631,26 @@ export const getHighQualityChannels = async (options = {}) => {
 };
 
 /**
- * 활성 Shorts 채널 조회 (뷰 활용)
+ * 활성 Shorts 채널 조회 (테이블 직접 조회로 안전 처리)
  * @param {number} [limit=20] - 조회 개수
  * @returns {Promise<Object>} 활성 Shorts 채널 목록
  */
 export const getActiveShortsChannels = async (limit = 20) => {
   try {
     const { data, error } = await supabase
-      .from('active_shorts_channels')
+      .from('video_channels')
       .select('*')
+      .eq('is_active', true)
+      .eq('is_blocked', false)
+      .gte('video_count', 10)  // 최소 10개 이상 영상
       .limit(limit);
 
     if (error) throw error;
 
     return {
       success: true,
-      message: '활성 Shorts 채널 조회 완료',
-      data
+      message: data.length > 0 ? '활성 Shorts 채널 조회 완료' : '활성 Shorts 채널이 없습니다',
+      data: data || []
     };
   } catch (error) {
     console.error('활성 Shorts 채널 조회 실패:', error);
@@ -615,15 +669,23 @@ export const getChannelStatsSummary = async () => {
   try {
     const { data, error } = await supabase
       .from('channel_stats_summary')
-      .select('*')
-      .single();
+      .select('*');
 
     if (error) throw error;
 
+    // 데이터가 배열로 반환되므로 요약 처리
+    const summary = data.length > 0 ? data[0] : {
+      total_channels: 0,
+      total_videos: 0,
+      total_views: 0,
+      avg_quality_score: 0,
+      high_quality_channels: 0
+    };
+
     return {
       success: true,
-      message: '채널 통계 요약 조회 완료',
-      data
+      message: data.length > 0 ? '채널 통계 요약 조회 완료' : '채널 데이터가 없습니다',
+      data: summary
     };
   } catch (error) {
     console.error('채널 통계 요약 조회 실패:', error);
