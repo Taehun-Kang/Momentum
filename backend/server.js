@@ -390,22 +390,29 @@ app.use((error, req, res, next) => {
 // 서버 시작
 // ============================================
 
-// 서버 시작 함수
+// 서버 시작 함수  
 function startServer() {
-  // Railway 환경에서는 8080, 로컬에서는 3002
-  const PORT = process.env.PORT || (process.env.RAILWAY_ENVIRONMENT ? 8080 : 3002);
-  const HOST = process.env.HOST || '0.0.0.0';
+  // Railway가 동적으로 할당하는 PORT를 최우선 사용
+  const PORT = process.env.PORT || 8080;
+  const HOST = '0.0.0.0'; // Railway 필수: 모든 인터페이스에서 수신
   
-  console.log(`🔧 포트 설정: ${PORT} (Railway: ${!!process.env.RAILWAY_ENVIRONMENT}, ENV PORT: ${process.env.PORT})`);
+  // 환경 변수 디버깅
+  console.log('🔧 환경 변수 디버깅:');
+  console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
+  console.log(`   PORT: ${process.env.PORT}`);
+  console.log(`   RAILWAY_ENVIRONMENT: ${process.env.RAILWAY_ENVIRONMENT}`);
+  console.log(`   최종 PORT: ${PORT}`);
 
   app.listen(PORT, HOST, () => {
     console.log('🚀 Momentum Backend Server 시작!');
+    console.log(`🔗 서버 수신 대기: ${HOST}:${PORT}`);
     
     // Railway 배포 감지
-    const isRailway = process.env.RAILWAY_ENVIRONMENT;
+    const isRailway = process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production';
     if (isRailway) {
       console.log(`📍 Railway 배포 주소: https://momentum-production-68bb.up.railway.app`);
-      console.log(`🚂 Railway 환경: ${process.env.RAILWAY_ENVIRONMENT}`);
+      console.log(`🚂 Railway 환경: ${process.env.RAILWAY_ENVIRONMENT || 'production'}`);
+      console.log(`✅ Railway 포트 바인딩: 0.0.0.0:${PORT}`);
     } else {
       console.log(`📍 로컬 서버 주소: http://${HOST}:${PORT}`);
     }
