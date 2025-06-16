@@ -75,7 +75,8 @@ import { classifyVideoBatch } from '../../youtube-ai-services/llm/modules/video-
  */
 async function callDatabaseAPI(endpoint, options = {}) {
   try {
-    const baseURL = 'http://localhost:3002';
+    // Railway 환경에서 Database API 서버 주소 설정
+    const baseURL = process.env.DATABASE_API_URL || 'http://localhost:3002';
     const url = `${baseURL}${endpoint}`;
     
     const response = await fetch(url, {
