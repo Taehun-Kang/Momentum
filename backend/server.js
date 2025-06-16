@@ -33,7 +33,7 @@ const app = express();
 // 보안 미들웨어
 // ============================================
 
-// 고급 헬멧 보안 설정
+// 고급 헬멧 보안 설정 (Railway 배포 지원)
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -41,7 +41,14 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://api.youtube.com", "https://*.supabase.co", "https://serpapi.com"]
+      connectSrc: [
+        "'self'", 
+        "https://api.youtube.com", 
+        "https://*.supabase.co", 
+        "https://serpapi.com",
+        "https://momentum-production-68bb.up.railway.app",
+        "https://*.up.railway.app"
+      ]
     }
   },
   hsts: {
@@ -51,9 +58,22 @@ app.use(helmet({
   }
 }));
 
-// CORS 설정
+// CORS 설정 (Railway 배포 지원)
+const allowedOrigins = [
+  'http://localhost:3001',
+  'https://momentum-production-68bb.up.railway.app',
+  process.env.CORS_ORIGIN
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
+  origin: (origin, callback) => {
+    // Railway 배포 시 origin이 undefined일 수 있음 (서버 간 호출)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS policy violation'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Session-Id']
@@ -377,7 +397,16 @@ function startServer() {
 
   app.listen(PORT, HOST, () => {
     console.log('🚀 Momentum Backend Server 시작!');
-    console.log(`📍 서버 주소: http://${HOST}:${PORT}`);
+    
+    // Railway 배포 감지
+    const isRailway = process.env.RAILWAY_ENVIRONMENT;
+    if (isRailway) {
+      console.log(`📍 Railway 배포 주소: https://momentum-production-68bb.up.railway.app`);
+      console.log(`🚂 Railway 환경: ${process.env.RAILWAY_ENVIRONMENT}`);
+    } else {
+      console.log(`📍 로컬 서버 주소: http://${HOST}:${PORT}`);
+    }
+    
     console.log(`🌍 환경: ${process.env.NODE_ENV || 'development'}`);
     console.log('');
     console.log('🎉 **최신 성과 (2025-01-27)**:');
