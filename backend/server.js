@@ -392,15 +392,17 @@ app.use((error, req, res, next) => {
 
 // 서버 시작 함수  
 function startServer() {
-  // Railway 표준: PORT 환경 변수 필수 사용
-  const PORT = parseInt(process.env.PORT) || 8080;
+  // Railway 표준: PORT 환경 변수 필수 사용 (Railway가 동적 할당)
+  const PORT = parseInt(process.env.PORT) || (process.env.NODE_ENV === 'production' ? 8080 : 3002);
   const HOST = '0.0.0.0';
   
-  // Railway 환경 디버깅
+  // Railway 환경 디버깅 (상세)
   console.log('🚂 Railway 환경 체크:');
   console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
-  console.log(`   PORT: ${process.env.PORT} (파싱됨: ${PORT})`);
+  console.log(`   원본 PORT: "${process.env.PORT}"`);
+  console.log(`   파싱된 PORT: ${PORT}`);
   console.log(`   PWD: ${process.cwd()}`);
+  console.log(`   RAILWAY_ENVIRONMENT: ${process.env.RAILWAY_ENVIRONMENT}`);
   console.log(`   서버 바인딩: ${HOST}:${PORT}`);
 
   const server = app.listen(PORT, HOST, () => {
