@@ -28,6 +28,27 @@ import { refineKoreanTrends } from '../../youtube-ai-services/keywords/modules/n
 import { searchYouTubeShorts } from '../../youtube-ai-services/search/modules/youtube-search-engine.js';
 import { collectChannelInfo } from '../../youtube-ai-services/search/modules/channel-info-collector.js';
 
+// 💾 Database 서비스들 import
+import { 
+  createRawTrendDataBatch, 
+  createTrendAnalysisResult, 
+  createKeywordAnalysis 
+} from '../database/trendService.js';
+import { 
+  saveVideosBatch, 
+  saveChannelsBatch, 
+  checkExistingVideos 
+} from '../database/videoService.js';
+import { 
+  createSearchLog, 
+  updateSearchLog 
+} from '../database/searchService.js';
+import { 
+  logApiUsage, 
+  logSystemPerformance, 
+  logAutomatedJob 
+} from '../database/systemService.js';
+
 class TrendVideoService {
   constructor() {
     this.apiKey = process.env.YOUTUBE_API_KEY;
@@ -96,6 +117,9 @@ class TrendVideoService {
       }
     };
     
+    // 실행 시작 시간 (generateSummary에서 사용)
+    this.startTime = null;
+    
     console.log('🔥 Trend Video Service 초기화 완료');
     console.log(`🔑 API 키 상태:`);
     console.log(`   YouTube: ${this.apiKey ? '✅' : '❌'}`);
@@ -109,6 +133,7 @@ class TrendVideoService {
   async generateTrendVideos(options = {}) {
     console.log('\n🔥 ===== 트렌드 영상 큐레이션 시작 =====');
     const startTime = Date.now();
+    this.startTime = startTime; // DB 저장용 시작 시간
     this.stats.totalRuns++;
 
     try {
@@ -204,6 +229,7 @@ class TrendVideoService {
    */
   async collectActiveTrends(config) {
     console.log(`📊 한국 활성 트렌드 수집 중... (최대 ${config.maxKeywords}개)`);
+    const dbSaveStartTime = Date.now();
     
     try {
       const result = await getActiveKoreanTrends({
@@ -217,13 +243,94 @@ class TrendVideoService {
         console.log(`✅ 활성 트렌드 수집 성공: ${result.keywords.length}개`);
         console.log(`🔥 상위 5개: ${result.keywords.slice(0, 5).join(', ')}`);
         
+        // 📋 [DB 저장 1] 원시 트렌드 데이터 배치 저장
+        console.log(`💾 [DB 저장 1/3] 원시 트렌드 데이터 저장 중...`);
+        try {
+          // ✅ UUID 형식으로 batchId 생성
+          const { randomUUID } = await import('crypto');
+          const batchId = randomUUID();
+          
+          const trendsArray = result.keywords.map((keyword, index) => ({
+            keyword,
+            rank: index + 1, // ✅ NOT NULL 제약조건 해결: 순위 추가
+            regionCode: 'KR',
+            trendScore: Math.max(0.5, 1.0 - (index * 0.05)), // 순위별 트렌드 점수
+            sourceData: result.trends || {},
+            collectionTimestamp: new Date().toISOString()
+          }));
+
+          const trendSaveResult = await createRawTrendDataBatch(trendsArray, batchId);
+          
+          if (trendSaveResult.success) {
+            console.log(`   ✅ 원시 트렌드 데이터 저장 성공: ${result.keywords.length}개`);
+          } else {
+            console.error(`   ⚠️ 원시 트렌드 데이터 저장 실패: ${trendSaveResult.error}`);
+          }
+        } catch (dbError) {
+          console.error(`   ❌ 원시 트렌드 데이터 저장 중 오류:`, dbError.message);
+        }
+
+        // 📋 [DB 저장 2] API 사용량 기록
+        console.log(`💾 [DB 저장 2/3] API 사용량 기록 중...`);
+        try {
+          const apiUsageResult = await logApiUsage({
+            sessionId: `trend_collection_${Date.now()}`,
+            apiProvider: 'google_trends', // ✅ DB enum 값 수정: 'google' → 'google_trends'
+            apiEndpoint: 'trends_api',
+            responseTimeMs: Math.round(Date.now() - dbSaveStartTime), // ✅ Integer 타입 보장
+            success: true,
+            operationType: 'trend_collection',
+            moduleName: 'trendVideoService',
+            searchKeyword: `batch_${result.keywords.length}_keywords`,
+            processedAt: new Date().toISOString()
+          });
+
+          if (apiUsageResult.success) {
+            console.log(`   ✅ API 사용량 기록 성공`);
+          } else {
+            console.error(`   ⚠️ API 사용량 기록 실패: ${apiUsageResult.error}`);
+          }
+        } catch (dbError) {
+          console.error(`   ❌ API 사용량 기록 중 오류:`, dbError.message);
+        }
+
+        // 📋 [DB 저장 3] 시스템 성능 지표 기록
+        console.log(`💾 [DB 저장 3/3] 시스템 성능 지표 기록 중...`);
+        try {
+          const perfResult = await logSystemPerformance({
+            metricType: 'search_performance', // ✅ DB enum 값 수정: 'search_efficiency' → 'search_performance'
+            searchResultsCount: result.keywords.length,
+            apiUnitsUsed: 0, // Google Trends는 무료
+            efficiencyVideosPer100units: 0,
+            totalApiCalls: 1,
+            successfulApiCalls: 1,
+            apiSuccessRate: 1.0,
+            averageResponseTimeMs: Math.round(Date.now() - dbSaveStartTime), // ✅ Integer 타입 보장
+            moduleName: 'trendVideoService',
+            operationType: 'trend_collection',
+            measurementTimestamp: new Date().toISOString()
+          });
+
+          if (perfResult.success) {
+            console.log(`   ✅ 시스템 성능 지표 기록 성공`);
+          } else {
+            console.error(`   ⚠️ 시스템 성능 지표 기록 실패: ${perfResult.error}`);
+          }
+        } catch (dbError) {
+          console.error(`   ❌ 시스템 성능 지표 기록 중 오류:`, dbError.message);
+        }
+
         this.stats.totalTrendsCollected += result.keywords.length;
+        
+        const dbSaveTime = Date.now() - dbSaveStartTime;
+        console.log(`💾 [DB 저장 완료] 총 소요 시간: ${dbSaveTime}ms`);
         
         return {
           success: true,
           keywords: result.keywords,
           trends: result.trends,
-          summary: result.summary
+          summary: result.summary,
+          dbSaveTime: dbSaveTime
         };
       } else {
         throw new Error('활성 트렌드가 없음');
@@ -231,6 +338,24 @@ class TrendVideoService {
 
     } catch (error) {
       console.error('❌ 트렌드 수집 실패:', error.message);
+      
+      // 🚨 실패 시에도 DB에 기록
+      try {
+        await logApiUsage({
+          sessionId: `trend_collection_failed_${Date.now()}`,
+          apiProvider: 'google_trends',
+          apiEndpoint: 'trends_api',
+          responseTimeMs: Date.now() - dbSaveStartTime,
+          success: false,
+          errorMessage: error.message,
+          errorType: 'trend_collection_failure',
+          operationType: 'trend_collection',
+          moduleName: 'trendVideoService'
+        });
+      } catch (dbError) {
+        console.error('❌ 실패 로그 기록 중 오류:', dbError.message);
+      }
+      
       throw error;
     }
   }
@@ -240,6 +365,7 @@ class TrendVideoService {
    */
   async refineKeywords(keywords, config) {
     console.log(`🎯 키워드 정제 시작: ${keywords.length}개 → 최대 ${config.maxFinalKeywords}개`);
+    const dbSaveStartTime = Date.now();
     
     try {
       const result = await refineKoreanTrends(keywords, {
@@ -257,14 +383,83 @@ class TrendVideoService {
           console.log(`   ${index + 1}. "${keyword}"`);
         });
         
+        // 📋 [DB 저장 1] 트렌드 분석 결과 저장
+        console.log(`💾 [DB 저장 1/2] 트렌드 분석 결과 저장 중...`);
+        try {
+          // ✅ 중복 방지: 유니크한 분석 ID 생성
+          const { randomUUID } = await import('crypto');
+          
+          const analysisResult = await createTrendAnalysisResult({
+            originalKeywords: keywords,
+            refinedKeywords: result.refinedKeywords,
+            analysisMethod: 'news_based_refinement',
+            qualityScore: result.refinedKeywords.length / keywords.length, // 정제 효율성
+            confidence: 0.8,
+            analysisData: {
+              refinement_ratio: result.refinedKeywords.length / keywords.length,
+              analysis_results: result.analysis,
+              statistics: result.statistics,
+              processing_time: Date.now() - dbSaveStartTime,
+              config: config,
+              unique_id: randomUUID() // 중복 방지를 위한 유니크 ID
+            },
+            regionCode: 'KR',
+            executedAt: new Date().toISOString()
+          });
+
+          if (analysisResult.success) {
+            console.log(`   ✅ 트렌드 분석 결과 저장 성공`);
+          } else {
+            console.error(`   ⚠️ 트렌드 분석 결과 저장 실패: ${analysisResult.error}`);
+          }
+        } catch (dbError) {
+          console.error(`   ❌ 트렌드 분석 결과 저장 중 오류:`, dbError.message);
+        }
+
+        // 📋 [DB 저장 2] 키워드별 분석 데이터 저장
+        console.log(`💾 [DB 저장 2/2] 키워드별 분석 데이터 저장 중...`);
+        try {
+          for (let i = 0; i < Math.min(result.refinedKeywords.length, 5); i++) { // 상위 5개만
+            const keyword = result.refinedKeywords[i];
+            const keywordAnalysisResult = await createKeywordAnalysis({
+              keyword: keyword,
+              analysisType: 'trend_refinement',
+              qualityScore: Math.max(0.5, 1.0 - (i * 0.1)), // 순위별 품질 점수
+              confidence: 0.8,
+              analysisData: {
+                refinement_rank: i + 1,
+                original_index: keywords.indexOf(keyword),
+                context_added: config.addContext,
+                news_sources_count: config.newsPerKeyword,
+                duplicate_removed: config.removeDuplicates
+              },
+              tags: ['trend', 'news_based', 'refined'],
+              regionCode: 'KR',
+              executedAt: new Date().toISOString()
+            });
+
+            if (keywordAnalysisResult.success) {
+              console.log(`   ✅ "${keyword}" 키워드 분석 저장 성공`);
+            } else {
+              console.error(`   ⚠️ "${keyword}" 키워드 분석 저장 실패: ${keywordAnalysisResult.error}`);
+            }
+          }
+        } catch (dbError) {
+          console.error(`   ❌ 키워드별 분석 데이터 저장 중 오류:`, dbError.message);
+        }
+        
         this.stats.totalRefinedKeywords += result.refinedKeywords.length;
+        
+        const dbSaveTime = Date.now() - dbSaveStartTime;
+        console.log(`💾 [DB 저장 완료] 키워드 정제 결과 저장 시간: ${dbSaveTime}ms`);
         
         return {
           success: true,
           refinedKeywords: result.refinedKeywords,
           originalKeywords: result.originalKeywords,
           analysis: result.analysis,
-          statistics: result.statistics
+          statistics: result.statistics,
+          dbSaveTime: dbSaveTime
         };
       } else {
         throw new Error('키워드 정제 실패');
@@ -276,6 +471,30 @@ class TrendVideoService {
       // 폴백: 원본 키워드 상위 10개 사용
       const fallbackKeywords = keywords.slice(0, config.maxFinalKeywords);
       console.log(`🔄 폴백 모드: 원본 키워드 상위 ${fallbackKeywords.length}개 사용`);
+      
+      // 🚨 폴백 사용 시에도 DB에 기록 (중복 방지 포함)
+      try {
+        const { randomUUID } = await import('crypto');
+        
+        await createTrendAnalysisResult({
+          originalKeywords: keywords,
+          refinedKeywords: fallbackKeywords,
+          analysisMethod: 'fallback_mode',
+          qualityScore: 0.3, // 폴백 모드는 낮은 품질 점수
+          confidence: 0.5,
+          analysisData: {
+            fallback_reason: error.message,
+            fallback_used: true,
+            original_method: 'news_based_refinement',
+            unique_id: randomUUID() // ✅ 중복 방지를 위한 유니크 ID
+          },
+          regionCode: 'KR',
+          executedAt: new Date().toISOString()
+        });
+        console.log(`💾 폴백 모드 DB 기록 완료`);
+      } catch (dbError) {
+        console.error(`❌ 폴백 모드 DB 기록 중 오류:`, dbError.message);
+      }
       
       return {
         success: true,
@@ -345,6 +564,88 @@ class TrendVideoService {
 
     console.log(`\n📊 검색 완료: 총 ${allVideos.length}개 영상 발견`);
     console.log(`💰 API 비용: ${totalApiCost} units`);
+
+    // 📋 [DB 저장] 검색 기록만 저장 (영상은 채널 필터링 후 저장)
+    if (allVideos.length > 0) {
+      console.log(`💾 [DB 저장] 검색 기록 저장 시작... (영상은 채널 필터링 후 저장)`);
+      const dbSaveStartTime = Date.now();
+      
+      try {
+        // 📋 [DB 저장 1] 키워드별 검색 실행 기록
+        console.log(`💾 [DB 저장 1/2] 키워드별 검색 실행 기록 중... (${keywords.length}개)`);
+        for (const keyword of keywords) {
+          const keywordResult = keywordResults[keyword];
+          if (keywordResult && keywordResult.videoCount > 0) {
+            try {
+              const searchLogResult = await createSearchLog({
+                sessionId: `trend_search_${Date.now()}_${keyword}`,
+                searchQuery: keyword,
+                searchType: 'trending', // ✅ DB enum 값 수정: 더 적절한 타입
+                searchSource: 'trending_click', // ✅ DB enum 값 수정: 'api' → 'trending_click'
+                keywordsUsed: [keyword],
+                filtersApplied: {
+                  videoDuration: 'short',
+                  regionCode: 'KR',
+                  publishedAfter: config.publishedAfter
+                },
+                resultsCount: keywordResult.totalResults,
+                resultsReturned: keywordResult.videoCount,
+                playableResultsCount: keywordResult.videoCount, // 기본값으로 전체 재생 가능
+                apiUnitsConsumed: 100, // search.list 기본 비용
+                responseTime: Math.round(keywordResult.responseTime || 1000), // ✅ Integer 타입 보장
+                searchFailed: false,
+                moduleName: 'trendVideoService',
+                searchStartedAt: new Date().toISOString(),
+                searchCompletedAt: new Date().toISOString()
+              });
+
+              if (searchLogResult.success) {
+                console.log(`   ✅ "${keyword}" 검색 기록 성공`);
+              } else {
+                console.error(`   ⚠️ "${keyword}" 검색 기록 실패: ${searchLogResult.error}`);
+              }
+            } catch (dbError) {
+              console.error(`   ❌ "${keyword}" 검색 기록 중 오류:`, dbError.message);
+            }
+          }
+        }
+
+        // 📋 [DB 저장 2] API 사용량 집계 기록
+        console.log(`💾 [DB 저장 2/2] API 사용량 집계 기록 중...`);
+        try {
+          const apiUsageResult = await logApiUsage({
+            sessionId: `trend_video_search_${Date.now()}`,
+            apiProvider: 'youtube_data_api', // ✅ DB enum 값 수정: 'youtube_v3' → 'youtube_data_api'
+            apiEndpoint: 'search.list',
+            youtubeQuotaUnits: totalApiCost,
+            youtubeVideoCount: allVideos.length,
+            responseTimeMs: Math.round(keywords.length * 1000), // ✅ Integer 타입 보장
+            success: true,
+            operationType: 'batch_video_search',
+            moduleName: 'trendVideoService',
+            searchKeyword: `batch_${keywords.length}_keywords`,
+            processedAt: new Date().toISOString()
+          });
+
+          if (apiUsageResult.success) {
+            console.log(`   ✅ API 사용량 집계 기록 성공`);
+          } else {
+            console.error(`   ⚠️ API 사용량 집계 기록 실패: ${apiUsageResult.error}`);
+          }
+        } catch (dbError) {
+          console.error(`   ❌ API 사용량 집계 기록 중 오류:`, dbError.message);
+        }
+
+        const dbSaveTime = Date.now() - dbSaveStartTime;
+        console.log(`💾 [DB 저장 완료] 검색 기록 저장 시간: ${dbSaveTime}ms`);
+        console.log(`🎬 영상은 채널 필터링 후 FK 제약 조건을 만족한 상태로 저장됩니다`);
+        
+      } catch (error) {
+        console.error(`❌ 검색 기록 DB 저장 중 전체 오류:`, error.message);
+      }
+    } else {
+      console.log(`💾 [DB 저장 생략] 저장할 검색 기록 없음`);
+    }
 
     return {
       allVideos,
@@ -426,6 +727,128 @@ class TrendVideoService {
       console.log(`   🎬 고품질 영상: ${enrichedVideos.length}개`);
       console.log(`   📈 필터링 성공률: ${((enrichedVideos.length / allVideos.length) * 100).toFixed(1)}%`);
 
+      // 📋 [DB 저장] 채널 품질 데이터 저장
+      if (qualityChannels.length > 0) {
+        console.log(`💾 [DB 저장] 채널 품질 데이터 저장 시작...`);
+        const dbSaveStartTime = Date.now();
+        
+        try {
+          // 📋 [DB 저장 1] 고품질 채널 배치 저장
+          console.log(`💾 [DB 저장 1/2] 고품질 채널 배치 저장 중... (${qualityChannels.length}개)`);
+          const channelsForDB = qualityChannels.map(channel => ({
+            channel_id: channel.channelId,
+            channel_title: channel.channelTitle,
+            subscriber_count: channel.subscriberCount,
+            video_count: channel.videoCount,
+            channel_icon_url: channel.channelIcon,
+            channel_description: channel.channelDescription || '',
+            quality_grade: channel.qualityGrade,
+            collected_at: new Date().toISOString(),
+            api_units_consumed: Math.floor((channelResult.summary.apiCost || 0) / qualityChannels.length),
+            collection_context: {
+              collection_method: 'trend_quality_filtering',
+              min_subscribers: config.minSubscribers,
+              filter_applied: true,
+              total_channels_checked: channelIds.length,
+              filter_success_rate: ((qualityChannels.length / channelIds.length) * 100).toFixed(1) + '%'
+            }
+          }));
+
+          const channelSaveResult = await saveChannelsBatch(channelsForDB);
+          
+          if (channelSaveResult.success) {
+            console.log(`   ✅ 채널 배치 저장 성공: ${channelSaveResult.data?.saved_count || qualityChannels.length}개`);
+          } else {
+            console.error(`   ⚠️ 채널 배치 저장 실패: ${channelSaveResult.error}`);
+          }
+
+          // 📋 [DB 저장 2] 시스템 성능 지표 기록 (필터링 효율성)
+          console.log(`💾 [DB 저장 2/2] 필터링 성능 지표 기록 중...`);
+          try {
+            const filterEfficiencyRate = (enrichedVideos.length / allVideos.length);
+            const perfResult = await logSystemPerformance({
+              metricType: 'search_performance', // ✅ DB enum 값 수정: 'search_efficiency' → 'search_performance'
+              searchResultsCount: allVideos.length,
+              apiUnitsUsed: channelResult.summary.apiCost || 0,
+              efficiencyVideosPer100units: Math.round((enrichedVideos.length / Math.max(1, channelResult.summary.apiCost || 1)) * 100),
+              targetAchievementRate: filterEfficiencyRate,
+              totalApiCalls: 1, // channels.list 호출
+              successfulApiCalls: 1,
+              apiSuccessRate: 1.0,
+              averageResponseTimeMs: Math.round(Date.now() - dbSaveStartTime), // ✅ Integer 타입 보장
+              cacheHitRate: 0, // 채널 정보는 실시간 수집
+              moduleName: 'trendVideoService',
+              operationType: 'channel_quality_filtering',
+              measurementTimestamp: new Date().toISOString()
+            });
+
+            if (perfResult.success) {
+              console.log(`   ✅ 필터링 성능 지표 기록 성공`);
+            } else {
+              console.error(`   ⚠️ 필터링 성능 지표 기록 실패: ${perfResult.error}`);
+            }
+          } catch (dbError) {
+            console.error(`   ❌ 필터링 성능 지표 기록 중 오류:`, dbError.message);
+          }
+
+          const dbSaveTime = Date.now() - dbSaveStartTime;
+          console.log(`💾 [DB 저장 완료] 채널 데이터 저장 시간: ${dbSaveTime}ms`);
+          
+        } catch (error) {
+          console.error(`❌ 채널 데이터 DB 저장 중 전체 오류:`, error.message);
+        }
+      } else {
+        console.log(`💾 [DB 저장 생략] 저장할 고품질 채널 없음`);
+      }
+
+      // 📋 [DB 저장] 필터링된 영상 저장 (FK 제약 조건 만족)
+      if (enrichedVideos.length > 0) {
+        console.log(`💾 [DB 저장] 필터링된 영상 저장 시작... (${enrichedVideos.length}개)`);
+        const videoSaveStartTime = Date.now();
+        
+        try {
+          const videosForDB = enrichedVideos.map(video => ({
+            video_id: video.id?.videoId || video.snippet?.resourceId?.videoId,
+            title: video.snippet?.title || '',
+            description: video.snippet?.description || '',
+            channel_id: video.snippet?.channelId,
+            channel_title: video.snippet?.channelTitle,
+            published_at: video.snippet?.publishedAt,
+            thumbnail_url: video.snippet?.thumbnails?.high?.url || video.snippet?.thumbnails?.default?.url,
+            search_keyword: video.searchKeyword,
+            category: '트렌드',
+            is_playable: true, // 고품질 채널의 영상이므로 재생 가능으로 가정
+            quality_score: video.channelInfo ? 
+              Math.min(0.9, 0.5 + (video.channelInfo.subscriberCount / 1000000) * 0.4) : 0.7, // 구독자 수 기반 품질 점수
+            api_units_consumed: 5, // 채널 정보 수집 비용
+            cache_source: 'trend_quality_filtered',
+            collection_context: {
+              collection_method: 'trend_quality_filtering',
+              keyword_rank: video.keywordRank,
+              channel_quality_grade: video.channelInfo?.qualityGrade,
+              filter_applied: true,
+              collected_at: new Date().toISOString()
+            }
+          }));
+
+          const videoSaveResult = await saveVideosBatch(videosForDB);
+          
+          if (videoSaveResult.success) {
+            console.log(`   ✅ 필터링된 영상 저장 성공: ${videoSaveResult.data?.saved_count || videosForDB.length}개`);
+          } else {
+            console.error(`   ⚠️ 필터링된 영상 저장 실패: ${videoSaveResult.error}`);
+          }
+
+          const videoSaveTime = Date.now() - videoSaveStartTime;
+          console.log(`💾 [DB 저장 완료] 필터링된 영상 저장 시간: ${videoSaveTime}ms`);
+          
+        } catch (error) {
+          console.error(`❌ 필터링된 영상 DB 저장 중 오류:`, error.message);
+        }
+      } else {
+        console.log(`💾 [DB 저장 생략] 저장할 필터링된 영상 없음`);
+      }
+
       this.stats.totalQualityVideos += enrichedVideos.length;
 
       return {
@@ -464,7 +887,7 @@ class TrendVideoService {
    * 📊 결과 요약 생성
    */
   generateSummary(trendsResult, refinedResult, searchResults, finalResult, processingTime) {
-    return {
+    const summary = {
       pipeline: {
         trendsCollected: trendsResult.keywords.length,
         keywordsRefined: refinedResult.refinedKeywords.length,
@@ -487,6 +910,112 @@ class TrendVideoService {
       },
       timestamp: new Date().toISOString()
     };
+
+    console.log('\n🎯 === 트렌드 영상 수집 완료 ===');
+    console.log(`📊 최종 결과:`);
+    console.log(`   🔥 수집된 트렌드 키워드: ${this.stats.totalTrendsCollected}개`);
+    console.log(`   🎨 정제된 키워드: ${this.stats.totalRefinedKeywords}개`);
+    console.log(`   🎬 발견된 영상: ${this.stats.totalVideosFound}개`);
+    console.log(`   🏆 고품질 영상: ${this.stats.totalQualityVideos}개`);
+    console.log(`   ⏱️ 총 소요 시간: ${((Date.now() - this.startTime) / 1000).toFixed(1)}초`);
+    console.log(`   💰 총 API 비용: ${summary.performance.apiCosts.total} units`);
+    console.log(`   📈 영상 품질 점수: ${summary.quality.averageSubscribers.toLocaleString()}명 평균 구독자`);
+    console.log(`   ✨ 수집 효율성: ${summary.performance.filteringEfficiency}`);
+
+    // 📋 [DB 저장] 최종 성과 지표 및 자동화 작업 완료 기록
+    this.saveFinalMetricsToDatabase(summary, trendsResult, refinedResult, searchResults, finalResult);
+
+    return summary;
+  }
+
+  /**
+   * 📋 [DB 저장] 최종 성과 지표 저장 메서드
+   */
+  async saveFinalMetricsToDatabase(summary, trendsResult, refinedResult, searchResults, finalResult) {
+    console.log(`💾 [DB 저장] 최종 성과 지표 저장 시작...`);
+    const dbSaveStartTime = Date.now();
+    
+    try {
+      // 📋 [DB 저장 1] 자동화 작업 완료 기록
+      console.log(`💾 [DB 저장 1/2] 자동화 작업 완료 기록 중...`);
+      try {
+        const jobResult = await logAutomatedJob({
+          jobName: 'trend_video_collection',
+          jobType: 'trend_collection', // ✅ DB enum 값 수정: 'scheduled_data_collection' → 'trend_collection'
+          status: this.stats.totalQualityVideos > 0 ? 'completed' : 'partial_success',
+          scheduledAt: new Date(this.startTime).toISOString(), // ✅ NOT NULL 제약 조건 해결
+          totalDurationMs: Math.round(Date.now() - this.startTime), // ✅ Integer 타입 보장
+          recordsProcessed: this.stats.totalVideosFound,
+          recordsSuccessful: this.stats.totalQualityVideos,
+          recordsFailed: this.stats.totalVideosFound - this.stats.totalQualityVideos,
+          apiCostTotal: summary.performance.apiCosts.total,
+          errorCount: 0, // TODO: 실제 에러 카운트 추가
+          configData: {
+            collection_config: this.config,
+            target_keywords: this.stats.totalRefinedKeywords,
+            quality_filter_applied: true
+          },
+          resultData: {
+            final_summary: summary,
+            collection_stats: this.stats,
+            quality_metrics: {
+              trend_collection_rate: this.stats.totalTrendsCollected > 0 ? 1.0 : 0.0,
+              keyword_refinement_rate: this.stats.totalRefinedKeywords / Math.max(1, this.stats.totalTrendsCollected),
+              video_discovery_rate: this.stats.totalVideosFound / Math.max(1, this.stats.totalRefinedKeywords),
+              quality_filter_rate: this.stats.totalQualityVideos / Math.max(1, this.stats.totalVideosFound)
+            }
+          },
+          startedAt: new Date(this.startTime).toISOString(),
+          completedAt: new Date().toISOString()
+        });
+
+        if (jobResult.success) {
+          console.log(`   ✅ 자동화 작업 완료 기록 성공: Job ID ${jobResult.data?.id || 'unknown'}`);
+        } else {
+          console.error(`   ⚠️ 자동화 작업 완료 기록 실패: ${jobResult.error}`);
+        }
+      } catch (dbError) {
+        console.error(`   ❌ 자동화 작업 완료 기록 중 오류:`, dbError.message);
+      }
+
+      // 📋 [DB 저장 2] 전체 시스템 성능 지표 종합
+      console.log(`💾 [DB 저장 2/2] 전체 시스템 성능 지표 종합 기록 중...`);
+      try {
+        const overallEfficiency = (this.stats.totalQualityVideos / Math.max(1, summary.performance.apiCosts.total)) * 100;
+        const systemPerfResult = await logSystemPerformance({
+          metricType: 'search_performance', // ✅ DB enum 값 수정: 'search_efficiency' → 'search_performance'
+          searchResultsCount: this.stats.totalVideosFound,
+          apiUnitsUsed: summary.performance.apiCosts.total,
+          efficiencyVideosPer100units: Math.round(overallEfficiency),
+          targetAchievementRate: parseFloat(summary.performance.filteringEfficiency.replace('%', '')) / 100,
+          totalApiCalls: this.stats.totalRefinedKeywords + 1, // 검색 + 채널 정보
+          successfulApiCalls: this.stats.totalRefinedKeywords + 1,
+          apiSuccessRate: 1.0,
+          averageResponseTimeMs: Math.round((Date.now() - this.startTime) / (this.stats.totalRefinedKeywords + 1)), // ✅ Integer 타입 보장
+          quotaUsagePercentage: (summary.performance.apiCosts.total / 10000) * 100, // 일일 할당량 대비
+          userSatisfactionScore: this.stats.totalQualityVideos > 20 ? 0.9 : 0.7, // 품질 영상 20개 이상이면 높은 만족도
+          moduleName: 'trendVideoService',
+          operationType: 'complete_trend_collection_workflow',
+          measurementTimestamp: new Date().toISOString(),
+          aggregationPeriod: 'realtime' // ✅ DB enum 값 올바르게 설정
+        });
+
+        if (systemPerfResult.success) {
+          console.log(`   ✅ 전체 시스템 성능 지표 기록 성공`);
+        } else {
+          console.error(`   ⚠️ 전체 시스템 성능 지표 기록 실패: ${systemPerfResult.error}`);
+        }
+      } catch (dbError) {
+        console.error(`   ❌ 전체 시스템 성능 지표 기록 중 오류:`, dbError.message);
+      }
+
+      const dbSaveTime = Date.now() - dbSaveStartTime;
+      console.log(`💾 [DB 저장 완료] 최종 성과 지표 저장 시간: ${dbSaveTime}ms`);
+      console.log(`🎉 === 트렌드 영상 수집 및 DB 저장 완전 완료! ===\n`);
+      
+    } catch (error) {
+      console.error(`❌ 최종 성과 지표 DB 저장 중 전체 오류:`, error.message);
+    }
   }
 
   /**

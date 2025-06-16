@@ -25,6 +25,80 @@ const supabase = createClient(
 );
 
 // =============================================================================
+// 🔄 PostgreSQL 배열 변환 헬퍼 함수
+// =============================================================================
+
+/**
+ * PostgreSQL text[] 배열을 JavaScript 배열로 변환
+ * @param {any} value - PostgreSQL에서 반환된 값
+ * @returns {Array} 변환된 JavaScript 배열
+ */
+const parsePostgreSQLArray = (value) => {
+  if (!value) {
+    return [];
+  }
+  
+  if (Array.isArray(value)) {
+    return value; // 이미 배열이면 그대로 반환
+  }
+  
+  if (typeof value === 'string') {
+    // PostgreSQL 배열 문자열 파싱: '{"쿠키","베이킹","캐릭터디저트"}'
+    if (value.startsWith('{') && value.endsWith('}')) {
+      const arrayContent = value.slice(1, -1); // 중괄호 제거
+      
+      if (arrayContent === '') {
+        return []; // 빈 배열
+      }
+      
+      // 콤마로 분리하고 따옴표 제거
+      const parsedArray = arrayContent
+        .split(',')
+        .map(item => item.trim().replace(/^"(.*)"$/, '$1'))
+        .filter(item => item !== '');
+      
+      return parsedArray;
+    }
+  }
+  
+  return [];
+};
+
+/**
+ * 영상 데이터의 모든 배열 필드를 변환
+ * @param {Object} videoData - 영상 데이터
+ * @returns {Object} 변환된 영상 데이터
+ */
+const transformVideoArrayFields = (videoData) => {
+  if (!videoData) return null;
+  
+  const transformed = {
+    ...videoData,
+    // YouTube 태그
+    youtube_tags: parsePostgreSQLArray(videoData.youtube_tags),
+    
+    // LLM 분류 태그들
+    topic_tags: parsePostgreSQLArray(videoData.topic_tags),
+    mood_tags: parsePostgreSQLArray(videoData.mood_tags),
+    context_tags: parsePostgreSQLArray(videoData.context_tags),
+    genre_tags: parsePostgreSQLArray(videoData.genre_tags)
+  };
+  
+  return transformed;
+};
+
+/**
+ * 영상 데이터 배열의 모든 배열 필드를 변환
+ * @param {Array} videosData - 영상 데이터 배열
+ * @returns {Array} 변환된 영상 데이터 배열
+ */
+const transformVideosArrayFields = (videosData) => {
+  if (!Array.isArray(videosData)) return [];
+  
+  return videosData.map(transformVideoArrayFields);
+};
+
+// =============================================================================
 // 📋 1. 영상 캐시 관리 (video_cache_extended 테이블)
 // =============================================================================
 
@@ -41,6 +115,35 @@ const supabase = createClient(
  * @param {string[]} [videoData.llm_classification.genre_tags] - 장르 태그
  * @returns {Promise<Object>} 저장 결과
  */
+// 🔧 quality_score 문자열을 숫자로 변환하는 헬퍼 함수
+const convertQualityScoreToNumber = (qualityScore) => {
+  // 문자열 등급을 숫자로 변환
+  const gradeMap = {
+    'S': 0.95,
+    'A': 0.85, 
+    'B': 0.75,
+    'C': 0.65,
+    'D': 0.55,
+    'F': 0.45
+  };
+  
+  if (typeof qualityScore === 'string') {
+    const grade = qualityScore.toUpperCase().trim();
+    if (grade.includes('+')) {
+      // B+ -> B 등급에 0.05 추가
+      const baseGrade = grade.replace('+', '');
+      return (gradeMap[baseGrade] || 0.5) + 0.05;
+    }
+    return gradeMap[grade] || 0.5; // 기본값
+  }
+  
+  if (typeof qualityScore === 'number') {
+    return qualityScore;
+  }
+  
+  return 0.5; // 기본값
+};
+
 export const cacheVideoData = async (videoData) => {
   try {
     // 1. channel_id 필수 검증
@@ -69,15 +172,19 @@ export const cacheVideoData = async (videoData) => {
       };
     }
 
-    // 3. quality_score 스케일링 (NUMERIC(3,2) → 9.99 이하)
-    let qualityScore = videoData.quality_score || 0.5;
+    // 3. quality_score 변환 및 스케일링 (문자열 → 숫자, NUMERIC(3,2) → 9.99 이하)
+    let qualityScore = convertQualityScoreToNumber(videoData.quality_score || 0.5);
     if (qualityScore > 9.99) {
       qualityScore = Math.min(qualityScore / 10, 9.99);
-      console.log(`quality_score ${videoData.quality_score} → ${qualityScore} (스케일링 적용)`);
     }
 
-    // LLM 분류 데이터 분리
+    // 🔧 LLM 분류 데이터 분리 (두 가지 구조 지원)
     const llmData = videoData.llm_classification || {};
+    
+    // LLM 태그 구조 확인 (간단 로그)
+    if (videoData.video_id && (videoData.topic_tags?.length > 0 || llmData.topic_tags?.length > 0)) {
+      console.log(`💾 ${videoData.video_id}: LLM 태그 저장`);
+    }
     
     const insertData = {
       video_id: videoData.video_id,
@@ -119,20 +226,20 @@ export const cacheVideoData = async (videoData) => {
       made_for_kids: videoData.made_for_kids || false,
       region_restriction: videoData.region_restriction || {},
       
-      // LLM 분류 태그
-      topic_tags: llmData.topic_tags || [],
-      mood_tags: llmData.mood_tags || [],
-      context_tags: llmData.context_tags || [],
-      genre_tags: llmData.genre_tags || [],
+      // 🔧 LLM 분류 태그 (두 가지 구조 모두 지원)
+      topic_tags: videoData.topic_tags || llmData.topic_tags || [],
+      mood_tags: videoData.mood_tags || llmData.mood_tags || [],
+      context_tags: videoData.context_tags || llmData.context_tags || [],
+      genre_tags: videoData.genre_tags || llmData.genre_tags || [],
       
-      // LLM 분류 메타데이터
-      classification_confidence: llmData.confidence || 0.8,
-      classified_by: llmData.engine || 'claude_api',
-      classification_model: llmData.model || null,
-      classification_prompt_hash: llmData.prompt_hash || null,
-      classified_at: llmData.classified_at || new Date().toISOString(),
-      used_fallback: llmData.used_fallback || false,
-      fallback_reason: llmData.fallback_reason || null,
+      // 🔧 LLM 분류 메타데이터 (두 가지 구조 모두 지원)
+      classification_confidence: videoData.classification_confidence || llmData.confidence || 0.8,
+      classified_by: videoData.classified_by || llmData.engine || 'claude_api',
+      classification_model: videoData.classification_model || llmData.model || 'claude-3-5-sonnet-20241022',
+      classification_prompt_hash: videoData.classification_prompt_hash || llmData.prompt_hash || null,
+      classified_at: videoData.classified_at || llmData.classified_at || new Date().toISOString(),
+      used_fallback: videoData.used_fallback || llmData.used_fallback || false,
+      fallback_reason: videoData.fallback_reason || llmData.fallback_reason || null,
       
       // 검색 정보
       search_keyword: videoData.search_keyword || null,
@@ -152,9 +259,16 @@ export const cacheVideoData = async (videoData) => {
       api_units_consumed: videoData.api_units_consumed || 107,
       cache_source: videoData.cache_source || 'youtube_api',
       
-      // Raw 데이터
+      // 🔧 Raw 데이터 (두 가지 구조 모두 지원)
       raw_youtube_data: videoData.raw_youtube_data || {},
-      raw_classification_data: llmData.raw_data || {}
+      raw_classification_data: videoData.raw_classification_data || llmData.raw_data || {
+        // 폴백: 현재 태그 데이터를 raw 데이터로 저장
+        topic_tags: videoData.topic_tags || llmData.topic_tags || [],
+        mood_tags: videoData.mood_tags || llmData.mood_tags || [],
+        context_tags: videoData.context_tags || llmData.context_tags || [],
+        genre_tags: videoData.genre_tags || llmData.genre_tags || [],
+        confidence: videoData.classification_confidence || llmData.confidence || 0.8
+      }
     };
 
     const { data, error } = await supabase
@@ -168,10 +282,13 @@ export const cacheVideoData = async (videoData) => {
 
     if (error) throw error;
 
+    // 🔄 PostgreSQL 배열 필드 변환 (저장 후 반환 데이터)
+    const transformedData = transformVideoArrayFields(data);
+
     return {
       success: true,
       message: '영상 캐시가 저장되었습니다',
-      data
+      data: transformedData
     };
   } catch (error) {
     console.error('영상 캐시 저장 실패:', error);
@@ -206,9 +323,12 @@ export const getCachedVideo = async (videoId, incrementHit = true) => {
       });
     }
 
+    // 🔄 PostgreSQL 배열 필드 변환
+    const transformedData = transformVideoArrayFields(data);
+
     return {
       success: true,
-      data,
+      data: transformedData,
       cached: true
     };
   } catch (error) {
@@ -237,10 +357,13 @@ export const getCachedVideos = async (videoIds) => {
 
     if (error) throw error;
 
+    // 🔄 PostgreSQL 배열 필드 변환
+    const transformedData = transformVideosArrayFields(data);
+
     return {
       success: true,
       message: `${data.length}개 영상 캐시 조회 완료`,
-      data,
+      data: transformedData,
       found_count: data.length,
       requested_count: videoIds.length
     };
@@ -249,6 +372,47 @@ export const getCachedVideos = async (videoIds) => {
     return {
       success: false,
       error: error.message
+    };
+  }
+};
+
+/**
+ * 기존 영상 존재 여부 확인 (UPSERT 방식용)
+ * @param {string[]} videoIds - YouTube 영상 ID 배열
+ * @returns {Promise<Object>} 기존 영상 ID 목록
+ */
+export const checkExistingVideos = async (videoIds) => {
+  try {
+    const { data, error } = await supabase
+      .from('video_cache_extended')
+      .select('video_id')
+      .in('video_id', videoIds);
+
+    if (error) throw error;
+
+    const existingVideoIds = data.map(item => item.video_id);
+
+    return {
+      success: true,
+      message: `${existingVideoIds.length}개 기존 영상 확인됨`,
+      data: {
+        existing_videos: existingVideoIds,
+        existing_count: existingVideoIds.length,
+        new_count: videoIds.length - existingVideoIds.length,
+        requested_count: videoIds.length
+      }
+    };
+  } catch (error) {
+    console.error('기존 영상 확인 실패:', error);
+    return {
+      success: false,
+      error: error.message,
+      data: {
+        existing_videos: [],
+        existing_count: 0,
+        new_count: videoIds.length,
+        requested_count: videoIds.length
+      }
     };
   }
 };
@@ -285,10 +449,13 @@ export const getPlayableQualityShorts = async (options = {}) => {
 
     if (error) throw error;
 
+    // 🔄 PostgreSQL 배열 필드 변환
+    const transformedData = transformVideosArrayFields(data);
+
     return {
       success: true,
       message: '고품질 Shorts 조회 완료',
-      data
+      data: transformedData
     };
   } catch (error) {
     console.error('고품질 Shorts 조회 실패:', error);
@@ -313,10 +480,13 @@ export const getTrendingShorts = async (limit = 20) => {
 
     if (error) throw error;
 
+    // 🔄 PostgreSQL 배열 필드 변환
+    const transformedData = transformVideosArrayFields(data);
+
     return {
       success: true,
       message: '트렌딩 Shorts 조회 완료',
-      data
+      data: transformedData
     };
   } catch (error) {
     console.error('트렌딩 Shorts 조회 실패:', error);
@@ -350,10 +520,13 @@ export const getVideosByTag = async (tag, tagType = null, limit = 15) => {
 
     if (error) throw error;
 
+    // 🔄 PostgreSQL 배열 필드 변환
+    const transformedData = transformVideosArrayFields(data);
+
     return {
       success: true,
       message: `태그 "${tag}" 영상 조회 완료`,
-      data
+      data: transformedData
     };
   } catch (error) {
     console.error('태그별 영상 조회 실패:', error);
@@ -865,10 +1038,13 @@ export const searchVideosWithChannelInfo = async (keyword, options = {}) => {
 
     if (error) throw error;
 
+    // 🔄 PostgreSQL 배열 필드 변환
+    const transformedData = transformVideosArrayFields(data);
+
     return {
       success: true,
       message: `키워드 "${keyword}" 검색 완료`,
-      data,
+      data: transformedData,
       total_found: data.length
     };
   } catch (error) {
@@ -907,10 +1083,13 @@ export const getVideosByChannel = async (channelId, options = {}) => {
 
     if (error) throw error;
 
+    // 🔄 PostgreSQL 배열 필드 변환
+    const transformedData = transformVideosArrayFields(data);
+
     return {
       success: true,
       message: '채널별 영상 조회 완료',
-      data
+      data: transformedData
     };
   } catch (error) {
     console.error('채널별 영상 조회 실패:', error);
@@ -999,52 +1178,199 @@ export const blockUnblockChannel = async (channelId, isBlocked, blockReason = nu
 };
 
 /**
- * 캐시 통계 조회
+ * 캐시 통계 조회 (실제 테이블에서 집계 계산)
  * @returns {Promise<Object>} 캐시 통계
  */
 export const getCacheStatistics = async () => {
   try {
-    // 영상 캐시 통계
-    const { data: videoStats, error: videoError } = await supabase
+    // 실제 video_cache_extended 테이블에서 통계 계산
+    const { data, error } = await supabase
       .from('video_cache_extended')
-      .select('*')
-      .gt('expires_at', new Date().toISOString());
+      .select(`
+        video_id,
+        is_playable,
+        quality_score,
+        view_count,
+        created_at,
+        expires_at
+      `);
 
-    if (videoError) throw videoError;
+    if (error) throw error;
 
-    // 채널 캐시 통계  
-    const { data: channelStats, error: channelError } = await supabase
-      .from('video_channels')
-      .select('*')
-      .gt('expires_at', new Date().toISOString());
+    // 통계 계산
+    const totalVideos = data.length;
+    const playableVideos = data.filter(v => v.is_playable).length;
+    const highQualityVideos = data.filter(v => v.quality_score >= 0.7).length;
+    const totalViews = data.reduce((sum, v) => sum + (v.view_count || 0), 0);
+    const avgQualityScore = totalVideos > 0 
+      ? data.reduce((sum, v) => sum + (v.quality_score || 0), 0) / totalVideos 
+      : 0;
 
-    if (channelError) throw channelError;
+    // 만료 상태 계산
+    const now = new Date();
+    const activeVideos = data.filter(v => new Date(v.expires_at) > now).length;
+    const expiredVideos = totalVideos - activeVideos;
 
-    const stats = {
-      videos: {
-        total: videoStats.length,
-        playable: videoStats.filter(v => v.is_playable).length,
-        high_quality: videoStats.filter(v => v.quality_score >= 0.7).length,
-        with_llm_tags: videoStats.filter(v => v.topic_tags.length > 0).length,
-        total_cache_hits: videoStats.reduce((sum, v) => sum + v.cache_hit_count, 0)
-      },
-      channels: {
-        total: channelStats.length,
-        active: channelStats.filter(c => c.is_active).length,
-        blocked: channelStats.filter(c => c.is_blocked).length,
-        s_grade: channelStats.filter(c => c.quality_grade === 'S').length,
-        a_grade: channelStats.filter(c => c.quality_grade === 'A').length,
-        b_grade: channelStats.filter(c => c.quality_grade === 'B').length
-      }
+    const statistics = {
+      total_videos: totalVideos,
+      playable_videos: playableVideos,
+      high_quality_videos: highQualityVideos,
+      total_views: totalViews,
+      avg_quality_score: Math.round(avgQualityScore * 100) / 100,
+      active_cache: activeVideos,
+      expired_cache: expiredVideos,
+      playable_rate: totalVideos > 0 ? Math.round((playableVideos / totalVideos) * 100) : 0,
+      high_quality_rate: totalVideos > 0 ? Math.round((highQualityVideos / totalVideos) * 100) : 0,
+      cache_efficiency: totalVideos > 0 ? Math.round((activeVideos / totalVideos) * 100) : 0
     };
 
     return {
       success: true,
       message: '캐시 통계 조회 완료',
-      data: stats
+      data: statistics
     };
   } catch (error) {
     console.error('캐시 통계 조회 실패:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// =============================================================================
+// 📋 새로 추가: 배치 저장 함수들 (Batch Processing)
+// =============================================================================
+
+/**
+ * 여러 영상을 배치로 저장 (Rate Limiting 해결)
+ * @param {Array} videosData - 영상 데이터 배열
+ * @returns {Promise<Object>} 배치 저장 결과
+ */
+export const saveVideosBatch = async (videosData) => {
+  try {
+    console.log(`💾 영상 배치 저장 시작: ${videosData.length}개 영상`);
+    
+    const batchSize = 10;
+    let totalSuccess = 0;
+    let totalFailed = 0;
+    const failedVideos = [];
+
+    for (let i = 0; i < videosData.length; i += batchSize) {
+      const batch = videosData.slice(i, i + batchSize);
+      console.log(`   📦 영상 배치 ${Math.floor(i/batchSize) + 1}/${Math.ceil(videosData.length/batchSize)}: ${batch.length}개`);
+
+      // 병렬 처리 (배치 내에서)
+      const batchPromises = batch.map(async (videoData) => {
+        try {
+          const result = await cacheVideoData(videoData);
+          return { success: result.success, videoId: videoData.video_id, error: result.error };
+        } catch (error) {
+          return { success: false, videoId: videoData.video_id, error: error.message };
+        }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+
+      // 결과 처리
+      batchResults.forEach(result => {
+        if (result.success) {
+          totalSuccess++;
+        } else {
+          totalFailed++;
+          failedVideos.push({ videoId: result.videoId, error: result.error });
+        }
+      });
+
+      console.log(`     ✅ 영상 배치 ${Math.floor(i/batchSize) + 1} 완료: ${batchResults.filter(r => r.success).length}개 성공, ${batchResults.filter(r => !r.success).length}개 실패`);
+
+      // 배치간 대기 (Rate Limiting 방지)
+      if (i + batchSize < videosData.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    console.log(`💾 영상 배치 저장 완료: 총 ${totalSuccess}개 성공, ${totalFailed}개 실패`);
+
+    return {
+      success: true,
+      totalProcessed: videosData.length,
+      successCount: totalSuccess,
+      failedCount: totalFailed,
+      failedVideos: failedVideos,
+      message: `영상 배치 저장 완료: ${totalSuccess}개 성공, ${totalFailed}개 실패`
+    };
+
+  } catch (error) {
+    console.error('🚨 영상 배치 저장 에러:', error.message);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+/**
+ * 여러 채널을 배치로 저장 (Rate Limiting 해결)
+ * @param {Array} channelsData - 채널 데이터 배열
+ * @returns {Promise<Object>} 배치 저장 결과
+ */
+export const saveChannelsBatch = async (channelsData) => {
+  try {
+    console.log(`🏢 채널 배치 저장 시작: ${channelsData.length}개 채널`);
+    
+    const batchSize = 10;
+    let totalSuccess = 0;
+    let totalFailed = 0;
+    const failedChannels = [];
+
+    for (let i = 0; i < channelsData.length; i += batchSize) {
+      const batch = channelsData.slice(i, i + batchSize);
+      console.log(`   📦 채널 배치 ${Math.floor(i/batchSize) + 1}/${Math.ceil(channelsData.length/batchSize)}: ${batch.length}개`);
+
+      // 병렬 처리 (배치 내에서)
+      const batchPromises = batch.map(async (channelData) => {
+        try {
+          const result = await saveChannelInfo(channelData);
+          return { success: result.success, channelId: channelData.channel_id, error: result.error };
+        } catch (error) {
+          return { success: false, channelId: channelData.channel_id, error: error.message };
+        }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+
+      // 결과 처리
+      batchResults.forEach(result => {
+        if (result.success) {
+          totalSuccess++;
+        } else {
+          totalFailed++;
+          failedChannels.push({ channelId: result.channelId, error: result.error });
+        }
+      });
+
+      console.log(`     ✅ 채널 배치 ${Math.floor(i/batchSize) + 1} 완료: ${batchResults.filter(r => r.success).length}개 성공, ${batchResults.filter(r => !r.success).length}개 실패`);
+
+      // 배치간 대기 (Rate Limiting 방지)
+      if (i + batchSize < channelsData.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    console.log(`🏢 채널 배치 저장 완료: 총 ${totalSuccess}개 성공, ${totalFailed}개 실패`);
+
+    return {
+      success: true,
+      totalProcessed: channelsData.length,
+      successCount: totalSuccess,
+      failedCount: totalFailed,
+      failedChannels: failedChannels,
+      message: `채널 배치 저장 완료: ${totalSuccess}개 성공, ${totalFailed}개 실패`
+    };
+
+  } catch (error) {
+    console.error('🚨 채널 배치 저장 에러:', error.message);
     return {
       success: false,
       error: error.message
@@ -1087,5 +1413,9 @@ export default {
   // 4. 유틸리티 및 관리
   updateVideoPlayability,
   blockUnblockChannel,
-  getCacheStatistics
+  getCacheStatistics,
+
+  // 5. 배치 저장 함수들
+  saveVideosBatch,
+  saveChannelsBatch
 };
