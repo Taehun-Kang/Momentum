@@ -30,14 +30,18 @@ router.post('/analyze', async (req, res) => {
   try {
     console.log('🌟 감성 분석 API 호출:', req.body);
 
-    // 🔧 요청 데이터 파싱
+    // 🔧 요청 데이터 파싱 - options 객체 지원
     const {
       userInput,
+      options = {}
+    } = req.body;
+
+    const {
       userId = null,
       inputType = 'emotion', // 'emotion' or 'topic'
       maxKeywords = 8,
       responseFormat = 'full' // 'full', 'quick', 'keywords-only'
-    } = req.body;
+    } = options;
 
     // ✅ 입력 검증
     if (!userInput || typeof userInput !== 'string') {
