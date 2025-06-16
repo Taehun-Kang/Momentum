@@ -38,6 +38,28 @@ router.post('/cache', async (req, res) => {
 });
 
 /**
+ * POST /api/videos_db/cache/batch-save
+ * 여러 영상 배치 저장 (신규 추가 - Rate Limiting 해결)
+ */
+router.post('/cache/batch-save', async (req, res) => {
+  try {
+    const { videos } = req.body;
+    
+    if (!Array.isArray(videos)) {
+      return res.status(400).json({
+        success: false,
+        error: 'videos 필드는 배열이어야 합니다'
+      });
+    }
+
+    const result = await videoService.saveVideosBatch(videos);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * GET /api/videos_db/cache/:videoId
  * 캐시된 영상 정보 조회 (조회수 증가 옵션)
  */
@@ -60,6 +82,28 @@ router.post('/cache/batch', async (req, res) => {
   try {
     const { videoIds } = req.body;
     const result = await videoService.getCachedVideos(videoIds);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/videos_db/cache/batch-check
+ * 기존 영상 존재 여부 확인 (UPSERT 방식용)
+ */
+router.post('/cache/batch-check', async (req, res) => {
+  try {
+    const { video_ids } = req.body;
+    
+    if (!Array.isArray(video_ids)) {
+      return res.status(400).json({
+        success: false,
+        error: 'video_ids 필드는 배열이어야 합니다'
+      });
+    }
+
+    const result = await videoService.checkExistingVideos(video_ids);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -148,6 +192,28 @@ router.get('/search', async (req, res) => {
 router.post('/channels', async (req, res) => {
   try {
     const result = await videoService.saveChannelInfo(req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/videos_db/channels/batch-save
+ * 여러 채널 배치 저장 (신규 추가 - Rate Limiting 해결)
+ */
+router.post('/channels/batch-save', async (req, res) => {
+  try {
+    const { channels } = req.body;
+    
+    if (!Array.isArray(channels)) {
+      return res.status(400).json({
+        success: false,
+        error: 'channels 필드는 배열이어야 합니다'
+      });
+    }
+
+    const result = await videoService.saveChannelsBatch(channels);
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

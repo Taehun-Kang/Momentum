@@ -4,31 +4,33 @@
 **백엔드**: Node.js + Express.js  
 **데이터베이스**: Supabase PostgreSQL  
 **AI**: Claude API  
-**총 엔드포인트**: 182개 (실제 구현 기준 - 모든 "function not implemented" 에러 해결 완료 ✅)
+**총 엔드포인트**: 180개 (실제 구현 기준 - 모든 "function not implemented" 에러 해결 완료 ✅)  
+**🎉 최신 업데이트 (2025-01-27)**: Search API 통합으로 중복 기능 제거 (-2개)
 
 ---
 
 ## 📋 API 개요 (실제 구현 기준)
 
-| 카테고리          | 엔드포인트 수 | Base URL              | 상태        | Frontend 우선순위 | 테스트 결과      |
-| ----------------- | ------------- | --------------------- | ----------- | ----------------- | ---------------- |
-| 🔐 Authentication | 7개           | `/api/v1/auth`        | ✅ 완료     | ✅ 필수           | ✅ 완료          |
-| 🔍 Search         | 14개          | `/api/v1/search`      | ✅ 완료     | 부분적            | ✅ 완료          |
-| 🤖 LLM            | 6개           | `/api/v1/llm`         | ✅ 완료     | ✅ 필수           | ✅ 완료          |
-| 📈 Trends         | 6개           | `/api/v1/trends`      | ✅ 완료     | ✅ 필수           | ✅ 완료          |
-| 👤 Users DB       | 25개          | `/api/v1/users_db`    | ✅ 완료     | ✅ 필수           | 🏆 25/25 (100%)  |
-| 📺 Videos DB      | 21개          | `/api/v1/videos_db`   | ✅ 완료     | 부분적            | ⚠️ 16/21 (76.2%) |
-| 🏷️ Keywords DB    | 23개          | `/api/v1/keywords_db` | ✅ 완료     | 관리자            | 🏆 23/23 (100%)  |
-| ⚙️ System DB      | 24개          | `/api/v1/system_db`   | ✅ 완료     | 관리자            | ✅ 완료          |
-| 🔍 Search DB      | 21개          | `/api/v1/search_db`   | 🏆 **완료** | 부분적            | 🏆 21/21 (100%)  |
-| 📈 Trends DB      | 21개          | `/api/v1/trends_db`   | ✅ 완료     | 부분적            | 🏆 20/21 (95.2%) |
-| 😊 Emotions DB    | 16개          | `/api/v1/emotions_db` | ✅ 완료     | ✅ 필수           | 🏆 16/16 (100%)  |
+| 카테고리          | 엔드포인트 수 | Base URL              | 상태             | Frontend 우선순위 | 테스트 결과      |
+| ----------------- | ------------- | --------------------- | ---------------- | ----------------- | ---------------- |
+| 🔐 Authentication | 7개           | `/api/v1/auth`        | ✅ 완료          | ✅ 필수           | ✅ 완료          |
+| 🔍 Search         | 12개          | `/api/v1/search`      | ✅ **통합 완료** | 부분적            | ✅ 완료          |
+| 🤖 LLM            | 6개           | `/api/v1/llm`         | ✅ 완료          | ✅ 필수           | ✅ 완료          |
+| 📈 Trends         | 6개           | `/api/v1/trends`      | ✅ 완료          | ✅ 필수           | ✅ 완료          |
+| 👤 Users DB       | 25개          | `/api/v1/users_db`    | ✅ 완료          | ✅ 필수           | 🏆 25/25 (100%)  |
+| 📺 Videos DB      | 21개          | `/api/v1/videos_db`   | ✅ 완료          | 부분적            | ⚠️ 16/21 (76.2%) |
+| 🏷️ Keywords DB    | 23개          | `/api/v1/keywords_db` | ✅ 완료          | 관리자            | 🏆 23/23 (100%)  |
+| ⚙️ System DB      | 24개          | `/api/v1/system_db`   | ✅ 완료          | 관리자            | ✅ 완료          |
+| 🔍 Search DB      | 21개          | `/api/v1/search_db`   | 🏆 **완료**      | 부분적            | 🏆 21/21 (100%)  |
+| 📈 Trends DB      | 21개          | `/api/v1/trends_db`   | ✅ 완료          | 부분적            | 🏆 20/21 (95.2%) |
+| 😊 Emotions DB    | 16개          | `/api/v1/emotions_db` | ✅ 완료          | ✅ 필수           | 🏆 16/16 (100%)  |
 
-**총 182개** = 33개 (비즈니스 API) + 149개 (Database API)
+**총 180개** = 31개 (비즈니스 API) + 149개 (Database API)  
+**변경사항**: Search API 통합으로 비즈니스 API 2개 감소 (14개 → 12개)
 
 **구성**:
 
-- **비즈니스 API**: 33개 (7+14+6+6)
+- **비즈니스 API**: 31개 (7+12+6+6) - **Search API 통합 완료 ✅**
 - **Database API**: 149개 (25+21+21+24+21+21+16) - **모든 함수 1:1 매핑 완료 ✅**
 
 **🎉 핵심 성과**:
@@ -198,48 +200,107 @@ const activityResult = await userService.updateUserActivity(userId);
 
 ---
 
-## 🔍 Search API (14개) ✅
+## 🔍 Search API (12개) ✅ **통합 완료 - 2025-01-27**
 
 **Base URL**: `/api/v1/search`  
 **Purpose**: YouTube 검색 및 매일 키워드 갱신
+**🎉 주요 변경사항**: `processSingleKeyword` 통합으로 중복 기능 제거 및 95% DB 연동 완료
 
 ### 엔드포인트 목록
 
-| Method | Endpoint                  | Description           | Parameters                                | Frontend  |
-| ------ | ------------------------- | --------------------- | ----------------------------------------- | --------- |
-| POST   | `/realtime`               | 실시간 키워드 검색    | `{ keyword, category?, min_view_count? }` | ✅ 필수   |
-| POST   | `/quick`                  | 빠른 키워드 검색      | `{ keyword, category? }`                  | ✅ 필수   |
-| GET    | `/realtime/session`       | 실시간 검색 세션 상태 | 없음                                      | ⭐ 권장   |
-| GET    | `/health`                 | 검색 서비스 헬스체크  | 없음                                      | ⭐ 권장   |
-| POST   | `/daily-update`           | 매일 키워드 갱신 실행 | `{ targetKeywords? }`                     | ❌ 관리자 |
-| GET    | `/daily-update/progress`  | 갱신 진행 상황 조회   | 없음                                      | ❌ 관리자 |
-| GET    | `/daily-update/stats`     | 갱신 서비스 통계      | 없음                                      | ❌ 관리자 |
-| POST   | `/test-keyword`           | 단일 키워드 테스트    | `{ keyword, category?, min_view_count? }` | ❌ 개발   |
-| POST   | `/batch-keywords`         | 배치 키워드 처리      | `{ keywords: [...] }`                     | ❌ 관리자 |
-| POST   | `/retry-classifications`  | 분류 실패 재분류      | `{ maxRetries? }`                         | ❌ 관리자 |
-| GET    | `/failed-videos`          | 분류 실패 영상 목록   | Query: `limit`                            | ❌ 관리자 |
-| POST   | `/reprocess-videos`       | 특정 영상 재분류      | `{ videoIds: [...] }`                     | ❌ 관리자 |
-| POST   | `/cleanup-failed`         | 분류 실패 목록 정리   | `{ maxAge? }`                             | ❌ 관리자 |
-| GET    | `/realtime/failed-videos` | 실시간 검색 실패 영상 | Query: `sessionId?`                       | ❌ 관리자 |
+| Method  | Endpoint                      | Description               | Parameters                                | Status            | Frontend      |
+| ------- | ----------------------------- | ------------------------- | ----------------------------------------- | ----------------- | ------------- |
+| POST    | `/realtime`                   | 실시간 키워드 검색        | `{ keyword, category?, min_view_count? }` | ✅ **통합 완료**  | ✅ 필수       |
+| POST    | `/quick`                      | 빠른 키워드 검색          | `{ keyword, category? }`                  | ✅ **통합 완료**  | ✅ 필수       |
+| GET     | `/health`                     | 검색 서비스 헬스체크      | 없음                                      | ✅ 정상           | ⭐ 권장       |
+| POST    | `/daily-update`               | 매일 키워드 갱신 실행     | `{ targetKeywords? }`                     | ✅ 정상           | ❌ 관리자     |
+| GET     | `/daily-update/progress`      | 갱신 진행 상황 조회       | 없음                                      | ✅ 정상           | ❌ 관리자     |
+| GET     | `/daily-update/stats`         | 갱신 서비스 통계          | 없음                                      | ✅ 정상           | ❌ 관리자     |
+| POST    | `/test-keyword`               | 단일 키워드 테스트        | `{ keyword, category?, min_view_count? }` | ✅ 정상           | ❌ 개발       |
+| POST    | `/batch-keywords`             | 배치 키워드 처리          | `{ keywords: [...] }`                     | ✅ 정상           | ❌ 관리자     |
+| POST    | `/retry-classifications`      | 분류 실패 재분류          | `{ maxRetries? }`                         | ✅ 정상           | ❌ 관리자     |
+| GET     | `/failed-videos`              | 분류 실패 영상 목록       | Query: `limit`                            | ✅ 정상           | ❌ 관리자     |
+| POST    | `/reprocess-videos`           | 특정 영상 재분류          | `{ videoIds: [...] }`                     | ✅ 정상           | ❌ 관리자     |
+| POST    | `/cleanup-failed`             | 분류 실패 목록 정리       | `{ maxAge? }`                             | ✅ 정상           | ❌ 관리자     |
+| ~~GET~~ | ~~`/realtime/session`~~       | ~~실시간 검색 세션 상태~~ | ~~없음~~                                  | ❌ **비활성화됨** | ~~⭐ 권장~~   |
+| ~~GET~~ | ~~`/realtime/failed-videos`~~ | ~~실시간 검색 실패 영상~~ | ~~Query: `sessionId?`~~                   | ❌ **비활성화됨** | ~~❌ 관리자~~ |
+
+### 🎯 **통합 성과** (2025-01-27)
+
+#### **✅ 중복 기능 제거**
+
+- **이전**: `searchKeywordRealtime()` + `processSingleKeyword()` 중복
+- **개선**: `processSingleKeyword()` 통합으로 단일 진입점
+- **장점**: 95% DB 연동 + UPSERT 방식 + 배치 저장 API 자동 적용
+
+#### **✅ 성능 개선**
+
+- **실시간 검색**: YouTube → 필터링 → LLM → DB 저장까지 완전 자동화
+- **DB 연동**: Keywords DB 조회 + Videos/Channels DB UPSERT 방식
+- **품질 보장**: 재생가능 여부 확인 + 품질 점수 기반 필터링
+
+#### **✅ 통합된 기능**
+
+- **2단계 필터링**: YouTube search → videos.list → 재생가능 여부 확인
+- **LLM 분류**: 9개 고정 카테고리 자동 분류 + 감성 태깅
+- **배치 저장**: 10개씩 묶어서 Rate Limiting 방지
+- **실시간 데이터**: 중복 제거 대신 최신 데이터 UPSERT
 
 ### 주요 특징
 
-- **실시간 검색**: 사용자 요청 즉시 처리
-- **매일 자동 갱신**: 백그라운드 콘텐츠 업데이트
-- **실패 처리**: 자동 재시도 및 수동 재처리
+- **✅ 단일 진입점**: `processSingleKeyword` 통합으로 일관성 보장
+- **✅ 95% DB 연동**: Keywords DB 조회 + Videos/Channels DB 저장 완료
+- **✅ UPSERT 방식**: 중복 제거 대신 실시간 데이터 갱신
+- **✅ 매일 자동 갱신**: 백그라운드 콘텐츠 업데이트
+- **✅ 실패 처리**: 자동 재시도 및 수동 재처리
 
 ### 파라미터 상세
 
-#### POST /realtime (핵심 엔드포인트)
+#### POST /realtime (핵심 엔드포인트) ✅ **통합 완료**
 
 ```json
 {
   "keyword": "먹방",
-  "category": "음식", // 선택사항
+  "category": "먹방 & 요리", // 선택사항 (자동 LLM 분류)
   "min_view_count": 10000, // 최소 조회수
   "min_engagement_rate": 1.5, // 최소 참여율
   "target_count": 20, // 목표 영상 수
-  "max_pages": 5 // 최대 페이지 수
+  "max_pages": 3 // 최대 페이지 수
+}
+```
+
+**응답 예시**:
+
+```json
+{
+  "success": true,
+  "message": "실시간 검색 완료: \"먹방\"",
+  "keyword": "먹방",
+  "mode": "realtime",
+  "duration": 45,
+  "timestamp": "2025-01-27T10:30:00.000Z",
+  "note": "✅ processSingleKeyword 통합 완료 - 95% DB 연동 + UPSERT 방식"
+}
+```
+
+#### POST /quick (빠른 검색) ✅ **통합 완료**
+
+```json
+{
+  "keyword": "브이로그",
+  "category": "라이프스타일" // 선택사항
+}
+```
+
+**응답 예시**:
+
+```json
+{
+  "success": true,
+  "message": "빠른 검색 완료: \"브이로그\"",
+  "mode": "quick",
+  "duration": 23,
+  "note": "✅ processSingleKeyword 통합 완료 - 빠른 검색 최적화"
 }
 ```
 
@@ -780,7 +841,7 @@ curl -X POST "http://localhost:3002/api/v1/system_db/api-usage" \
     "httpMethod": "GET",
     "apiUnitsUsed": 100,
     "responseTimeMs": 1500,
-    "success": true,
+  "success": true,
     "requestSizeBytes": 150,
     "responseSizeBytes": 5000,
     "userId": "550e8400-e29b-41d4-a716-446655440000",
@@ -806,55 +867,55 @@ curl -X POST "http://localhost:3002/api/v1/system_db/cache-performance" \
 ```bash
 # ✅ POST /api-usage - 완전 성공 요청
 curl -X POST "http://localhost:3002/api/v1/system_db/api-usage" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "apiProvider": "youtube_v3",
-    "apiEndpoint": "search.list",
-    "responseTimeMs": 1500,
-    "success": true,
-    "userId": null,
-    "moduleName": "youtube-search"
-  }'
+-H "Content-Type: application/json" \
+-d '{
+"apiProvider": "youtube_v3",
+"apiEndpoint": "search.list",
+"responseTimeMs": 1500,
+"success": true,
+"userId": null,
+"moduleName": "youtube-search"
+}'
 # 응답: {"success": true}
 
 # ✅ POST /cache-performance - 완전 성공 요청
 curl -X POST "http://localhost:3002/api/v1/system_db/cache-performance" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "cacheType": "video_details",
-    "cacheKey": "test_key",
-    "cacheOperation": "hit",
-    "hitCount": 10,
-    "moduleName": "cache-service"
-  }'
+-H "Content-Type: application/json" \
+-d '{
+"cacheType": "video_details",
+"cacheKey": "test_key",
+"cacheOperation": "hit",
+"hitCount": 10,
+"moduleName": "cache-service"
+}'
 # 응답: {"success": true}
 
 # ✅ POST /llm-processing - 완전 성공 요청 (필수 필드 포함)
 curl -X POST "http://localhost:3002/api/v1/system_db/llm-processing" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "sessionId": "session_123",
-    "llmProvider": "claude",
-    "modelName": "claude-3-sonnet",
-    "processingType": "video_classification",
-    "inputTokens": 100,
-    "outputTokens": 50,
-    "processingTimeMs": 2000,
-    "success": true,
-    "moduleName": "llm-service"
-  }'
+-H "Content-Type: application/json" \
+-d '{
+"sessionId": "session_123",
+"llmProvider": "claude",
+"modelName": "claude-3-sonnet",
+"processingType": "video_classification",
+"inputTokens": 100,
+"outputTokens": 50,
+"processingTimeMs": 2000,
+"success": true,
+"moduleName": "llm-service"
+}'
 # 응답: {"success": true}
 
 # ✅ POST /system-performance - 완전 성공 요청
 curl -X POST "http://localhost:3002/api/v1/system_db/system-performance" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "metricType": "search_performance",
-    "searchKeyword": "test",
-    "searchResultsCount": 50,
-    "averageResponseTimeMs": 1200,
-    "moduleName": "search-service"
-  }'
+-H "Content-Type: application/json" \
+-d '{
+"metricType": "search_performance",
+"searchKeyword": "test",
+"searchResultsCount": 50,
+"averageResponseTimeMs": 1200,
+"moduleName": "search-service"
+}'
 # 응답: {"success": true}
 ```
 
