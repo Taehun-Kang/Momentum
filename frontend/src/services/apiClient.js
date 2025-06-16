@@ -38,27 +38,18 @@ class ApiClient {
     }
 
     try {
-      console.log(`🔗 API 호출: ${options.method || 'GET'} ${url}`)
-      console.log(`📤 요청 헤더:`, config.headers)
-      console.log(`📤 요청 바디:`, config.body)
-      
       const response = await fetch(url, config)
-      console.log(`📡 응답 상태: ${response.status} ${response.statusText}`)
-      
       const data = await response.json()
-      console.log(`📥 응답 데이터:`, data)
 
       if (!response.ok) {
-        console.error(`❌ HTTP 에러: ${response.status}`)
+        console.error(`API 에러 (${response.status}):`, data.error || response.statusText)
         throw new Error(data.error || `HTTP ${response.status}`)
       }
 
-      console.log(`✅ API 응답 성공!`)
       return data
 
     } catch (error) {
-      console.error(`❌ API 호출 실패 (${endpoint}):`, error.message)
-      console.error(`❌ 전체 에러:`, error)
+      console.error(`API 호출 실패 (${endpoint}):`, error.message)
       throw error
     }
   }

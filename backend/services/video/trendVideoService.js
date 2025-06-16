@@ -67,7 +67,7 @@ class TrendVideoService {
       
       // 2단계: 키워드 정제 설정
       refiner: {
-        maxFinalKeywords: 25,   // 최종 25개로 정제 (10→25 대폭 증가)
+        maxFinalKeywords: 10,   // 최종 25개로 정제 (10→25 대폭 증가)
         newsPerKeyword: 3,      // 키워드당 뉴스 3개
         removeDuplicates: true, // 중복 제거
         addContext: true,       // 맥락 추가 ("키워드 + 한 단어")

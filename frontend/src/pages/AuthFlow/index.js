@@ -621,81 +621,44 @@ export default class AuthFlow extends Component {
   }
 
   async handleLogin() {
-    // 🚨 중요한 테스트!
-    alert('🔥🔥🔥 AuthFlow handleLogin 메서드가 호출되었습니다! 🔥🔥🔥')
-    
-    console.log('🚀 === AuthFlow 로그인 핸들러 시작 ===')
-    
     const loginBtn = this.el.querySelector('#login-btn')
     const email = this.el.querySelector('#login-email-input').value
     const password = this.el.querySelector('#login-password-input').value
 
-    console.log('📝 입력된 데이터:', { email, password: password ? '***' : '(없음)' })
-
     if (!email || !password) {
-      console.log('❌ 입력 검증 실패: 이메일 또는 패스워드 누락')
       alert('이메일과 비밀번호를 모두 입력해주세요.')
       return
     }
 
     // Loading state
-    console.log('⏳ 로딩 상태 시작...')
     loginBtn.classList.add('loading')
     loginBtn.disabled = true
 
     try {
-      // 🔥 실제 백엔드 API 호출!
-      console.log('🔥 === authService.login() 호출 시작 ===')
-      console.log('📤 전달할 데이터:', { email, password: '***' })
-      
       const result = await authService.login(email, password)
       
-      console.log('📥 === authService.login() 응답 받음 ===')
-      console.log('📋 전체 응답:', result)
-      console.log('✅ result.success:', result.success)
-      console.log('👤 result.user:', result.user)
-      console.log('❌ result.error:', result.error)
-      
       if (result.success) {
-        console.log('🎉 === 로그인 성공 처리 시작 ===')
-        console.log('👤 로그인된 사용자:', result.user)
-        
         // 성공 시 홈으로 이동
-        console.log('🏠 홈 페이지로 리다이렉트...')
         if (window.app) {
           window.app.goToHome()
         } else {
           window.location.hash = '#/home'
         }
       } else {
-        console.log('💥 === 로그인 실패 처리 시작 ===')
-        console.log('❌ 에러 메시지:', result.error)
-        
         // 에러 처리
         alert(result.error || '로그인에 실패했습니다.')
       }
       
     } catch (error) {
-      console.log('🚨 === CATCH 블록 진입 ===')
-      console.error('❌ 로그인 오류:', error)
-      console.error('❌ 에러 타입:', typeof error)
-      console.error('❌ 에러 메시지:', error.message)
-      console.error('❌ 전체 에러 객체:', error)
-      
+      console.error('로그인 오류:', error)
       alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.')
     } finally {
-      console.log('🏁 === FINALLY 블록 진입 ===')
       loginBtn.classList.remove('loading')
       loginBtn.disabled = false
-      console.log('⏳ 로딩 상태 종료')
     }
-    
-    console.log('🔚 === AuthFlow 로그인 핸들러 종료 ===')
   }
 
   async handleSignup() {
-    console.log('🚀 === AuthFlow 회원가입 핸들러 시작 ===')
-    
     const signupBtn = this.el.querySelector('#signup-btn')
     const name = this.el.querySelector('#signup-name-input').value.trim()
     const email = this.el.querySelector('#signup-email-input').value.trim()
@@ -703,68 +666,48 @@ export default class AuthFlow extends Component {
     const confirmPassword = this.el.querySelector('#signup-password-confirm-input').value
     const termsAgree = this.el.querySelector('#terms-agree').checked
 
-    console.log('📝 입력된 데이터:', { name, email, password: password ? '***' : '(없음)' })
-
     // 유효성 검사
     if (!name) {
-      console.log('❌ 유효성 검사 실패: 이름 누락')
       alert('이름을 입력해주세요.')
       return
     }
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      console.log('❌ 유효성 검사 실패: 이메일 형식 오류')
       alert('올바른 이메일을 입력해주세요.')
       return
     }
 
     if (password.length < 8 || !/(?=.*[a-zA-Z])(?=.*\d)/.test(password)) {
-      console.log('❌ 유효성 검사 실패: 패스워드 강도 부족')
       alert('비밀번호는 8자 이상, 영문과 숫자를 포함해야 합니다.')
       return
     }
 
     if (password !== confirmPassword) {
-      console.log('❌ 유효성 검사 실패: 패스워드 불일치')
       alert('비밀번호가 일치하지 않습니다.')
       return
     }
 
     if (!termsAgree) {
-      console.log('❌ 유효성 검사 실패: 약관 미동의')
       alert('이용약관에 동의해주세요.')
       return
     }
 
     // Loading state
-    console.log('⏳ 로딩 상태 시작...')
     signupBtn.classList.add('loading')
     signupBtn.disabled = true
 
     try {
-      // 🔥 실제 백엔드 API 호출!
-      console.log('🔥 === authService.signup() 호출 시작 ===')
-      console.log('📤 전달할 데이터:', { name, email, password: '***' })
-      
       const result = await authService.signup({
         name,
         email,
         password
       })
       
-      console.log('📥 === authService.signup() 응답 받음 ===')
-      console.log('📋 전체 응답:', result)
-      console.log('✅ result.success:', result.success)
-      console.log('❌ result.error:', result.error)
-      
       if (result.success) {
-        console.log('🎉 === 회원가입 성공 처리 시작 ===')
-        
         // 성공 메시지 표시
         alert('회원가입이 완료되었습니다! 로그인을 진행해주세요.')
         
-        // 로그인 페이지로 이동 (회원가입 후 바로 로그인하지 않음)
-        console.log('🔄 로그인 페이지로 전환...')
+        // 로그인 페이지로 이동
         this.transitionToStep('login')
         
         // 회원가입한 이메일을 로그인 폼에 자동 입력
@@ -776,29 +719,17 @@ export default class AuthFlow extends Component {
         }, 500)
         
       } else {
-        console.log('💥 === 회원가입 실패 처리 시작 ===')
-        console.log('❌ 에러 메시지:', result.error)
-        
         // 에러 처리
         alert(result.error || '회원가입에 실패했습니다.')
       }
       
     } catch (error) {
-      console.log('🚨 === CATCH 블록 진입 ===')
-      console.error('❌ 회원가입 오류:', error)
-      console.error('❌ 에러 타입:', typeof error)
-      console.error('❌ 에러 메시지:', error.message)
-      console.error('❌ 전체 에러 객체:', error)
-      
+      console.error('회원가입 오류:', error)
       alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.')
     } finally {
-      console.log('🏁 === FINALLY 블록 진입 ===')
       signupBtn.classList.remove('loading')
       signupBtn.disabled = false
-      console.log('⏳ 로딩 상태 종료')
     }
-    
-    console.log('🔚 === AuthFlow 회원가입 핸들러 종료 ===')
   }
 
   destroy() {

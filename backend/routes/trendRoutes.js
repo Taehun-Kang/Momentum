@@ -37,7 +37,7 @@ router.get('/videos', async (req, res) => {
       noCache = false,
       
       // 키워드 정제 옵션
-      finalKeywords = 20,      // 8→20 대폭 증가
+      finalKeywords = 10,      // 8→20 대폭 증가
       timeout = 45000,         // 30→45초 증가
       
       // 영상 검색 옵션
@@ -167,7 +167,7 @@ router.get('/keywords', async (req, res) => {
 
     const {
       maxKeywords = 50,        // 20→50 증가
-      finalKeywords = 25,      // 10→25 대폭 증가
+      finalKeywords = 10,      // 10→25 대폭 증가
       region = 'KR',
       noCache = false,
       includeContext = false
@@ -263,7 +263,7 @@ router.get('/videos/quick', async (req, res) => {
     // 🔧 캐시 우선 설정 (제한 완화)
     const config = {
       trends: { noCache: false },
-      refiner: { maxFinalKeywords: 15 }, // 5→15 대폭 증가
+      refiner: { maxFinalKeywords: 10 }, // 5→15 대폭 증가
       search: { maxResults: 50 },        // 20→50 증가
       channelFilter: { minSubscribers: parseInt(minSubscribers) },
       quick: true,
@@ -348,7 +348,7 @@ router.post('/videos/custom', async (req, res) => {
         ...trends
       },
       refiner: {
-        maxFinalKeywords: 20,    // 8→20 대폭 증가
+        maxFinalKeywords: 10,    // 8→20 대폭 증가
         timeout: 45000,          // 30→45초 증가
         ...refiner
       },

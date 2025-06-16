@@ -10,8 +10,6 @@ class AuthService {
   // 🔐 로그인
   async login(email, password) {
     try {
-      console.log('🔐 로그인 시도:', email)
-      
       // 실제 백엔드 API 호출 (엔드포인트 수정: login → signin)
       const response = await apiClient.post('/api/v1/auth/signin', {
         email,
@@ -28,14 +26,13 @@ class AuthService {
         this.currentUser = response.data.user
         this.isAuthenticated = true
         
-        console.log('✅ 로그인 성공!')
         return { success: true, user: response.data.user }
       }
 
       throw new Error('로그인 응답에 토큰이 없습니다')
 
     } catch (error) {
-      console.error('❌ 로그인 실패:', error.message)
+      console.error('로그인 실패:', error.message)
       return { 
         success: false, 
         error: error.message || '로그인에 실패했습니다' 
@@ -46,20 +43,17 @@ class AuthService {
   // 📝 회원가입
   async signup(userData) {
     try {
-      console.log('📝 회원가입 시도:', userData.email)
-      
       // 실제 백엔드 API 호출
       const response = await apiClient.post('/api/v1/auth/signup', userData)
 
       if (response.success) {
-        console.log('✅ 회원가입 성공!')
         return { success: true, message: '회원가입이 완료되었습니다' }
       }
 
       throw new Error(response.error || '회원가입에 실패했습니다')
 
     } catch (error) {
-      console.error('❌ 회원가입 실패:', error.message)
+      console.error('회원가입 실패:', error.message)
       return { 
         success: false, 
         error: error.message || '회원가입에 실패했습니다' 
@@ -70,8 +64,6 @@ class AuthService {
   // 🚪 로그아웃
   async logout() {
     try {
-      console.log('🚪 로그아웃 처리')
-      
       // 백엔드에 로그아웃 요청 (엔드포인트 수정: logout → signout)
       if (this.isAuthenticated) {
         await apiClient.post('/api/v1/auth/signout', {}, true)
@@ -89,8 +81,6 @@ class AuthService {
       
       this.currentUser = null
       this.isAuthenticated = false
-      
-      console.log('✅ 로그아웃 완료')
     }
   }
 
