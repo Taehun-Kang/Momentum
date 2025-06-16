@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🧹 localStorage 정리 도구</title>
+    <style>
+      body {
+        font-family: "Apple SD Gothic Neo", sans-serif;
+        max-width: 500px;
+        margin: 50px auto;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+      }
+
+      .button {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 15px 30px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin: 10px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+      }
+
+      .button:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+      }
+
+      .info {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+      }
+
+      #status {
+        margin-top: 20px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧹 localStorage 정리 도구</h1>
+
+    <div class="info">
+      <h3>📋 현재 저장된 데이터:</h3>
+      <div id="current-data"></div>
+    </div>
+
+    <button class="button" onclick="clearStorage()">
+      🗑️ localStorage 전체 정리
+    </button>
+
+    <button class="button" onclick="clearAuthOnly()">
+      🔐 인증 데이터만 정리
+    </button>
+
+    <button class="button" onclick="testLogin()">
+      🔧 로그인 페이지로 이동
+    </button>
+
+    <div id="status"></div>
+
+    <script>
+      // 현재 저장된 데이터 표시
+      function showCurrentData() {
+        const data = {};
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          data[key] = localStorage.getItem(key);
+        }
+
+        const container = document.getElementById("current-data");
+
+        if (Object.keys(data).length === 0) {
+          container.innerHTML =
+            '<p style="color: #90EE90;">✅ localStorage가 비어있습니다</p>';
+        } else {
+          container.innerHTML = Object.entries(data)
+            .map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`)
+            .join("");
+        }
+      }
+
+      // 전체 localStorage 정리
+      function clearStorage() {
+        localStorage.clear();
+        document.getElementById("status").innerHTML =
+          '<span style="color: #90EE90;">✅ localStorage 전체 정리 완료!</span>';
+        showCurrentData();
+      }
+
+      // 인증 데이터만 정리
+      function clearAuthOnly() {
+        const authKeys = ["authToken", "isLoggedIn", "userEmail", "userName"];
+
+        authKeys.forEach((key) => {
+          localStorage.removeItem(key);
+        });
+
+        document.getElementById("status").innerHTML =
+          '<span style="color: #90EE90;">✅ 인증 데이터만 정리 완료!</span>';
+        showCurrentData();
+      }
+
+      // 로그인 페이지로 이동
+      function testLogin() {
+        window.open("http://localhost:3000/#/login", "_blank");
+      }
+
+      // 페이지 로드시 현재 데이터 표시
+      window.onload = showCurrentData;
+
+      // 2초마다 데이터 갱신
+      setInterval(showCurrentData, 2000);
+    </script>
+  </body>
+</html>

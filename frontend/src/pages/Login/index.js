@@ -1,4 +1,5 @@
 import { Component } from '../../core/Component.js'
+import { authService } from '../../services/authService.js'
 import './Login.css'
 
 export default class Login extends Component {
@@ -7,6 +8,9 @@ export default class Login extends Component {
       tagName: 'div',
       autoRender: false
     })
+    
+    console.log('🔥🔥🔥 LOGIN 페이지 생성자 실행됨! 🔥🔥🔥')
+    alert('🔥 LOGIN 페이지가 로드되었습니다!')
     
     this.animationFrameId = null
     this.render()
@@ -157,11 +161,14 @@ export default class Login extends Component {
     // Form submission
     form.addEventListener('submit', (e) => {
       e.preventDefault()
+      console.log('🔥🔥🔥 FORM SUBMIT 이벤트 발생! 🔥🔥🔥')
+      alert('🔥 폼 제출 이벤트 감지!')
       this.handleLogin()
     })
 
     // Button ripple effect
     loginBtn.addEventListener('click', (e) => {
+      console.log('🔥🔥🔥 LOGIN 버튼 클릭! 🔥🔥🔥')
       this.createRippleEffect(e, loginBtn)
     })
 
@@ -201,38 +208,69 @@ export default class Login extends Component {
   }
 
   async handleLogin() {
+    console.log('🚀 === 로그인 핸들러 시작 ===')
+    
     const loginBtn = this.el.querySelector('#login-btn')
     const email = this.el.querySelector('#email-input').value
     const password = this.el.querySelector('#password-input').value
 
+    console.log('📝 입력된 데이터:', { email, password: password ? '***' : '(없음)' })
+
     if (!email || !password) {
+      console.log('❌ 입력 검증 실패: 이메일 또는 패스워드 누락')
       this.showError('이메일과 비밀번호를 모두 입력해주세요.')
       return
     }
 
     // Loading state
+    console.log('⏳ 로딩 상태 시작...')
     loginBtn.classList.add('loading')
     loginBtn.disabled = true
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // 🔥 실제 백엔드 API 호출!
+      console.log('🔥 === authService.login() 호출 시작 ===')
+      console.log('📤 전달할 데이터:', { email, password: '***' })
       
-      // 성공
-      console.log('로그인 성공:', { email })
-      localStorage.setItem('isLoggedIn', 'true')
-      localStorage.setItem('userEmail', email)
-      localStorage.setItem('userName', email.split('@')[0])
+      const result = await authService.login(email, password)
       
-      // 홈으로 이동
-      window.location.href = '#/'
+      console.log('📥 === authService.login() 응답 받음 ===')
+      console.log('📋 전체 응답:', result)
+      console.log('✅ result.success:', result.success)
+      console.log('👤 result.user:', result.user)
+      console.log('❌ result.error:', result.error)
+      
+      if (result.success) {
+        console.log('🎉 === 로그인 성공 처리 시작 ===')
+        console.log('👤 로그인된 사용자:', result.user)
+        
+        // 성공 시 홈으로 이동
+        console.log('🏠 홈 페이지로 리다이렉트...')
+        window.location.href = '#/'
+      } else {
+        console.log('💥 === 로그인 실패 처리 시작 ===')
+        console.log('❌ 에러 메시지:', result.error)
+        
+        // 에러 처리
+        this.showError(result.error || '로그인에 실패했습니다.')
+      }
       
     } catch (error) {
-      this.showError('로그인에 실패했습니다. 다시 시도해주세요.')
+      console.log('🚨 === CATCH 블록 진입 ===')
+      console.error('❌ 로그인 오류:', error)
+      console.error('❌ 에러 타입:', typeof error)
+      console.error('❌ 에러 메시지:', error.message)
+      console.error('❌ 전체 에러 객체:', error)
+      
+      this.showError('네트워크 오류가 발생했습니다. 다시 시도해주세요.')
     } finally {
+      console.log('🏁 === FINALLY 블록 진입 ===')
       loginBtn.classList.remove('loading')
       loginBtn.disabled = false
+      console.log('⏳ 로딩 상태 종료')
     }
+    
+    console.log('🔚 === 로그인 핸들러 종료 ===')
   }
 
   showError(message) {

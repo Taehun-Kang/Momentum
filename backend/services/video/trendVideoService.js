@@ -419,7 +419,7 @@ class TrendVideoService {
         // 📋 [DB 저장 2] 키워드별 분석 데이터 저장
         console.log(`💾 [DB 저장 2/2] 키워드별 분석 데이터 저장 중...`);
         try {
-          for (let i = 0; i < Math.min(result.refinedKeywords.length, 5); i++) { // 상위 5개만
+          for (let i = 0; i < result.refinedKeywords.length; i++) { // 상위 5개만
             const keyword = result.refinedKeywords[i];
             const keywordAnalysisResult = await createKeywordAnalysis({
               keyword: keyword,
