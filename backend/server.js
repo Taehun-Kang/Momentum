@@ -392,32 +392,48 @@ app.use((error, req, res, next) => {
 
 // 서버 시작 함수  
 function startServer() {
-  // Railway가 동적으로 할당하는 PORT를 최우선 사용
-  const PORT = process.env.PORT || 8080;
-  const HOST = '0.0.0.0'; // Railway 필수: 모든 인터페이스에서 수신
+  // Railway 표준: PORT 환경 변수 필수 사용
+  const PORT = parseInt(process.env.PORT) || 8080;
+  const HOST = '0.0.0.0';
   
-  // 환경 변수 디버깅
-  console.log('🔧 환경 변수 디버깅:');
+  // Railway 환경 디버깅
+  console.log('🚂 Railway 환경 체크:');
   console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
-  console.log(`   PORT: ${process.env.PORT}`);
-  console.log(`   RAILWAY_ENVIRONMENT: ${process.env.RAILWAY_ENVIRONMENT}`);
-  console.log(`   최종 PORT: ${PORT}`);
+  console.log(`   PORT: ${process.env.PORT} (파싱됨: ${PORT})`);
+  console.log(`   PWD: ${process.cwd()}`);
+  console.log(`   서버 바인딩: ${HOST}:${PORT}`);
 
-  app.listen(PORT, HOST, () => {
+  const server = app.listen(PORT, HOST, () => {
     console.log('🚀 Momentum Backend Server 시작!');
     console.log(`🔗 서버 수신 대기: ${HOST}:${PORT}`);
     
     // Railway 배포 감지
-    const isRailway = process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production';
+    const isRailway = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT;
     if (isRailway) {
       console.log(`📍 Railway 배포 주소: https://momentum-production-68bb.up.railway.app`);
-      console.log(`🚂 Railway 환경: ${process.env.RAILWAY_ENVIRONMENT || 'production'}`);
-      console.log(`✅ Railway 포트 바인딩: 0.0.0.0:${PORT}`);
+      console.log(`✅ Railway 포트 바인딩 성공: ${HOST}:${PORT}`);
     } else {
       console.log(`📍 로컬 서버 주소: http://${HOST}:${PORT}`);
     }
     
     console.log(`🌍 환경: ${process.env.NODE_ENV || 'development'}`);
+  });
+
+  // Railway 서버 에러 처리
+  server.on('error', (error) => {
+    console.error('🚨 서버 시작 실패:', error);
+    
+    if (error.code === 'EADDRINUSE') {
+      console.error(`❌ 포트 ${PORT}가 이미 사용 중입니다`);
+    } else if (error.code === 'EACCES') {
+      console.error(`❌ 포트 ${PORT}에 대한 권한이 없습니다`);
+    }
+    
+    process.exit(1);
+  });
+
+  // 서버 시작 성공 시 추가 정보 출력
+  setTimeout(() => {
     console.log('');
     console.log('🎉 **최신 성과 (2025-01-27)**:');
     console.log('   🏆 Database API 테스트: 146/149개 완료 (98.0% 성공률!)');
@@ -472,7 +488,7 @@ function startServer() {
     console.log(`🔐 인증 API: POST ${HOST}:${PORT}/api/v1/auth/signin`);
     console.log(`🗄️ Database API 예시: GET ${HOST}:${PORT}/api/v1/users_db/profiles (🏆 100% 테스트 완료)`);
     console.log(`🔧 DB 통합 진행 중: dailyKeywordUpdateService.js (✅ 첫 번째 API 통합 완료)`);
-  });
+  }, 1000); // 1초 후 정보 출력
 }
 
 // 🚀 서버 시작 실행
