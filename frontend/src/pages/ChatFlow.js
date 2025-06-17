@@ -870,37 +870,48 @@ export default class ChatFlow extends Component {
       
       console.log('🔍 영상 검색 시작:', actualKeyword)
       console.log('📋 원본 선택 데이터:', selectedCardData)
+      console.log('🚂 Railway 서버로 realtime API 호출 시작...')
       
       // 키워드에서 카테고리 자동 추출
       const category = searchService.extractCategory(actualKeyword)
       
       // 🎯 검색 파라미터는 keyword만 전달 (다른 파라미터 건들지 않음)
       const searchOptions = {
-        // keyword만 전달, 나머지는 백엔드 기본값 사용
+        category: category  // 카테고리 추가로 더 정확한 검색
       }
       
-      // 실시간 검색 실행 (keyword만 전달)
+      // ⏱️ 실시간 검색 실행 (완료까지 대기 - 최대 120초)
+      console.log('🚀 realtime 검색 시작... 완료까지 대기 중 (최대 120초)')
+      const searchStartTime = Date.now()
+      
       const searchResult = await searchService.searchRealtime(actualKeyword, searchOptions)
       
+      const searchEndTime = Date.now()
+      const actualDuration = Math.round((searchEndTime - searchStartTime) / 1000)
+      
       if (searchResult.success) {
-        console.log('✅ 영상 검색 완료:', searchResult)
+        console.log('✅ realtime 검색 완료:', searchResult)
+        console.log(`⏱️ 실제 검색 시간: ${actualDuration}초`)
+        console.log(`📊 백엔드 처리 시간: ${searchResult.duration}초`)
         
-        // 성공 메시지 잠시 표시
-        this.showSearchSuccess(actualKeyword, searchResult.duration)
+        // 성공 메시지 표시 (실제 처리 시간 표시)
+        this.showSearchSuccess(actualKeyword, actualDuration, searchResult.duration)
         
-        // 1초 후 VideoPlayer로 이동 (추출된 키워드 그대로 전달)
+        // 🎯 realtime 검색이 완료되었으므로 VideoPlayer로 이동
+        // 성공 메시지를 잠깐 보여준 후 이동
         setTimeout(() => {
+          console.log(`🎬 VideoPlayer로 이동: "${actualKeyword}" (realtime 검색 완료됨)`)
           this.navigateToVideoPlayer(actualKeyword)
-        }, 1000)
+        }, 2000)  // 2초 후 이동 (성공 메시지 확인 시간)
         
       } else {
-        console.error('❌ 영상 검색 실패:', searchResult.error)
+        console.error('❌ realtime 검색 실패:', searchResult.error)
         this.showSearchError(searchResult.error)
       }
       
     } catch (error) {
-      console.error('❌ 영상 검색 오류:', error)
-      this.showSearchError('네트워크 오류가 발생했습니다')
+      console.error('❌ realtime 검색 오류:', error)
+      this.showSearchError('네트워크 오류가 발생했습니다: ' + error.message)
     } finally {
       this.isSearching = false
     }
@@ -1053,11 +1064,23 @@ export default class ChatFlow extends Component {
     contentContainer.innerHTML = `
       <div class="llm-analyzing">
         <div class="analyzing-spinner">
-          <div class="spinner"></div>
         </div>
         <div class="analyzing-text">
           <h3>🔍 "${keyword}" 관련 영상을 찾고 있어요</h3>
-          <p>YouTube에서 최고의 쇼츠 영상들을 큐레이션하는 중...</p>
+          <p>🚀 YouTube에서 최고의 쇼츠 영상들을 큐레이션하는 중...</p>
+          <div style="
+            margin-top: 16px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.4;
+          ">
+            <div>📺 영상 검색 및 품질 필터링</div>
+            <div>🏷️ AI 분류 및 태깅</div>
+            <div>💾 데이터베이스 저장</div>
+            <div style="margin-top: 8px; color: #ffeb3b;">⏱️ 약 30-60초 소요됩니다</div>
+          </div>
         </div>
       </div>
     `
@@ -1066,7 +1089,7 @@ export default class ChatFlow extends Component {
   /**
    * ✅ 검색 성공 상태 표시
    */
-  showSearchSuccess(keyword, duration) {
+  showSearchSuccess(keyword, actualDuration, backendDuration) {
     const contentContainer = this.el.querySelector('#content-container')
     
     contentContainer.innerHTML = `
@@ -1085,7 +1108,12 @@ export default class ChatFlow extends Component {
         ">✅</div>
         <div class="analyzing-text">
           <h3>🎉 "${keyword}" 영상 큐레이션 완료!</h3>
-          <p>검색 시간: ${duration}초 • 곧 영상 페이지로 이동합니다...</p>
+          <p>총 처리 시간: ${actualDuration}초 • 백엔드 처리: ${backendDuration}초</p>
+          <div style="
+            margin-top: 12px;
+            font-size: 14px;
+            opacity: 0.9;
+          ">곧 영상 페이지로 이동합니다...</div>
         </div>
       </div>
     `
@@ -1133,11 +1161,21 @@ export default class ChatFlow extends Component {
    * 🎬 VideoPlayer로 이동
    */
   navigateToVideoPlayer(keyword) {
+    // realtime 검색 완료 플래그 추가
+    const params = new URLSearchParams({
+      keyword: keyword,
+      realtime_completed: 'true',  // 🔧 realtime 검색 완료 표시
+      timestamp: Date.now()        // 캐시 방지용 타임스탬프
+    })
+    
+    const url = `#/video-player?${params.toString()}`
+    console.log('🎬 VideoPlayer로 이동:', url)
+    
     if (window.app && typeof window.app.navigateTo === 'function') {
-      window.app.navigateTo(`#/video-player?keyword=${encodeURIComponent(keyword)}`)
+      window.app.navigateTo(url)
     } else {
       // 폴백: 직접 URL 변경
-      window.location.hash = `#/video-player?keyword=${encodeURIComponent(keyword)}`
+      window.location.hash = url
     }
   }
   

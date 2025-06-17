@@ -11,6 +11,7 @@ import VideoPlayer from './pages/VideoPlayer/final/VideoPlayer.js'
 import MyPage from './pages/MyPage.js'
 import AuthFlow from './pages/AuthFlow/index.js'
 import Navbar from './components/layout/Navbar/index.js'
+import searchService from './services/searchService.js'
 
 export default class App extends Component {
   constructor() {
@@ -93,6 +94,9 @@ export default class App extends Component {
     
     // 초기 라우트 렌더링
     this.handleRouteChange()
+    
+    // 트렌딩 영상 미리 로드
+    this.loadTrendingVideos()
     
     console.log('✅ App initialization completed')
   }
@@ -313,7 +317,7 @@ export default class App extends Component {
     console.log('✅ Current page refreshed successfully')
   }
   
-  // �� 홈으로 이동 (로그인 성공 시)
+  // 🏠 홈으로 이동 (로그인 성공 시)
   goToHome() {
     console.log('🏠 Navigating to Home after login')
     this.navigateTo('#/home')
@@ -424,5 +428,24 @@ export default class App extends Component {
     super.destroy?.()
     
     console.log('🗑️ App destroyed')
+  }
+  
+  // 트렌딩 영상 미리 로드
+  async loadTrendingVideos() {
+    try {
+      console.log('🚀 App: 홈페이지용 Trending 영상 미리 로드 시작...')
+      
+      // 비동기로 trending 영상들을 미리 로드 (백그라운드에서 실행)
+      const trendingVideos = await searchService.preloadTrendingVideos()
+      
+      if (trendingVideos && trendingVideos.length > 0) {
+        console.log('✅ App: Trending 영상 미리 로드 완료:', trendingVideos.length, '개')
+        console.log('💾 App: 이제 VideoPlayer에서 폴백 시 실제 DB 영상들이 사용됩니다')
+      } else {
+        console.warn('⚠️ App: Trending 영상 미리 로드 실패 - 폴백은 하드코딩된 영상 사용')
+      }
+    } catch (error) {
+      console.error('❌ App: Trending 영상 미리 로드 오류:', error)
+    }
   }
 } 

@@ -338,7 +338,7 @@ WHERE
   AND v.expires_at > now()
 ORDER BY v.quality_score DESC, v.view_count DESC;
 
--- 트렌딩 영상 뷰 (채널 정보 조인)
+- 수정된 trending_shorts 뷰 생성 (cache_source 조건 적용)
 CREATE VIEW trending_shorts AS
 SELECT 
   v.video_id,
@@ -349,6 +349,9 @@ SELECT
   v.like_count,
   v.trending_score,
   v.topic_tags,
+  v.mood_tags,
+  v.context_tags,
+  v.genre_tags,
   v.published_at,
   v.cached_at,
   c.channel_icon_url,
@@ -358,7 +361,7 @@ LEFT JOIN video_channels c ON v.channel_id = c.channel_id
 WHERE 
   v.is_playable = true 
   AND v.duration <= 60 
-  AND v.published_at > (now() - interval '7 days')
+  AND v.cache_source = 'trend_quality_filtered'  -- 🔧 수정된 조건
   AND v.expires_at > now()
 ORDER BY v.trending_score DESC, v.published_at DESC;
 

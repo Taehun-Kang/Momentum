@@ -6,6 +6,7 @@
 
 import { Component } from './Component.js'
 import VideoSwiper from './VideoSwiper.js'
+import Loading from '../../../components/ui/Loading/index.js'
 import searchService from '../../../services/searchService.js'
 import './VideoPlayer.css'
 
@@ -18,6 +19,8 @@ export default class VideoPlayer extends Component {
     this.videos = []
     this.videoSwiper = null
     this.isLoading = true
+    this.realtimeCompleted = false  // 🔧 realtime 검색 완료 여부
+    this.timestamp = null           // 🔧 검색 타임스탬프
     
     // 뒤로가기 감지
     this.handlePopState = this.handleBackNavigation.bind(this)
@@ -34,10 +37,21 @@ export default class VideoPlayer extends Component {
     if (queryString) {
       const params = new URLSearchParams(queryString)
       const keyword = params.get('keyword')
+      const realtimeCompleted = params.get('realtime_completed')
+      const timestamp = params.get('timestamp')
       
       if (keyword) {
         this.keyword = decodeURIComponent(keyword)
         console.log('📋 URL에서 키워드 추출:', this.keyword)
+      }
+      
+      // 🔧 realtime 검색 완료 여부 확인
+      if (realtimeCompleted === 'true') {
+        this.realtimeCompleted = true
+        this.timestamp = timestamp
+        console.log('✅ realtime 검색 완료 상태로 VideoPlayer 진입')
+      } else {
+        console.log('⚠️ realtime 검색 상태 불명 - 직접 DB 조회 모드')
       }
     }
   }
@@ -62,13 +76,20 @@ export default class VideoPlayer extends Component {
     
     // VideoSwiper 생성
     if (this.videos.length > 0) {
-      this.createVideoSwiper()
+    this.createVideoSwiper()
     } else {
       this.showNoVideosMessage()
     }
   }
 
   showLoadingState() {
+    // 🔧 기존 Loading 컴포넌트 사용으로 중복 제거
+    const loadingComponent = new Loading({
+      text: `"${this.keyword}" 영상 로딩 중...`,
+      subtext: 'DB에서 큐레이션된 영상을 가져오는 중입니다',
+      theme: 'video-loading'
+    })
+
     this.el.innerHTML = `
       <div style="
         display: flex;
@@ -80,27 +101,12 @@ export default class VideoPlayer extends Component {
         text-align: center;
         padding: 40px;
       ">
-        <div>
-          <div style="
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-          "></div>
-          <div style="font-size: 18px; margin-bottom: 10px;">"${this.keyword}" 영상 로딩 중...</div>
-          <div style="font-size: 14px; opacity: 0.8;">DB에서 큐레이션된 영상을 가져오는 중입니다</div>
-        </div>
       </div>
-      <style>
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      </style>
     `
+
+    // Loading 컴포넌트를 로딩 컨테이너에 추가
+    const loadingContainer = this.el.querySelector('div')
+    loadingContainer.appendChild(loadingComponent.el)
   }
   
   /**
@@ -109,6 +115,14 @@ export default class VideoPlayer extends Component {
   async loadVideoData() {
     try {
       console.log(`🎬 DB에서 "${this.keyword}" 영상 조회 시작`)
+      
+      // 🔧 realtime 검색 완료 상태에 따른 딜레이 적용
+      if (this.realtimeCompleted) {
+        console.log('⏳ realtime 검색 완료됨 - DB 저장 완료 대기 중 (2초)')
+        await new Promise(resolve => setTimeout(resolve, 2000))  // 2초 대기
+      } else {
+        console.log('🔍 realtime 검색 상태 불명 - 즉시 DB 조회')
+      }
       
       // DB에서 키워드별 영상 조회
       const result = await searchService.getVideosByKeyword(this.keyword, {
@@ -122,6 +136,12 @@ export default class VideoPlayer extends Component {
         if (!isFallback) {
           // 🎯 실제 키워드 매칭 영상들
           console.log(`✅ DB에서 "${this.keyword}" 실제 영상 조회 성공: ${result.data.length}개`)
+          
+          // realtime 검색 완료 상태 로깅
+          if (this.realtimeCompleted) {
+            console.log('🎉 realtime → DB 조회 워크플로우 완료!')
+          }
+          
           this.videos = this.transformDbDataToVideoFormat(result.data)
           
         } else {
@@ -129,18 +149,26 @@ export default class VideoPlayer extends Component {
           console.log(`⚠️ DB에서 "${this.keyword}" 영상 없음, 백엔드 폴백 데이터 받음: ${result.data.length}개`)
           console.log('🔄 프론트엔드에서 더 적절한 폴백 데이터로 교체')
           
-          // 백엔드 폴백 대신 키워드 관련 폴백 사용
-          this.videos = this.generateKeywordRelatedFallback()
+          // 🔥 Trending 영상으로 폴백 교체
+          this.videos = await this.generateTrendingFallback()
         }
         
       } else {
-        console.warn(`⚠️ 키워드 "${this.keyword}" 영상 조회 실패 - 프론트엔드 폴백 사용`)
-        this.videos = this.generateKeywordRelatedFallback()
+        console.warn(`⚠️ 키워드 "${this.keyword}" 영상 조회 실패 - Trending 폴백 사용`)
+        
+        // realtime 검색 완료했는데도 데이터가 없는 경우 경고
+        if (this.realtimeCompleted) {
+          console.warn('🚨 realtime 검색 완료 후에도 DB에 데이터 없음!')
+        }
+        
+        // 🔥 Trending 영상으로 폴백
+        this.videos = await this.generateTrendingFallback()
       }
       
     } catch (error) {
       console.error('❌ DB 영상 로드 실패:', error)
-      this.videos = this.generateKeywordRelatedFallback()
+      // 🔥 Trending 영상으로 폴백
+      this.videos = await this.generateTrendingFallback()
       
     } finally {
       this.isLoading = false
@@ -301,7 +329,7 @@ export default class VideoPlayer extends Component {
         { id: 'kJQP7kiw5Fk', title: '일상 브이로그', topic: '일상', channel: '@daily_vlog' },
         { id: 'fJ9rUzIMcZQ', title: '라이프스타일 팁', topic: '라이프스타일', channel: '@lifestyle_tips' },
         { id: 'V-_O7nl0Ii0', title: '엔터테인먼트', topic: '엔터테인먼트', channel: '@entertainment' }
-      ]
+    ]
     }
     
     // 8개 영상 생성 (부족하면 반복)
@@ -474,5 +502,141 @@ export default class VideoPlayer extends Component {
     console.log('🧹 VideoPlayer 정리 완료')
     
     super.destroy?.()
+  }
+
+  /**
+   * 🔥 실제 Trending 영상들로 폴백 데이터 생성
+   * DB의 trend_quality_filtered 영상들을 100개 가져와서 랜덤 섞기
+   */
+  async generateTrendingFallback() {
+    console.log('🔥 Trending API에서 실제 영상들로 폴백 생성 중...')
+    
+    try {
+      const response = await fetch(`https://momentum-production-68bb.up.railway.app/api/v1/videos_db/trending?limit=100`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        
+        if (result.success && result.data && result.data.length > 0) {
+          console.log('✅ Trending 영상 조회 성공:', result.data.length, '개')
+          
+          // 🎲 영상들을 랜덤으로 섞기
+          const shuffledVideos = this.shuffleArray([...result.data])
+          
+          // VideoSwiper 형식으로 변환 (최대 20개)
+          const trendingVideos = shuffledVideos.slice(0, 20).map((video, index) => {
+            return {
+              videoId: video.video_id,
+              creator: video.channel_title || `@${video.channel_id || 'trending'}`,
+              avatar: this.getChannelAvatar(video.channel_title, video.topic_tags),
+              title: video.title || `Trending 영상 #${index + 1}`,
+              desc: `인기 급상승 중인 트렌딩 영상입니다. ${this.keyword !== '추천 영상' ? `${this.keyword} 관련 콘텐츠를 찾지 못해 대신 추천드려요.` : ''}`,
+              tags: this.formatTrendingTags(video),
+              likes: video.like_count || Math.floor(Math.random() * 50000) + 1000,
+              comments: video.comment_count || Math.floor(Math.random() * 3000) + 100,
+              dislikes: Math.floor((video.like_count || 1000) * 0.05),
+              followers: video.channel_subscriber_count || Math.floor(Math.random() * 100000) + 5000,
+              isLiked: false,
+              isDisliked: false,
+              isFollowing: Math.random() > 0.7,
+              isFallback: true,
+              fallbackType: 'trending_videos',  // 트렌딩 영상 폴백
+              // DB 추가 정보
+              qualityScore: video.quality_score || 0.8,
+              trendingScore: video.trending_score || 0.9,
+              cacheSource: video.cache_source || 'trending_db'
+            }
+          })
+          
+          console.log('🎉 Trending 영상 폴백 생성 완료:', trendingVideos.length, '개')
+          return trendingVideos
+        }
+      }
+      
+      console.warn('⚠️ Trending API 호출 실패, 하드코딩된 폴백 사용')
+      
+    } catch (error) {
+      console.error('❌ Trending API 호출 오류:', error)
+    }
+    
+    // 🔄 API 실패 시 기존 하드코딩된 폴백 사용
+    return this.generateHardcodedFallback()
+  }
+
+  /**
+   * 🎲 배열 랜덤 섞기 (Fisher-Yates 알고리즘)
+   */
+  shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]]
+    }
+    return array
+  }
+
+  /**
+   * 🏷️ 트렌딩 영상용 태그 포맷팅
+   */
+  formatTrendingTags(video) {
+    const tags = ['#트렌딩', '#인기급상승']
+    
+    // 키워드 태그 추가
+    if (this.keyword && this.keyword !== '추천 영상') {
+      tags.push(`#${this.keyword}추천`)
+    }
+    
+    // topic_tags 추가
+    if (video.topic_tags && Array.isArray(video.topic_tags)) {
+      video.topic_tags.slice(0, 3).forEach(tag => tags.push(`#${tag}`))
+    }
+    
+    // mood_tags 추가  
+    if (video.mood_tags && Array.isArray(video.mood_tags)) {
+      video.mood_tags.slice(0, 2).forEach(tag => tags.push(`#${tag}`))
+    }
+    
+    return tags.slice(0, 6) // 최대 6개 태그
+  }
+
+  /**
+   * 🔄 하드코딩된 폴백 영상 생성 (API 실패 시 최후 수단)
+   */
+  generateHardcodedFallback() {
+    console.log(`🔄 하드코딩된 폴백 영상 생성: ${this.keyword} (최후 수단)`)
+    
+    // 기존 하드코딩된 폴백 로직 유지 (최후 수단용)
+    const fallbackVideos = [
+      { id: 'dQw4w9WgXcQ', title: '인기 뮤직 영상', topic: '음악', channel: '@popular_music' },
+      { id: 'kJQP7kiw5Fk', title: '일상 브이로그', topic: '일상', channel: '@daily_vlog' },
+      { id: 'fJ9rUzIMcZQ', title: '라이프스타일 팁', topic: '라이프스타일', channel: '@lifestyle_tips' },
+      { id: 'V-_O7nl0Ii0', title: '엔터테인먼트', topic: '엔터테인먼트', channel: '@entertainment' }
+    ]
+    
+    return Array.from({ length: 8 }, (_, i) => {
+      const video = fallbackVideos[i % fallbackVideos.length]
+      
+      return {
+        videoId: video.id,
+        creator: video.channel,
+        avatar: this.getChannelAvatar(video.channel, [video.topic]),
+        title: `${video.title} | ${this.keyword}`,
+        desc: `${this.keyword}과 관련된 ${video.topic} 콘텐츠입니다.`,
+        tags: [`#${this.keyword}`, `#${video.topic}`, '#쇼츠', '#추천'],
+        likes: Math.floor(Math.random() * 100000) + 5000,
+        comments: Math.floor(Math.random() * 8000) + 500,
+        dislikes: Math.floor(Math.random() * 500) + 20,
+        followers: Math.floor(Math.random() * 500000) + 10000,
+        isLiked: false,
+        isDisliked: false,
+        isFollowing: Math.random() > 0.6,
+        isFallback: true,
+        fallbackType: 'hardcoded_emergency'  // 긴급 하드코딩 폴백
+      }
+    })
   }
 } 
