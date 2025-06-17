@@ -639,10 +639,10 @@ export default class AuthFlow extends Component {
       
       if (result.success) {
         // 성공 시 홈으로 이동
-        if (window.app) {
-          window.app.goToHome()
-        } else {
-          window.location.hash = '#/home'
+      if (window.app) {
+        window.app.goToHome()
+      } else {
+        window.location.hash = '#/home'
         }
       } else {
         // 에러 처리

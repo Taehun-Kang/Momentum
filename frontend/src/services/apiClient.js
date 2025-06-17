@@ -1,13 +1,11 @@
 // API 호출을 위한 기본 클라이언트
 class ApiClient {
   constructor() {
-    // 🔧 임시 수정: 개발 중이므로 localhost로 강제 설정
-    this.baseURL = 'http://localhost:3002'
+    // 🚀 Railway 배포 환경 사용
+    this.baseURL = 'https://momentum-production-68bb.up.railway.app'
     
-    // 원래 코드 (나중에 복원 필요):
-    // this.baseURL = process.env.NODE_ENV === 'production' 
-    //   ? 'https://your-railway-domain.com' 
-    //   : 'http://localhost:3002'
+    // 개발 시 로컬 사용 (필요시):
+    // this.baseURL = 'http://localhost:3002'
     
     this.defaultHeaders = {
       'Content-Type': 'application/json',

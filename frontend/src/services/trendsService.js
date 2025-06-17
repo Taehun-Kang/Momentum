@@ -200,8 +200,6 @@ class TrendsService {
         rank: index + 1,
         score: Math.round(qualityScore),
         category: category,
-        trend: qualityScore > 70 ? 'up' : qualityScore > 50 ? 'stable' : 'down',
-        change: (Math.random() - 0.5) * 10, // -5 ~ +5 사이 랜덤 변화량
         updatedAt: item.created_at || new Date().toISOString(),
         // 추가 정보
         trendStatus: item.trend_status,

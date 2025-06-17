@@ -853,4 +853,110 @@ router.post('/ultra-fast', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/v1/search/videos/:keyword
+ * 🎬 키워드별 저장된 영상 조회 (video_cache_extended DB에서)
+ * ChatFlow → VideoPlayer 연동용
+ */
+router.get('/videos/:keyword', async (req, res) => {
+  try {
+    const { keyword } = req.params;
+    const { limit = 20, topic_tags, mood_tags } = req.query;
+
+    if (!keyword) {
+      return res.status(400).json({
+        success: false,
+        error: 'keyword 파라미터가 필요합니다',
+        example: '/api/v1/search/videos/댄스?limit=20'
+      });
+    }
+
+    console.log(`🎬 키워드별 영상 조회 API: "${keyword}" (limit: ${limit})`);
+
+    // videoService의 getPlayableQualityShorts 함수 사용
+    const { getPlayableQualityShorts } = await import('../services/database/videoService.js');
+
+    // 조회 옵션 구성
+    const searchOptions = {
+      search_keyword: keyword,
+      limit: parseInt(limit) || 20
+    };
+
+    // topic_tags가 있으면 추가
+    if (topic_tags) {
+      const topicTagsArray = Array.isArray(topic_tags) ? topic_tags : topic_tags.split(',').map(tag => tag.trim());
+      searchOptions.topic_tags = topicTagsArray;
+    }
+
+    // mood_tags가 있으면 추가
+    if (mood_tags) {
+      const moodTagsArray = Array.isArray(mood_tags) ? mood_tags : mood_tags.split(',').map(tag => tag.trim());
+      searchOptions.mood_tags = moodTagsArray;
+    }
+
+    // DB에서 영상 조회
+    const startTime = Date.now();
+    const result = await getPlayableQualityShorts(searchOptions);
+    const queryTime = Date.now() - startTime;
+
+    if (result.success && result.data && result.data.length > 0) {
+      console.log(`✅ 키워드 "${keyword}" 영상 조회 성공: ${result.data.length}개 영상, ${queryTime}ms`);
+
+      res.json({
+        success: true,
+        message: `키워드 "${keyword}" 영상 조회 완료`,
+        keyword: keyword,
+        data: result.data,
+        meta: {
+          total_count: result.data.length,
+          requested_limit: parseInt(limit),
+          has_more: result.data.length === parseInt(limit),
+          filters: {
+            search_keyword: keyword,
+            topic_tags: searchOptions.topic_tags || null,
+            mood_tags: searchOptions.mood_tags || null
+          },
+          query_time_ms: queryTime
+        },
+        source: 'video_cache_extended',
+        timestamp: new Date().toISOString()
+      });
+
+    } else {
+      console.log(`⚠️ 키워드 "${keyword}" 영상 없음 - 대안 제안`);
+
+      // 대안: 비슷한 키워드나 인기 영상 제안
+      const alternativeOptions = { limit: parseInt(limit) };
+      const alternativeResult = await getPlayableQualityShorts(alternativeOptions);
+
+      res.json({
+        success: true,
+        message: `키워드 "${keyword}" 영상이 없어 인기 영상을 제공합니다`,
+        keyword: keyword,
+        data: alternativeResult.data || [],
+        meta: {
+          total_count: alternativeResult.data?.length || 0,
+          is_fallback: true,
+          fallback_reason: 'no_videos_for_keyword',
+          original_keyword: keyword,
+          query_time_ms: queryTime
+        },
+        source: 'video_cache_extended_fallback',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+  } catch (error) {
+    console.error(`❌ 키워드별 영상 조회 실패:`, error);
+    
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      keyword: req.params.keyword,
+      source: 'video_cache_extended',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 export default router; 

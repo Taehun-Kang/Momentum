@@ -243,10 +243,10 @@ export default class Login extends Component {
       if (result.success) {
         console.log('🎉 === 로그인 성공 처리 시작 ===')
         console.log('👤 로그인된 사용자:', result.user)
-        
+      
         // 성공 시 홈으로 이동
         console.log('🏠 홈 페이지로 리다이렉트...')
-        window.location.href = '#/'
+      window.location.href = '#/'
       } else {
         console.log('💥 === 로그인 실패 처리 시작 ===')
         console.log('❌ 에러 메시지:', result.error)

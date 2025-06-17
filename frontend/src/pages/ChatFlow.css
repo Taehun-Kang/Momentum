@@ -107,6 +107,123 @@
 /* ChatFlow에서도 card--selected 시각적 효과 제거 */
 
 /* ========================================
+   🧠 LLM 분석 로딩 상태
+======================================== */
+
+.llm-analyzing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.analyzing-spinner {
+  margin-bottom: 32px;
+}
+
+.analyzing-spinner .spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(154, 120, 219, 0.2);
+  border-top: 3px solid rgba(154, 120, 219, 0.8);
+  border-radius: 50%;
+  animation: llm-spin 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+  position: relative;
+}
+
+.analyzing-spinner .spinner::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  border: 2px solid transparent;
+  border-top: 2px solid rgba(196, 181, 253, 0.6);
+  border-radius: 50%;
+  animation: llm-spin-reverse 0.8s ease-in-out infinite;
+}
+
+@keyframes llm-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes llm-spin-reverse {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+.analyzing-text h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.analyzing-text p {
+  font-size: 0.95rem;
+  color: var(--text-secondary, #666);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ========================================
+   🏷️ 추천 카테고리
+======================================== */
+
+.recommended-categories {
+  margin-top: 24px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.categories-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary, #666);
+  margin-bottom: 12px;
+  letter-spacing: 0.5px;
+}
+
+.categories-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.category-tag {
+  display: inline-block;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, rgba(154, 120, 219, 0.1), rgba(196, 181, 253, 0.1));
+  border: 1px solid rgba(154, 120, 219, 0.2);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--primary-color, #9a78db);
+  transition: all 0.2s ease;
+}
+
+.category-tag:hover {
+  background: linear-gradient(135deg, rgba(154, 120, 219, 0.15), rgba(196, 181, 253, 0.15));
+  border-color: rgba(154, 120, 219, 0.3);
+  transform: translateY(-1px);
+}
+
+/* ========================================
    입력창 영역 (하단 Fixed)
 ======================================== */
 
@@ -159,6 +276,42 @@
   .chat-flow-page:has(.chat-flow-input[style*="display: block"]) .chat-flow-content {
     padding-bottom: calc(190px + env(safe-area-inset-bottom, 0px)); /* 100px(navbar) + 90px(input) */
   }
+  
+  /* LLM 분석 반응형 */
+  .llm-analyzing {
+    min-height: 350px;
+    padding: 30px 16px;
+  }
+  
+  .analyzing-spinner .spinner {
+    width: 42px;
+    height: 42px;
+  }
+  
+  .analyzing-text h3 {
+    font-size: 1.15rem;
+  }
+  
+  .analyzing-text p {
+    font-size: 0.9rem;
+  }
+  
+  /* 추천 카테고리 반응형 */
+  .recommended-categories {
+    margin-top: 20px;
+    padding: 16px;
+    border-radius: 14px;
+  }
+  
+  .categories-title {
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+  }
+  
+  .category-tag {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+  }
 }
 
 /* iPhone 12/13 mini (375px) 이하 */
@@ -185,6 +338,33 @@
   .chat-flow-page:has(.chat-flow-input[style*="display: block"]) .chat-flow-content {
     padding-bottom: calc(180px + env(safe-area-inset-bottom, 0px)); /* 96px(navbar) + 84px(input) */
   }
+  
+  /* LLM 분석 반응형 */
+  .llm-analyzing {
+    min-height: 320px;
+    padding: 24px 14px;
+  }
+  
+  .analyzing-spinner .spinner {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .analyzing-text h3 {
+    font-size: 1.1rem;
+  }
+  
+  /* 추천 카테고리 반응형 */
+  .recommended-categories {
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 12px;
+  }
+  
+  .category-tag {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
 }
 
 /* iPhone SE (320px) 이하 */
@@ -207,6 +387,40 @@
     padding: 10px 16px;
     padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   }
+  
+  /* LLM 분석 반응형 */
+  .llm-analyzing {
+    min-height: 300px;
+    padding: 20px 12px;
+  }
+  
+  .analyzing-spinner .spinner {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .analyzing-text h3 {
+    font-size: 1rem;
+  }
+  
+  .analyzing-text p {
+    font-size: 0.85rem;
+  }
+  
+  /* 추천 카테고리 반응형 */
+  .recommended-categories {
+    margin-top: 14px;
+    padding: 12px;
+  }
+  
+  .categories-tags {
+    gap: 6px;
+  }
+  
+  .category-tag {
+    padding: 3px 6px;
+    font-size: 0.7rem;
+  }
 }
 
 /* ========================================
@@ -228,6 +442,27 @@
     grid-template-columns: 1fr 1fr;
     gap: 16px;
   }
+  
+  /* LLM 분석 가로 모드 */
+  .llm-analyzing {
+    min-height: 250px;
+    padding: 20px;
+  }
+  
+  .analyzing-spinner {
+    margin-bottom: 20px;
+  }
+  
+  .analyzing-spinner .spinner {
+    width: 36px;
+    height: 36px;
+  }
+  
+  /* 추천 카테고리 가로 모드 */
+  .recommended-categories {
+    margin-top: 16px;
+    padding: 12px 16px;
+  }
 }
 
 /* ========================================
@@ -243,6 +478,45 @@
       rgba(0, 0, 0, 0.9) 100%
     );
   }
+  
+  /* LLM 분석 다크모드 */
+  .analyzing-spinner .spinner {
+    border-color: rgba(154, 120, 219, 0.15);
+    border-top-color: rgba(154, 120, 219, 0.6);
+  }
+  
+  .analyzing-spinner .spinner::after {
+    border-top-color: rgba(196, 181, 253, 0.4);
+  }
+  
+  .analyzing-text h3 {
+    color: rgba(255, 255, 255, 0.9);
+  }
+  
+  .analyzing-text p {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  /* 추천 카테고리 다크모드 */
+  .recommended-categories {
+    background: rgba(28, 28, 30, 0.6);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .categories-title {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  .category-tag {
+    background: linear-gradient(135deg, rgba(154, 120, 219, 0.15), rgba(196, 181, 253, 0.1));
+    border-color: rgba(154, 120, 219, 0.3);
+    color: rgba(196, 181, 253, 0.9);
+  }
+  
+  .category-tag:hover {
+    background: linear-gradient(135deg, rgba(154, 120, 219, 0.25), rgba(196, 181, 253, 0.15));
+    border-color: rgba(154, 120, 219, 0.4);
+  }
 }
 
 [data-theme="dark"] .chat-flow-page {
@@ -256,6 +530,43 @@
 [data-theme="dark"] .chat-flow-input {
   background: transparent; /* 다크모드에서도 투명 배경 */
   /* border 제거 */
+}
+
+[data-theme="dark"] .analyzing-spinner .spinner {
+  border-color: rgba(154, 120, 219, 0.15);
+  border-top-color: rgba(154, 120, 219, 0.6);
+}
+
+[data-theme="dark"] .analyzing-spinner .spinner::after {
+  border-top-color: rgba(196, 181, 253, 0.4);
+}
+
+[data-theme="dark"] .analyzing-text h3 {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .analyzing-text p {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="dark"] .recommended-categories {
+  background: rgba(28, 28, 30, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .categories-title {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="dark"] .category-tag {
+  background: linear-gradient(135deg, rgba(154, 120, 219, 0.15), rgba(196, 181, 253, 0.1));
+  border-color: rgba(154, 120, 219, 0.3);
+  color: rgba(196, 181, 253, 0.9);
+}
+
+[data-theme="dark"] .category-tag:hover {
+  background: linear-gradient(135deg, rgba(154, 120, 219, 0.25), rgba(196, 181, 253, 0.15));
+  border-color: rgba(154, 120, 219, 0.4);
 }
 
 /* ========================================
@@ -299,6 +610,20 @@
     opacity: 1;
     transform: none;
   }
+  
+  /* LLM 스피너 애니메이션 제거 */
+  .analyzing-spinner .spinner,
+  .analyzing-spinner .spinner::after {
+    animation: none;
+  }
+  
+  .category-tag {
+    transition: none;
+  }
+  
+  .category-tag:hover {
+    transform: none;
+  }
 }
 
 /* 고대비 모드 대응 */
@@ -312,6 +637,17 @@
     background: transparent; /* 다크 고대비 모드에서도 투명 */
     /* border 제거 */
   }
+  
+  /* LLM 요소들 고대비 대응 */
+  .analyzing-spinner .spinner {
+    border-width: 4px;
+    border-top-color: var(--primary-color, #9a78db);
+  }
+  
+  .category-tag {
+    border-width: 2px;
+    font-weight: 600;
+  }
 }
 
 /* ========================================
@@ -322,5 +658,14 @@
   .chat-flow-content {
     /* 터치 디바이스에서 여백 최적화 */
     padding-top: 0;
+  }
+  
+  /* 터치 타겟 크기 최적화 */
+  .category-tag {
+    min-height: 32px;
+    padding: 8px 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 } 

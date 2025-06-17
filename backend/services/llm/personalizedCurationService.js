@@ -594,14 +594,14 @@ class PersonalizedCurationService {
     console.log(`📊 클릭 처리 결과:`, clickResults);
 
     // 클릭 통계 업데이트
-    this.stats.curationClicks++;
+      this.stats.curationClicks++;
 
-    return {
-      success: true,
+      return {
+        success: true,
       clickTime: endTime - startTime,
       clickResults,
       message: '감성 문장 클릭이 성공적으로 처리되었습니다'
-    };
+      };
   }
 
   /**

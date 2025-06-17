@@ -77,6 +77,7 @@ export default class Home extends Component {
     this.mountComponent('header-container', this.header)
 
     // 2. TrendingKeywords 컴포넌트 (위로 이동)
+    console.log('🔧 TrendingKeywords 컴포넌트 생성 시작...')
     this.trendingKeywords = new TrendingKeywords({
       keywords: [
         { rank: 1, keyword: '뉴진스 신곡' },
@@ -103,6 +104,7 @@ export default class Home extends Component {
       showMoreButton: false,   // MVP: 전체보기 버튼 비활성화
       showVideoButton: true    // 영상 모아보기 버튼은 유지
     })
+    console.log('✅ TrendingKeywords 컴포넌트 생성 완료:', !!this.trendingKeywords)
     this.mountComponent('trending-container', this.trendingKeywords)
 
     // 3. TimeBasedKeywords 컴포넌트

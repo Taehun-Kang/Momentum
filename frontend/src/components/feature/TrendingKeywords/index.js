@@ -31,8 +31,6 @@ export default class TrendingKeywords extends Component {
     this.hotAnimationTimer = null
     this.currentHotIndex = 0
     this.isDestroyed = false
-    this.isLoading = true
-    this.hasError = false
 
     this.render()
     this.loadTrendingKeywords() // 🔥 실제 데이터 로드
@@ -40,11 +38,9 @@ export default class TrendingKeywords extends Component {
 
   // 🔥 실제 트렌딩 키워드 데이터 로드
   async loadTrendingKeywords() {
+    console.log('🚀 TrendingKeywords.loadTrendingKeywords() 호출됨!')
+    
     try {
-      this.isLoading = true
-      this.hasError = false
-      this.updateLoadingState()
-
       // 🎯 새로운 키워드 분석 API에서 6개 조회 (이미 순서 뒤집혀서 전달됨)
       const result = await trendsService.getTrendingKeywords(6)
       
@@ -55,20 +51,16 @@ export default class TrendingKeywords extends Component {
           rank: index + 1,
           keyword: item.keyword,
           score: item.score,
-          trend: item.trend,
           category: item.category,
-          change: item.change || 0,
           // 추가 정보
           trendStatus: item.trendStatus,
           newsContext: item.newsContext
         }))
 
         this.props.keywords = trendingKeywords
-        this.isLoading = false
-        this.hasError = false
         
         // UI 업데이트
-        this.updateContent()
+        this.populateKeywords()
         
         console.log('🔥 트렌딩 키워드 로드 완료:', trendingKeywords.length, '개')
         console.log('🥇 1위 키워드:', trendingKeywords[0]?.keyword)
@@ -84,14 +76,11 @@ export default class TrendingKeywords extends Component {
       }
 
     } catch (error) {
-      console.error('트렌딩 키워드 로드 실패:', error.message)
-      
-      this.isLoading = false
-      this.hasError = true
+      console.error('❌ TrendingKeywords 로드 실패:', error.message)
       
       // 폴백 데이터 사용
       this.props.keywords = this.getFallbackKeywords()
-      this.updateContent()
+      this.populateKeywords()
       
       console.log('🛡️ 폴백 키워드 사용 중')
     }
@@ -100,12 +89,12 @@ export default class TrendingKeywords extends Component {
   // 🛡️ 폴백 키워드 데이터
   getFallbackKeywords() {
     return [
-      { rank: 1, keyword: '먹방', score: 85, trend: 'up', category: '엔터테인먼트' },
-      { rank: 2, keyword: '브이로그', score: 78, trend: 'up', category: '라이프스타일' },
-      { rank: 3, keyword: '챌린지', score: 72, trend: 'stable', category: '엔터테인먼트' },
-      { rank: 4, keyword: 'ASMR', score: 69, trend: 'up', category: '힐링' },
-      { rank: 5, keyword: '운동', score: 65, trend: 'stable', category: '건강' },
-      { rank: 6, keyword: '요리', score: 62, trend: 'down', category: '라이프스타일' }
+      { rank: 1, keyword: '먹방', score: 85, category: '엔터테인먼트' },
+      { rank: 2, keyword: '브이로그', score: 78, category: '라이프스타일' },
+      { rank: 3, keyword: '챌린지', score: 72, category: '엔터테인먼트' },
+      { rank: 4, keyword: 'ASMR', score: 69, category: '힐링' },
+      { rank: 5, keyword: '운동', score: 65, category: '건강' },
+      { rank: 6, keyword: '요리', score: 62, category: '라이프스타일' }
     ]
   }
 
@@ -122,7 +111,7 @@ export default class TrendingKeywords extends Component {
         `}
       </div>
       <div class="trending-keywords-grid" id="trending-grid">
-        <!-- 로딩/에러/콘텐츠 영역 -->
+        <!-- 키워드 그리드 영역 -->
       </div>
       ${this.props.showVideoButton ? `
         <div class="trending-video-action">
@@ -135,48 +124,6 @@ export default class TrendingKeywords extends Component {
 
     this.bindEvents()
     return this
-  }
-
-  // 🔄 로딩 상태 업데이트
-  updateLoadingState() {
-    const grid = this.el.querySelector('#trending-grid')
-    if (!grid) return
-
-    if (this.isLoading) {
-      grid.innerHTML = /* html */ `
-        <div class="trending-loading">
-          <div class="loading-spinner"></div>
-          <div class="loading-text">실시간 트렌드 로딩 중...</div>
-        </div>
-      `
-    } else if (this.hasError) {
-      grid.innerHTML = /* html */ `
-        <div class="trending-error">
-          <div class="error-icon">⚠️</div>
-          <div class="error-text">트렌드 데이터를 불러올 수 없습니다</div>
-          <button class="retry-btn" onclick="this.parentElement.parentElement.parentElement.__component?.loadTrendingKeywords()">다시 시도</button>
-        </div>
-      `
-    }
-  }
-
-  // 🎨 콘텐츠 업데이트
-  updateContent() {
-    const grid = this.el.querySelector('#trending-grid')
-    if (!grid) return
-
-    if (this.isLoading) {
-      this.updateLoadingState()
-      return
-    }
-
-    if (this.hasError) {
-      this.updateLoadingState()
-      return
-    }
-
-    // 실제 키워드 렌더링
-    this.populateKeywords()
   }
 
   populateKeywords() {
@@ -198,7 +145,6 @@ export default class TrendingKeywords extends Component {
         keywordBtn.innerHTML = /* html */ `
           ${this.props.showRanking ? `<div class="grid-rank">#${item.rank}</div>` : ''}
           <div class="grid-keyword">${item.keyword}</div>
-          ${item.trend ? `<div class="grid-trend ${item.trend}"></div>` : ''}
         `
 
         grid.appendChild(keywordBtn)
