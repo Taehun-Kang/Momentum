@@ -212,8 +212,28 @@ router.get('/analysis-results', async (req, res) => {
 });
 
 // ============================================================================
-// 🎯 실시간 키워드 분석 관리 (3개 엔드포인트) ✅ 모두 구현됨
+// 🎯 실시간 키워드 분석 관리 (4개 엔드포인트) ✅ 모두 구현됨
 // ============================================================================
+
+/**
+ * GET /api/trend_db/keyword-analysis
+ * 전체 키워드 분석 조회 (새로 추가)
+ */
+router.get('/keyword-analysis', async (req, res) => {
+  try {
+    const options = {
+      limit: parseInt(req.query.limit) || 50,
+      includeExpired: req.query.includeExpired === 'true',
+      minQualityScore: parseFloat(req.query.minQualityScore) || 0.0,
+      hoursBack: parseInt(req.query.hoursBack) || 168, // 기본 7일
+      orderBy: req.query.orderBy || 'analysis_timestamp'
+    };
+    const result = await trendService.getAllKeywordAnalyses(options);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 /**
  * POST /api/trend_db/keyword-analysis
@@ -236,8 +256,8 @@ router.get('/keyword-analysis/:keyword', async (req, res) => {
   try {
     const { keyword } = req.params;
     const options = {
-      limit: parseInt(req.query.limit) || 10,
-      daysBack: parseInt(req.query.daysBack) || 7
+      limit: parseInt(req.query.limit) || 20,
+      daysBack: parseInt(req.query.daysBack) || 14
     };
     const result = await trendService.getKeywordAnalysis(keyword, options);
     res.json(result);

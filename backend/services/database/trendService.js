@@ -591,6 +591,49 @@ export async function getTrendAnalysisResults(options = {}) {
 // ============================================================================
 
 /**
+ * 전체 키워드 분석 조회 (새로 추가)
+ * @param {Object} options - 조회 옵션
+ * @returns {Promise<Object>} 전체 키워드 분석 결과
+ */
+export async function getAllKeywordAnalyses(options = {}) {
+  try {
+    const {
+      limit = 50,
+      includeExpired = false,
+      minQualityScore = 0.0,
+      hoursBack = 168, // 기본 7일
+      orderBy = 'analysis_timestamp'
+    } = options;
+
+    let query = supabase
+      .from('trends_keyword_analysis')
+      .select('*')
+      .gte('analysis_quality_score', minQualityScore)
+      .gte('analysis_timestamp', new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString())
+      .order(orderBy, { ascending: false })
+      .limit(limit);
+
+    if (!includeExpired) {
+      query = query.gt('expires_at', new Date().toISOString());
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('전체 키워드 분석 조회 실패:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`✅ 전체 키워드 분석 조회 성공: ${data.length}개`);
+    return { success: true, data, count: data.length };
+
+  } catch (error) {
+    console.error('전체 키워드 분석 조회 중 오류:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * 실시간 키워드 분석 저장
  * @param {Object} analysisData - 키워드 분석 데이터
  * @returns {Promise<Object>} 저장 결과
@@ -965,6 +1008,7 @@ export default {
   getTrendAnalysisResults,
   
   // 실시간 키워드 분석 관리
+  getAllKeywordAnalyses,
   createKeywordAnalysis,
   getKeywordAnalysis,
   getHighQualityKeywordAnalyses,
