@@ -1,0 +1,226 @@
+/* LoadingSpinner.css - 유니크한 클래스명으로 CSS 충돌 방지 */
+
+/* 전체 화면 오버레이 */
+.unique-loading-spinner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: unique-spinner-fade-in 0.3s ease-out;
+}
+
+/* 다크모드 지원 */
+@media (prefers-color-scheme: dark) {
+  .unique-loading-spinner-overlay {
+    background: rgba(0, 0, 0, 0.85);
+  }
+}
+
+/* 페이드인 애니메이션 */
+@keyframes unique-spinner-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 중앙 컨테이너 */
+.unique-loading-spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 20px;
+  padding: 40px 60px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: unique-spinner-scale-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  min-width: 200px;
+}
+
+/* 다크모드 컨테이너 */
+@media (prefers-color-scheme: dark) {
+  .unique-loading-spinner-container {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* 스케일인 애니메이션 */
+@keyframes unique-spinner-scale-in {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 원형 스피너 */
+.unique-loading-spinner-wheel {
+  width: 60px;
+  height: 60px;
+  border: 4px solid transparent;
+  border-top: 4px solid #1a73e8;
+  border-right: 4px solid #34a853;
+  border-radius: 50%;
+  animation: unique-spinner-rotate 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+/* 내부 원 */
+.unique-loading-spinner-wheel::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 30px;
+  height: 30px;
+  border: 2px solid transparent;
+  border-bottom: 2px solid #ea4335;
+  border-left: 2px solid #fbbc04;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: unique-spinner-rotate-reverse 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* 회전 애니메이션 */
+@keyframes unique-spinner-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 역방향 회전 애니메이션 */
+@keyframes unique-spinner-rotate-reverse {
+  from {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+}
+
+/* 텍스트 스타일 */
+.unique-loading-spinner-text {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #202124;
+  text-align: center;
+  margin: 0;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+  animation: unique-spinner-text-pulse 2s ease-in-out infinite;
+}
+
+/* 다크모드 텍스트 */
+@media (prefers-color-scheme: dark) {
+  .unique-loading-spinner-text {
+    color: #e8eaed;
+  }
+}
+
+/* 텍스트 펄스 애니메이션 */
+@keyframes unique-spinner-text-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .unique-loading-spinner-container {
+    padding: 30px 40px;
+    border-radius: 16px;
+    min-width: 160px;
+  }
+  
+  .unique-loading-spinner-wheel {
+    width: 50px;
+    height: 50px;
+    border-width: 3px;
+    margin-bottom: 16px;
+  }
+  
+  .unique-loading-spinner-wheel::before {
+    width: 25px;
+    height: 25px;
+    border-width: 2px;
+  }
+  
+  .unique-loading-spinner-text {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .unique-loading-spinner-container {
+    padding: 24px 32px;
+    border-radius: 12px;
+    min-width: 140px;
+  }
+  
+  .unique-loading-spinner-wheel {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 12px;
+  }
+  
+  .unique-loading-spinner-wheel::before {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .unique-loading-spinner-text {
+    font-size: 13px;
+  }
+}
+
+/* 접근성 개선 */
+@media (prefers-reduced-motion: reduce) {
+  .unique-loading-spinner-wheel,
+  .unique-loading-spinner-wheel::before {
+    animation-duration: 3s;
+  }
+  
+  .unique-spinner-fade-in,
+  .unique-spinner-scale-in,
+  .unique-spinner-text-pulse {
+    animation: none;
+  }
+}
+
+/* 포커스 상태 (스크린 리더용) */
+.unique-loading-spinner-overlay:focus {
+  outline: 2px solid #1a73e8;
+  outline-offset: 4px;
+}
+ 
