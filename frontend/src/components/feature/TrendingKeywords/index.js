@@ -3,18 +3,12 @@
  */
 
 import { Component } from '../../../core/Component.js'
+import { trendsService } from '../../../services/trendsService.js'
 import './TrendingKeywords.css'
 
 export default class TrendingKeywords extends Component {
   static defaultProps = {
-    keywords: [
-      { rank: 1, keyword: '뉴진스 신곡' },
-      { rank: 2, keyword: '일본 벚꽃 명소' },
-      { rank: 3, keyword: '홈카페 레시피' },
-      { rank: 4, keyword: '봄 패션 코디' },
-      { rank: 5, keyword: '운동 루틴' },
-      { rank: 6, keyword: '힐링 ASMR' }
-    ],
+    keywords: [], // 실제 API 데이터로 채워질 예정
     onKeywordClick: () => {},
     onMoreClick: () => {},
     onViewAllVideos: () => {},
@@ -37,8 +31,82 @@ export default class TrendingKeywords extends Component {
     this.hotAnimationTimer = null
     this.currentHotIndex = 0
     this.isDestroyed = false
+    this.isLoading = true
+    this.hasError = false
 
     this.render()
+    this.loadTrendingKeywords() // 🔥 실제 데이터 로드
+  }
+
+  // 🔥 실제 트렌딩 키워드 데이터 로드
+  async loadTrendingKeywords() {
+    try {
+      this.isLoading = true
+      this.hasError = false
+      this.updateLoadingState()
+
+      // 🎯 새로운 키워드 분석 API에서 6개 조회 (이미 순서 뒤집혀서 전달됨)
+      const result = await trendsService.getTrendingKeywords(6)
+      
+      if (result.success && result.keywords && result.keywords.length > 0) {
+        // 이미 서비스에서 순서가 뒤집혀 있고 6개로 제한되어 있음
+        // 첫시 승리가 1위, 발로란트 토론토가 마지막으로 정렬된 상태
+        const trendingKeywords = result.keywords.map((item, index) => ({
+          rank: index + 1,
+          keyword: item.keyword,
+          score: item.score,
+          trend: item.trend,
+          category: item.category,
+          change: item.change || 0,
+          // 추가 정보
+          trendStatus: item.trendStatus,
+          newsContext: item.newsContext
+        }))
+
+        this.props.keywords = trendingKeywords
+        this.isLoading = false
+        this.hasError = false
+        
+        // UI 업데이트
+        this.updateContent()
+        
+        console.log('🔥 트렌딩 키워드 로드 완료:', trendingKeywords.length, '개')
+        console.log('🥇 1위 키워드:', trendingKeywords[0]?.keyword)
+        console.log('🥉 마지막 키워드:', trendingKeywords[trendingKeywords.length - 1]?.keyword)
+        
+        // 폴백 사용 시 알림
+        if (result.fallback) {
+          console.log('ℹ️ 폴백 API 사용 중 (메인 API 일시 오류)')
+        }
+        
+      } else {
+        throw new Error(result.error || '트렌딩 키워드를 불러올 수 없습니다')
+      }
+
+    } catch (error) {
+      console.error('트렌딩 키워드 로드 실패:', error.message)
+      
+      this.isLoading = false
+      this.hasError = true
+      
+      // 폴백 데이터 사용
+      this.props.keywords = this.getFallbackKeywords()
+      this.updateContent()
+      
+      console.log('🛡️ 폴백 키워드 사용 중')
+    }
+  }
+
+  // 🛡️ 폴백 키워드 데이터
+  getFallbackKeywords() {
+    return [
+      { rank: 1, keyword: '먹방', score: 85, trend: 'up', category: '엔터테인먼트' },
+      { rank: 2, keyword: '브이로그', score: 78, trend: 'up', category: '라이프스타일' },
+      { rank: 3, keyword: '챌린지', score: 72, trend: 'stable', category: '엔터테인먼트' },
+      { rank: 4, keyword: 'ASMR', score: 69, trend: 'up', category: '힐링' },
+      { rank: 5, keyword: '운동', score: 65, trend: 'stable', category: '건강' },
+      { rank: 6, keyword: '요리', score: 62, trend: 'down', category: '라이프스타일' }
+    ]
   }
 
   render() {
@@ -53,7 +121,9 @@ export default class TrendingKeywords extends Component {
           <div class="live-indicator">LIVE</div>
         `}
       </div>
-      <div class="trending-keywords-grid" id="trending-grid"></div>
+      <div class="trending-keywords-grid" id="trending-grid">
+        <!-- 로딩/에러/콘텐츠 영역 -->
+      </div>
       ${this.props.showVideoButton ? `
         <div class="trending-video-action">
           <button class="video-action-btn" data-action="videos">
@@ -63,10 +133,50 @@ export default class TrendingKeywords extends Component {
       ` : ''}
     `
 
-    this.populateKeywords()
     this.bindEvents()
-
     return this
+  }
+
+  // 🔄 로딩 상태 업데이트
+  updateLoadingState() {
+    const grid = this.el.querySelector('#trending-grid')
+    if (!grid) return
+
+    if (this.isLoading) {
+      grid.innerHTML = /* html */ `
+        <div class="trending-loading">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">실시간 트렌드 로딩 중...</div>
+        </div>
+      `
+    } else if (this.hasError) {
+      grid.innerHTML = /* html */ `
+        <div class="trending-error">
+          <div class="error-icon">⚠️</div>
+          <div class="error-text">트렌드 데이터를 불러올 수 없습니다</div>
+          <button class="retry-btn" onclick="this.parentElement.parentElement.parentElement.__component?.loadTrendingKeywords()">다시 시도</button>
+        </div>
+      `
+    }
+  }
+
+  // 🎨 콘텐츠 업데이트
+  updateContent() {
+    const grid = this.el.querySelector('#trending-grid')
+    if (!grid) return
+
+    if (this.isLoading) {
+      this.updateLoadingState()
+      return
+    }
+
+    if (this.hasError) {
+      this.updateLoadingState()
+      return
+    }
+
+    // 실제 키워드 렌더링
+    this.populateKeywords()
   }
 
   populateKeywords() {
@@ -88,6 +198,7 @@ export default class TrendingKeywords extends Component {
         keywordBtn.innerHTML = /* html */ `
           ${this.props.showRanking ? `<div class="grid-rank">#${item.rank}</div>` : ''}
           <div class="grid-keyword">${item.keyword}</div>
+          ${item.trend ? `<div class="grid-trend ${item.trend}"></div>` : ''}
         `
 
         grid.appendChild(keywordBtn)
@@ -102,6 +213,9 @@ export default class TrendingKeywords extends Component {
         }
       }, index * 80)
     })
+
+    // 컴포넌트 참조 추가 (에러 상태에서 재시도용)
+    grid.parentElement.__component = this
   }
 
   startHotAnimation() {
@@ -183,8 +297,6 @@ export default class TrendingKeywords extends Component {
       }
     })
   }
-
-
 
   updateKeywords(newKeywords) {
     this.stopHotAnimation()
