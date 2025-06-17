@@ -114,6 +114,14 @@ export default class VideoPlayer extends Component {
    */
   async loadVideoData() {
     try {
+      // 🔥 trending-videos 키워드일 때는 바로 trending API 호출
+      if (this.keyword === 'trending-videos') {
+        console.log(`🔥 "${this.keyword}" 키워드 감지 - 바로 Trending API 호출`)
+        this.videos = await this.generateTrendingFallback()
+        this.isLoading = false
+        return
+      }
+      
       console.log(`🎬 DB에서 "${this.keyword}" 영상 조회 시작`)
       
       // 🔧 realtime 검색 완료 상태에 따른 딜레이 적용
@@ -123,7 +131,7 @@ export default class VideoPlayer extends Component {
       } else {
         console.log('🔍 realtime 검색 상태 불명 - 즉시 DB 조회')
       }
-      
+
       // DB에서 키워드별 영상 조회
       const result = await searchService.getVideosByKeyword(this.keyword, {
         limit: 20  // 충분한 영상 수
