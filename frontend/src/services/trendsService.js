@@ -23,9 +23,9 @@ class TrendsService {
       }
 
       // 🎯 새로 추가한 전체 키워드 분석 API 호출
-      console.log('🌐 API 호출 시작:', `/api/v1/trends_db/keyword-analysis?limit=20&minQualityScore=0.0`)
+      console.log('🌐 API 호출 시작:', `/api/v1/trends_db/keyword-analysis?limit=20&minQualityScore=0.0&includeExpired=true`)
       const response = await apiClient.get(
-        `/api/v1/trends_db/keyword-analysis?limit=20&minQualityScore=0.0`
+        `/api/v1/trends_db/keyword-analysis?limit=20&minQualityScore=0.0&includeExpired=true`
       )
 
       console.log('📥 API 응답 받음:', {
@@ -90,9 +90,9 @@ class TrendsService {
       
       // 폴백: 고품질 키워드 분석 (기존 로직)
       try {
-        console.log('🔄 폴백 API 시도:', `/api/v1/trends_db/keyword-analysis/high-quality?limit=${limit}&minScore=0.5`)
+        console.log('🔄 폴백 API 시도:', `/api/v1/trends_db/keyword-analysis/high-quality?limit=${limit}&minScore=0.5&includeExpired=true`)
         const fallbackResponse = await apiClient.get(
-          `/api/v1/trends_db/keyword-analysis/high-quality?limit=${limit}&minScore=0.5`
+          `/api/v1/trends_db/keyword-analysis/high-quality?limit=${limit}&minScore=0.5&includeExpired=true`
         )
         
         console.log('📥 폴백 응답:', {
