@@ -10,29 +10,59 @@ class TrendsService {
   // 🔥 트렌딩 키워드 조회 (홈페이지용)
   async getTrendingKeywords(limit = 6) {
     try {
+      console.log('🔍 트렌딩 키워드 조회 시작:', { limit })
+      
       // 캐시 확인
       const cacheKey = `trending_keywords_${limit}`
       if (this.cache.has(cacheKey)) {
         const cached = this.cache.get(cacheKey)
         if (Date.now() - cached.timestamp < this.cacheTimeout) {
+          console.log('💾 캐시된 데이터 사용')
           return cached.data
         }
       }
 
       // 🎯 새로 추가한 전체 키워드 분석 API 호출
+      console.log('🌐 API 호출 시작:', `/api/v1/trends_db/keyword-analysis?limit=20&minQualityScore=0.0`)
       const response = await apiClient.get(
         `/api/v1/trends_db/keyword-analysis?limit=20&minQualityScore=0.0`
       )
 
+      console.log('📥 API 응답 받음:', {
+        success: response.success,
+        hasData: !!response.data,
+        dataType: typeof response.data,
+        dataLength: Array.isArray(response.data) ? response.data.length : 'not array',
+        responseKeys: Object.keys(response)
+      })
+
       if (response.success && response.data && response.data.length > 0) {
+        console.log('✅ 응답 데이터 확인됨:', {
+          totalKeywords: response.data.length,
+          firstKeyword: response.data[0]?.keyword,
+          lastKeyword: response.data[response.data.length - 1]?.keyword
+        })
+
         // 🔄 순서 뒤집기: 첼시 승리가 위로, 발로란트 토론토가 아래로
         const reversedData = [...response.data].reverse()
+        console.log('🔄 순서 뒤집기 완료:', {
+          newFirstKeyword: reversedData[0]?.keyword,
+          newLastKeyword: reversedData[reversedData.length - 1]?.keyword
+        })
         
         // 📊 상위 6개만 선택
         const topKeywords = reversedData.slice(0, limit)
+        console.log('📊 상위 키워드 선택:', {
+          selectedCount: topKeywords.length,
+          keywords: topKeywords.map(k => k.keyword)
+        })
         
         // 데이터 가공
         const keywords = this.transformKeywordAnalysisData(topKeywords)
+        console.log('🔧 데이터 변환 완료:', {
+          transformedCount: keywords.length,
+          sampleKeyword: keywords[0]
+        })
         
         // 캐시 저장
         this.cache.set(cacheKey, {
@@ -44,16 +74,31 @@ class TrendsService {
         return { success: true, keywords }
       }
 
+      console.log('❌ 응답 데이터 조건 불만족:', {
+        success: response.success,
+        hasData: !!response.data,
+        dataLength: response.data?.length
+      })
       throw new Error(response.error || '키워드 분석 데이터가 없습니다')
 
     } catch (error) {
-      console.error('트렌딩 키워드 조회 실패:', error.message)
+      console.error('❌ 트렌딩 키워드 조회 실패:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack?.split('\n')[0]
+      })
       
       // 폴백: 고품질 키워드 분석 (기존 로직)
       try {
+        console.log('🔄 폴백 API 시도:', `/api/v1/trends_db/keyword-analysis/high-quality?limit=${limit}&minScore=0.5`)
         const fallbackResponse = await apiClient.get(
           `/api/v1/trends_db/keyword-analysis/high-quality?limit=${limit}&minScore=0.5`
         )
+        
+        console.log('📥 폴백 응답:', {
+          success: fallbackResponse.success,
+          hasData: !!fallbackResponse.data
+        })
         
         if (fallbackResponse.success) {
           const keywords = this.transformKeywordData(fallbackResponse.data.analyses || fallbackResponse.data)
@@ -61,15 +106,16 @@ class TrendsService {
           return { success: true, keywords, fallback: true }
         }
       } catch (fallbackError) {
-        console.error('폴백 API도 실패:', fallbackError.message)
+        console.error('❌ 폴백 API도 실패:', fallbackError.message)
       }
       
       // 최종 폴백: 기본 데이터
       console.log('🛡️ 최종 폴백: 기본 키워드 사용')
+      const fallbackKeywords = this.getFallbackKeywords()
       return { 
         success: false, 
         error: error.message,
-        keywords: this.getFallbackKeywords()
+        keywords: fallbackKeywords
       }
     }
   }
