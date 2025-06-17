@@ -63,17 +63,34 @@ const allowedOrigins = [
   'http://localhost:3000',  // 프론트엔드 서버
   'http://localhost:3001',  // 백업 포트
   'https://momentum-production-68bb.up.railway.app',
+  'https://momentum-nine-dun.vercel.app',  // Vercel 배포 도메인
   process.env.CORS_ORIGIN
 ].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
     // Railway 배포 시 origin이 undefined일 수 있음 (서버 간 호출)
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) {
       callback(null, true);
-    } else {
-      callback(new Error('CORS policy violation'));
+      return;
     }
+    
+    // 허용된 origin 목록 확인
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    
+    // 개발 중에는 Vercel 도메인들을 좀 더 유연하게 허용
+    if (origin.includes('.vercel.app')) {
+      console.log('🌍 Vercel 도메인 허용:', origin);
+      callback(null, true);
+      return;
+    }
+    
+    // 그 외에는 차단
+    console.warn('🚫 CORS 차단된 도메인:', origin);
+    callback(new Error('CORS policy violation'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
