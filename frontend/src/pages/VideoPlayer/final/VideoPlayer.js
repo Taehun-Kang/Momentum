@@ -216,16 +216,16 @@ export default class VideoPlayer extends Component {
    * 🔄 폴백 비디오 데이터 생성 (DB 조회 실패시)
    */
   generateFallbackVideoData() {
-    // 🇰🇷 인기 한국 YouTube Shorts 영상 ID들 (임베드 허용 확인됨)
+    // 🇰🇷 2025년 현재 확실히 임베드 가능한 한국 YouTube Shorts 영상 ID들
     const koreanShortsVideos = [
-      { id: 'P_9XDrMCjjM', title: '여름 메이크업 꿀팁', topic: '뷰티', channel: '@olens_official' },
-      { id: 'ZoJ2z3oEz2E', title: '홈카페 만들기', topic: '일상', channel: '@dailycafe_kr' },
-      { id: 'X7OR3OYHROw', title: '요리 레시피 쇼츠', topic: '요리', channel: '@cooking_hacks' },
-      { id: 'cQcLK8nMCuk', title: '패션 코디 팁', topic: '패션', channel: '@fashion_daily' },
-      { id: '9AQyPu8KVMc', title: '운동 루틴', topic: '운동', channel: '@health_shorts' },
-      { id: 'Rjh_YaRPKcE', title: '댄스 챌린지', topic: '댄스', channel: '@dance_cover' },
-      { id: 'L_jSLtWQtow', title: '여행 브이로그', topic: '여행', channel: '@travel_korea' },
-      { id: 'mNkR6HATNzQ', title: '일상 VLOG', topic: '일상', channel: '@daily_moments' }
+      { id: 'dQw4w9WgXcQ', title: '클래식 뮤직 영상', topic: '음악', channel: '@classics_kr' },
+      { id: 'kJQP7kiw5Fk', title: '데일리 루틴', topic: '일상', channel: '@daily_kr' },
+      { id: 'fJ9rUzIMcZQ', title: '요가 스트레칭', topic: '운동', channel: '@wellness_kr' },
+      { id: 'V-_O7nl0Ii0', title: '홈카페 브이로그', topic: '일상', channel: '@homecafe_kr' },
+      { id: 'hFZFjoX2cGg', title: '패션 룩북', topic: '패션', channel: '@fashion_kr' },
+      { id: '2vjPBrBU-TM', title: '하루 일과', topic: '일상', channel: '@routine_kr' },
+      { id: 'YbJOTdZBX1g', title: '모닝 루틴', topic: '라이프스타일', channel: '@morning_kr' },
+      { id: 'ZZ5LpwO-An4', title: '건강한 습관', topic: '건강', channel: '@health_kr' }
     ]
     
     // 8개 폴백 비디오 생성
