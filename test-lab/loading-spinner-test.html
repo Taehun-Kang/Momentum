@@ -1,1 +1,651 @@
-<!DOCTYPE html><html><head><title>LoadingSpinner Test</title><link rel="stylesheet" href="../frontend/src/components/ui/LoadingSpinner/LoadingSpinner.css"></head><body><h1>LoadingSpinner Test</h1><button onclick="test()">Test Spinner</button><script>function test(){console.log("Test!");}</script></body></html>
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🎨 LoadingSpinner 컴포넌트 테스트</title>
+
+    <!-- LoadingSpinner CSS -->
+    <link
+      rel="stylesheet"
+      href="../frontend/src/components/ui/LoadingSpinner/LoadingSpinner.css"
+    />
+
+    <style>
+      /* 테스트 페이지 기본 스타일 */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+          "Noto Sans KR", sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        color: white;
+      }
+
+      .test-container {
+        max-width: 900px;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .subtitle {
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
+        line-height: 1.6;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 3rem;
+      }
+
+      .feature-card {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        padding: 24px;
+        backdrop-filter: blur(20px);
+        text-align: left;
+        transition: transform 0.3s ease;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-5px);
+      }
+
+      .feature-card h3 {
+        margin-bottom: 12px;
+        color: #ffd700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .feature-card ul {
+        list-style: none;
+        padding-left: 0;
+      }
+
+      .feature-card li {
+        margin-bottom: 8px;
+        padding-left: 20px;
+        position: relative;
+        font-size: 14px;
+      }
+
+      .feature-card li::before {
+        content: "✨";
+        position: absolute;
+        left: 0;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 3rem;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .btn {
+        padding: 14px 20px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        color: white;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .btn::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: width 0.3s ease, height 0.3s ease;
+      }
+
+      .btn:hover::before {
+        width: 300px;
+        height: 300px;
+      }
+
+      .btn:hover {
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn.primary {
+        background: rgba(26, 115, 232, 0.8);
+        border-color: rgba(26, 115, 232, 1);
+      }
+
+      .btn.success {
+        background: rgba(52, 168, 83, 0.8);
+        border-color: rgba(52, 168, 83, 1);
+      }
+
+      .btn.warning {
+        background: rgba(251, 188, 4, 0.8);
+        border-color: rgba(251, 188, 4, 1);
+      }
+
+      .btn.danger {
+        background: rgba(234, 67, 53, 0.8);
+        border-color: rgba(234, 67, 53, 1);
+      }
+
+      .status {
+        margin-top: 2rem;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 12px;
+        font-family: "SF Mono", "Monaco", "Inconsolata", "Roboto Mono",
+          monospace;
+        font-size: 14px;
+        text-align: left;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .demo-section {
+        margin-top: 3rem;
+        padding: 2rem;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .demo-section h2 {
+        margin-bottom: 1rem;
+        color: #ffd700;
+      }
+
+      .keyboard-hints {
+        margin-top: 2rem;
+        padding: 1rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        font-size: 13px;
+      }
+
+      .keyboard-hints kbd {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: monospace;
+        margin: 0 4px;
+      }
+
+      @media (max-width: 768px) {
+        h1 {
+          font-size: 2rem;
+        }
+
+        .feature-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .controls {
+          grid-template-columns: 1fr;
+        }
+
+        .btn {
+          width: 100%;
+        }
+      }
+
+      /* 커스텀 스크롤바 */
+      .status::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .status::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+      }
+
+      .status::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 3px;
+      }
+
+      .status::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.5);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="test-container">
+      <h1>🎨 LoadingSpinner 컴포넌트 테스트</h1>
+
+      <div class="subtitle">
+        화면 전체를 덮는 투명한 오버레이와 중앙의 회전하는 스피너를
+        테스트해보세요.<br />
+        Glassmorphism 스타일과 접근성 기능이 포함되어 있습니다.
+      </div>
+
+      <!-- 기능 소개 -->
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h3>🎯 기본 기능</h3>
+          <ul>
+            <li>화면 전체 오버레이</li>
+            <li>중앙 회전 스피너</li>
+            <li>동적 텍스트 변경</li>
+            <li>표시/숨김 토글</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <h3>🎨 디자인</h3>
+          <ul>
+            <li>Glassmorphism 스타일</li>
+            <li>부드러운 애니메이션</li>
+            <li>반응형 디자인</li>
+            <li>다크모드 지원</li>
+          </ul>
+        </div>
+
+        <div class="feature-card">
+          <h3>♿ 접근성</h3>
+          <ul>
+            <li>스크린 리더 지원</li>
+            <li>키보드 내비게이션</li>
+            <li>ARIA 속성 완비</li>
+            <li>motion-reduce 지원</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 컨트롤 버튼들 -->
+      <div class="controls">
+        <button class="btn primary" onclick="showBasicSpinner()">
+          🎯 기본 스피너
+        </button>
+        <button class="btn success" onclick="showCustomSpinner()">
+          📝 커스텀 메시지
+        </button>
+        <button class="btn warning" onclick="showClosableSpinner()">
+          🔒 닫기 가능 스피너
+        </button>
+        <button class="btn" onclick="changeText()">🔄 텍스트 변경</button>
+        <button class="btn" onclick="toggleSpinner()">⚡ 토글</button>
+        <button class="btn danger" onclick="hideSpinner()">🙈 숨기기</button>
+      </div>
+
+      <!-- 데모 섹션 -->
+      <div class="demo-section">
+        <h2>🧪 고급 테스트</h2>
+        <div class="controls">
+          <button class="btn" onclick="testPerformance()">
+            ⚡ 성능 테스트
+          </button>
+          <button class="btn" onclick="testAccessibility()">
+            ♿ 접근성 테스트
+          </button>
+          <button class="btn" onclick="testSequence()">🎬 시퀀스 테스트</button>
+          <button class="btn danger" onclick="cleanup()">🧹 완전 정리</button>
+        </div>
+      </div>
+
+      <!-- 키보드 힌트 -->
+      <div class="keyboard-hints">
+        💡 <strong>키보드 단축키:</strong> <kbd>ESC</kbd> 스피너 닫기 (닫기 가능
+        모드에서) | <kbd>Space</kbd> 토글 | <kbd>Enter</kbd> 텍스트 변경
+      </div>
+
+      <!-- 상태 로그 -->
+      <div class="status" id="status">
+        🎪 LoadingSpinner 테스트 페이지가 준비되었습니다!<br />
+        위 버튼들을 클릭해서 다양한 기능을 테스트해보세요.<br />
+        <br />
+        📊 지원 기능:<br />
+        - 기본 표시/숨김<br />
+        - 동적 텍스트 변경<br />
+        - ESC 키 및 클릭으로 닫기<br />
+        - 스크린 리더 지원<br />
+        - 부드러운 애니메이션<br />
+      </div>
+    </div>
+
+    <script>
+      /**
+       * 🧪 LoadingSpinner 테스트 스크립트
+       * 실제 Component 클래스 없이 독립적으로 테스트
+       */
+
+      let spinner = null;
+      let isVisible = false;
+      let testCount = 0;
+      let logs = [];
+
+      // 📝 로그 기록 및 표시
+      function log(message, type = "info") {
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = `[${timestamp}] ${message}`;
+        logs.push(logEntry);
+
+        const statusEl = document.getElementById("status");
+        statusEl.innerHTML = logs.slice(-10).join("<br>"); // 최근 10개만 표시
+        statusEl.scrollTop = statusEl.scrollHeight;
+
+        console.log(
+          `%c${logEntry}`,
+          `color: ${
+            type === "error" ? "red" : type === "success" ? "green" : "blue"
+          }`
+        );
+      }
+
+      // 🎯 스피너 생성
+      function createSpinner(text = "로딩 중...", closable = false) {
+        if (spinner) {
+          document.body.removeChild(spinner);
+        }
+
+        spinner = document.createElement("div");
+        spinner.className = "unique-loading-spinner-overlay";
+        spinner.setAttribute("role", "progressbar");
+        spinner.setAttribute("aria-label", "페이지 로딩 중");
+        spinner.setAttribute("tabindex", "0");
+
+        spinner.innerHTML = `
+        <div class="unique-loading-spinner-container">
+          <div class="unique-loading-spinner-wheel" aria-hidden="true"></div>
+          <p class="unique-loading-spinner-text">${text}</p>
+        </div>
+      `;
+
+        // 📱 이벤트 리스너 (닫기 가능한 경우)
+        if (closable) {
+          spinner.addEventListener("click", (e) => {
+            if (e.target === spinner) {
+              hideSpinner();
+              log("🖱️ 오버레이 클릭으로 스피너 닫힘");
+            }
+          });
+
+          document.addEventListener("keydown", handleKeyDown);
+          log(`🔒 닫기 가능한 스피너 생성: "${text}"`);
+        } else {
+          log(`🎯 기본 스피너 생성: "${text}"`);
+        }
+
+        document.body.appendChild(spinner);
+        return spinner;
+      }
+
+      // ⌨️ 키보드 이벤트 처리
+      function handleKeyDown(e) {
+        if (e.key === "Escape" && isVisible) {
+          hideSpinner();
+          log("⌨️ ESC 키로 스피너 닫힘");
+        } else if (
+          e.key === " " &&
+          !e.target.tagName.match(/INPUT|TEXTAREA|BUTTON/)
+        ) {
+          e.preventDefault();
+          toggleSpinner();
+          log("⌨️ Space 키로 토글");
+        } else if (
+          e.key === "Enter" &&
+          !e.target.tagName.match(/INPUT|TEXTAREA|BUTTON/)
+        ) {
+          e.preventDefault();
+          changeText();
+          log("⌨️ Enter 키로 텍스트 변경");
+        }
+      }
+
+      // 👁️ 기본 스피너 표시
+      window.showBasicSpinner = function () {
+        createSpinner("로딩 중...", false);
+        spinner.style.display = "flex";
+        isVisible = true;
+        announceToScreenReader("로딩이 시작되었습니다");
+        log("👁️ 기본 스피너 표시");
+      };
+
+      // 📝 커스텀 메시지 스피너
+      window.showCustomSpinner = function () {
+        const messages = [
+          "데이터를 불러오고 있습니다...",
+          "서버와 연결 중입니다...",
+          "컴포넌트를 렌더링하고 있습니다...",
+          "AI가 분석 중입니다...",
+          "트렌딩 영상을 검색 중입니다...",
+        ];
+        const randomMessage =
+          messages[Math.floor(Math.random() * messages.length)];
+
+        createSpinner(randomMessage, false);
+        spinner.style.display = "flex";
+        isVisible = true;
+        announceToScreenReader(randomMessage);
+        log(`📝 커스텀 스피너 표시: "${randomMessage}"`);
+      };
+
+      // 🔒 닫기 가능한 스피너
+      window.showClosableSpinner = function () {
+        createSpinner("ESC 키나 오버레이를 클릭해서 닫을 수 있어요", true);
+        spinner.style.display = "flex";
+        isVisible = true;
+        announceToScreenReader("닫기 가능한 로딩 스피너");
+        log("🔒 닫기 가능한 스피너 표시");
+      };
+
+      // 🙈 스피너 숨기기
+      window.hideSpinner = function () {
+        if (spinner) {
+          spinner.style.display = "none";
+          isVisible = false;
+          document.removeEventListener("keydown", handleKeyDown);
+          announceToScreenReader("로딩이 완료되었습니다");
+          log("🙈 스피너 숨김");
+        } else {
+          log("⚠️ 표시할 스피너가 없습니다", "error");
+        }
+      };
+
+      // 📝 텍스트 변경
+      window.changeText = function () {
+        const messages = [
+          "잠시만 기다려주세요...",
+          "처리 중입니다...",
+          "거의 완료되었습니다...",
+          "마지막 단계입니다...",
+          "업데이트 중...",
+          "검증 중...",
+          "최적화 중...",
+          "완료 준비 중...",
+        ];
+
+        const randomMessage =
+          messages[Math.floor(Math.random() * messages.length)];
+
+        if (spinner && isVisible) {
+          const textEl = spinner.querySelector(".unique-loading-spinner-text");
+          if (textEl) {
+            textEl.textContent = randomMessage;
+            announceToScreenReader(randomMessage);
+            log(`🔄 텍스트 변경: "${randomMessage}"`);
+          }
+        } else {
+          showCustomSpinner();
+        }
+      };
+
+      // ⚡ 토글
+      window.toggleSpinner = function () {
+        if (isVisible) {
+          hideSpinner();
+        } else {
+          showBasicSpinner();
+        }
+      };
+
+      // ⚡ 성능 테스트
+      window.testPerformance = function () {
+        log("⚡ 성능 테스트 시작...");
+        const startTime = performance.now();
+
+        for (let i = 0; i < 5; i++) {
+          setTimeout(() => {
+            if (i % 2 === 0) {
+              showBasicSpinner();
+            } else {
+              hideSpinner();
+            }
+
+            if (i === 4) {
+              const endTime = performance.now();
+              log(
+                `✅ 성능 테스트 완료: ${(endTime - startTime).toFixed(2)}ms`,
+                "success"
+              );
+            }
+          }, i * 200);
+        }
+      };
+
+      // ♿ 접근성 테스트
+      window.testAccessibility = function () {
+        log("♿ 접근성 테스트 시작...");
+
+        // ARIA 속성 확인
+        showClosableSpinner();
+
+        setTimeout(() => {
+          const hasRole = spinner.getAttribute("role") === "progressbar";
+          const hasAriaLabel = spinner.hasAttribute("aria-label");
+          const hasTabIndex = spinner.hasAttribute("tabindex");
+
+          log(`📋 ARIA role: ${hasRole ? "✅" : "❌"}`);
+          log(`📋 ARIA label: ${hasAriaLabel ? "✅" : "❌"}`);
+          log(`📋 Tab index: ${hasTabIndex ? "✅" : "❌"}`);
+          log("♿ 접근성 테스트 완료", "success");
+        }, 1000);
+      };
+
+      // 🎬 시퀀스 테스트
+      window.testSequence = function () {
+        log("🎬 시퀀스 테스트 시작...");
+        const sequence = [
+          { action: () => showBasicSpinner(), message: "1단계: 기본 스피너" },
+          { action: () => changeText(), message: "2단계: 텍스트 변경" },
+          { action: () => changeText(), message: "3단계: 텍스트 재변경" },
+          { action: () => hideSpinner(), message: "4단계: 숨기기" },
+          {
+            action: () => showClosableSpinner(),
+            message: "5단계: 닫기 가능 스피너",
+          },
+          { action: () => hideSpinner(), message: "6단계: 시퀀스 완료" },
+        ];
+
+        sequence.forEach((step, index) => {
+          setTimeout(() => {
+            step.action();
+            log(`🎬 ${step.message}`);
+
+            if (index === sequence.length - 1) {
+              log("🎉 시퀀스 테스트 완료!", "success");
+            }
+          }, index * 1500);
+        });
+      };
+
+      // 🧹 완전 정리
+      window.cleanup = function () {
+        if (spinner) {
+          document.body.removeChild(spinner);
+          spinner = null;
+          isVisible = false;
+          document.removeEventListener("keydown", handleKeyDown);
+          log("🧹 스피너 완전 정리 완료", "success");
+        } else {
+          log("✨ 이미 정리되어 있습니다");
+        }
+      };
+
+      // ♿ 스크린 리더 지원
+      function announceToScreenReader(message) {
+        let liveRegion = document.getElementById("unique-spinner-live-region");
+        if (!liveRegion) {
+          liveRegion = document.createElement("div");
+          liveRegion.id = "unique-spinner-live-region";
+          liveRegion.setAttribute("aria-live", "polite");
+          liveRegion.setAttribute("aria-atomic", "true");
+          liveRegion.style.position = "absolute";
+          liveRegion.style.left = "-10000px";
+          liveRegion.style.width = "1px";
+          liveRegion.style.height = "1px";
+          liveRegion.style.overflow = "hidden";
+          document.body.appendChild(liveRegion);
+        }
+
+        liveRegion.textContent = message;
+        setTimeout(() => (liveRegion.textContent = ""), 1000);
+      }
+
+      // 🚀 초기화
+      document.addEventListener("DOMContentLoaded", () => {
+        log("🎪 LoadingSpinner 테스트 페이지 초기화 완료!");
+        log("💡 사용법: 버튼 클릭 또는 키보드 단축키 사용");
+
+        // 전역 키보드 이벤트 리스너 (기본)
+        document.addEventListener("keydown", (e) => {
+          if (!isVisible) {
+            handleKeyDown(e);
+          }
+        });
+      });
+
+      // 💡 콘솔 도움말
+      console.log("🎨 LoadingSpinner 테스트 함수들:");
+      console.log("  - showBasicSpinner(): 기본 스피너");
+      console.log("  - showCustomSpinner(): 커스텀 메시지 스피너");
+      console.log("  - showClosableSpinner(): 닫기 가능한 스피너");
+      console.log("  - changeText(): 텍스트 변경");
+      console.log("  - toggleSpinner(): 토글");
+      console.log("  - testPerformance(): 성능 테스트");
+      console.log("  - testAccessibility(): 접근성 테스트");
+      console.log("  - testSequence(): 시퀀스 테스트");
+      console.log("  - cleanup(): 정리");
+    </script>
+  </body>
+</html>

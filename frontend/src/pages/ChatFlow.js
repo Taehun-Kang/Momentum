@@ -117,7 +117,7 @@ export default class ChatFlow extends Component {
    * 현재 스텝 렌더링
    */
   renderStep() {
-    console.log('🔄 renderStep called with currentStep:', this.currentStep)
+    console.log('🔄 renderStep 호출됨 - currentStep:', this.currentStep, 'isAnalyzing:', this.isAnalyzing)
     
     // currentStep 최종 안전장치
     if (typeof this.currentStep !== 'number' || this.currentStep < 1 || this.currentStep > 4) {
@@ -161,13 +161,25 @@ export default class ChatFlow extends Component {
   renderContent() {
     const contentContainer = this.el.querySelector('#content-container')
     
+    console.log('🔍 renderContent 호출됨:', {
+      currentStep: this.currentStep,
+      isAnalyzing: this.isAnalyzing,
+      contentContainer: !!contentContainer
+    })
+    
     // 🧠 Step 3에서 LLM 분석 중인 경우 로딩 표시
     if (this.currentStep === 3 && this.isAnalyzing) {
+      console.log('🎯 renderAnalyzingState 호출 조건 만족!')
       this.renderAnalyzingState(contentContainer)
       return
     }
     
     const cardsData = this.getCardsData()
+    
+    console.log('🔍 getCardsData 결과:', {
+      cardsData: cardsData?.length,
+      currentStep: this.currentStep
+    })
     
     // 카드 데이터 확인
     if (!Array.isArray(cardsData) || cardsData.length === 0) {
@@ -200,20 +212,38 @@ export default class ChatFlow extends Component {
   }
   
   /**
-   * 🧠 LLM 분석 중 로딩 상태 렌더링
+   * 🧠 LLM 분석 중 로딩 상태 렌더링 - 간단하게 다시 시작
    */
   renderAnalyzingState(contentContainer) {
+    console.log('🎨 renderAnalyzingState 호출됨!')
+    
+    // contentContainer에 간단한 분석 중 메시지 표시
     contentContainer.innerHTML = `
-      <div class="llm-analyzing">
-        <div class="analyzing-spinner">
-          <div class="spinner"></div>
-        </div>
-        <div class="analyzing-text">
-          <h3>🧠 AI가 당신의 마음을 분석하고 있어요</h3>
-          <p>개인화된 감성 문장을 생성하는 중...</p>
-        </div>
+      <div style="
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 300px;
+        text-align: center;
+      ">
+        <div style="
+          font-size: 24px;
+          margin-bottom: 20px;
+        ">🧠</div>
+        <div style="
+          font-size: 18px;
+          color: #333;
+          margin-bottom: 10px;
+        ">AI가 분석 중입니다...</div>
+        <div style="
+          font-size: 14px;
+          color: #666;
+        ">잠시만 기다려주세요</div>
       </div>
     `
+    
+    console.log('🎨 간단한 분석 중 메시지 표시됨')
   }
   
   /**
@@ -601,7 +631,7 @@ export default class ChatFlow extends Component {
     // 선택 효과는 제거 - 바로 사라질 예정이므로 불필요
     // cardInstance.select()
     
-    // 🎯 클릭 애니메이션 완료를 기다린 후 카드 사라짐 애니메이션 시작
+    // 🎭 클릭 애니메이션 완료를 기다린 후 카드 사라짐 애니메이션 시작
     setTimeout(() => {
       this.playCardsExitAnimation(() => {
         this.proceedToNextStep(cardData)
@@ -686,10 +716,13 @@ export default class ChatFlow extends Component {
    * 🧠 LLM 감성 분석 수행
    */
   async performLLMAnalysis() {
+    console.log('🧠 performLLMAnalysis 시작!')
     console.log('🧠 LLM 감성 분석 시작:', this.chatData)
     
     // 분석할 텍스트 준비
     const userText = this.chatData.userInput || this.chatData.selection || ''
+    console.log('🧠 분석할 텍스트:', userText)
+    
     if (!userText) {
       console.warn('⚠️ 분석할 텍스트가 없음')
       return
@@ -703,10 +736,14 @@ export default class ChatFlow extends Component {
       responseFormat: 'full'
     }
     
+    console.log('🧠 분석 옵션:', analysisOptions)
+    
     try {
       // 분석 중 상태 표시
+      console.log('🧠 isAnalyzing = true 설정!')
       this.isAnalyzing = true
       
+      console.log('🧠 LLM 분석 API 호출 시작...')
       // LLM 분석 실행
       const result = await llmService.analyzeEmotionalCuration(userText, analysisOptions)
       
@@ -719,6 +756,7 @@ export default class ChatFlow extends Component {
       console.error('❌ LLM 분석 실패:', error)
       this.llmAnalysisResult = null
     } finally {
+      console.log('🧠 finally 블록 - isAnalyzing = false 설정!')
       this.isAnalyzing = false
     }
   }
@@ -751,18 +789,29 @@ export default class ChatFlow extends Component {
    * 입력 전송 처리
    */
   async handleInputSend(value) {
+    console.log('📝 handleInputSend 호출됨:', {
+      currentStep: this.currentStep,
+      value: value
+    })
+    
     switch (this.currentStep) {
       case 2:
+        console.log('📝 Step 2: 사용자 입력 처리 시작')
         this.chatData.userInput = value
         this.chatData.selection = null // 입력 시 카드 선택 초기화
         this.clearCardSelections()
         
+        console.log('📝 Step 2: performLLMAnalysis 호출 직전!')
+        console.log('📝 Step 2: chatData:', this.chatData)
+        
         // 🧠 2단계에서 3단계로 넘어갈 때 LLM 분석 실행
         await this.performLLMAnalysis()
+        console.log('📝 Step 2: performLLMAnalysis 완료, nextStep 호출')
         this.nextStep()
         break
         
       case 3:
+        console.log('📝 Step 3: 키워드 입력 처리')
         this.chatData.keywordInput = value
         this.chatData.keyword = null // 입력 시 카드 선택 초기화
         this.clearCardSelections()
@@ -770,6 +819,7 @@ export default class ChatFlow extends Component {
         break
         
       case 4:
+        console.log('📝 Step 4: 최종 입력 처리')
         this.chatData.finalInput = value
         this.chatData.finalAction = null // 입력 시 카드 선택 초기화
         this.clearCardSelections()
@@ -808,10 +858,17 @@ export default class ChatFlow extends Component {
    * 다음 단계로 이동
    */
   nextStep() {
+    console.log('⏭️ nextStep 호출됨:', {
+      currentStep: this.currentStep,
+      isAnalyzing: this.isAnalyzing
+    })
+    
     if (this.currentStep < 4) {
       this.currentStep++
+      console.log('⏭️ nextStep: currentStep 증가됨:', this.currentStep)
       this.animateStepTransition()
     } else {
+      console.log('⏭️ nextStep: 최종 단계, handleFinalAction 호출')
       this.handleFinalAction()
     }
   }
@@ -830,6 +887,12 @@ export default class ChatFlow extends Component {
    * 단계 전환 (애니메이션 제거됨)
    */
   animateStepTransition(backward = false) {
+    console.log('🎬 animateStepTransition 호출됨:', {
+      currentStep: this.currentStep,
+      isAnalyzing: this.isAnalyzing,
+      backward: backward
+    })
+    
     // 애니메이션 없이 즉시 렌더링
     this.renderStep()
   }
@@ -856,32 +919,36 @@ export default class ChatFlow extends Component {
   }
   
   /**
-   * 🔍 영상 검색 실행
+   * 🔍 영상 검색 실행 - 간단하게 다시 시작
    */
   async executeVideoSearch() {
+    console.log('🔍 executeVideoSearch 시작!')
+    
     // 🎯 description에서 실제 키워드 추출
     const selectedCardData = this.getSelectedCardData()
     const actualKeyword = this.extractKeywordFromDescription(selectedCardData)
     
+    console.log('🔍 executeVideoSearch:', {
+      selectedCardData: selectedCardData,
+      actualKeyword: actualKeyword
+    })
+    
     try {
-      // 검색 중 상태 표시
       this.isSearching = true
-      this.showSearchingState()
       
       console.log('🔍 영상 검색 시작:', actualKeyword)
-      console.log('📋 원본 선택 데이터:', selectedCardData)
       console.log('🚂 Railway 서버로 realtime API 호출 시작...')
       
       // 키워드에서 카테고리 자동 추출
       const category = searchService.extractCategory(actualKeyword)
       
-      // 🎯 검색 파라미터는 keyword만 전달 (다른 파라미터 건들지 않음)
+      // 🎯 검색 파라미터
       const searchOptions = {
-        category: category  // 카테고리 추가로 더 정확한 검색
+        category: category
       }
       
-      // ⏱️ 실시간 검색 실행 (완료까지 대기 - 최대 120초)
-      console.log('🚀 realtime 검색 시작... 완료까지 대기 중 (최대 120초)')
+      // ⏱️ 실시간 검색 실행
+      console.log('🚀 realtime 검색 시작...')
       const searchStartTime = Date.now()
       
       const searchResult = await searchService.searchRealtime(actualKeyword, searchOptions)
@@ -892,26 +959,19 @@ export default class ChatFlow extends Component {
       if (searchResult.success) {
         console.log('✅ realtime 검색 완료:', searchResult)
         console.log(`⏱️ 실제 검색 시간: ${actualDuration}초`)
-        console.log(`📊 백엔드 처리 시간: ${searchResult.duration}초`)
         
-        // 성공 메시지 표시 (실제 처리 시간 표시)
-        this.showSearchSuccess(actualKeyword, actualDuration, searchResult.duration)
-        
-        // 🎯 realtime 검색이 완료되었으므로 VideoPlayer로 이동
-        // 성공 메시지를 잠깐 보여준 후 이동
-        setTimeout(() => {
-          console.log(`🎬 VideoPlayer로 이동: "${actualKeyword}" (realtime 검색 완료됨)`)
-          this.navigateToVideoPlayer(actualKeyword)
-        }, 2000)  // 2초 후 이동 (성공 메시지 확인 시간)
+        // 바로 VideoPlayer로 이동
+        console.log(`🎬 VideoPlayer로 이동: "${actualKeyword}"`)
+        this.navigateToVideoPlayer(actualKeyword)
         
       } else {
         console.error('❌ realtime 검색 실패:', searchResult.error)
-        this.showSearchError(searchResult.error)
+        alert('영상 검색에 실패했습니다. 다시 시도해주세요.')
       }
       
     } catch (error) {
       console.error('❌ realtime 검색 오류:', error)
-      this.showSearchError('네트워크 오류가 발생했습니다: ' + error.message)
+      alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.')
     } finally {
       this.isSearching = false
     }
@@ -1052,109 +1112,6 @@ export default class ChatFlow extends Component {
     // 최종 폴백
     console.log(`🔧 키워드 폴백: "${keyword}" → "힐링"`)
     return '힐링'
-  }
-  
-  /**
-   * 🔍 검색 중 상태 표시
-   */
-  showSearchingState() {
-    const contentContainer = this.el.querySelector('#content-container')
-    const keyword = this.chatData.keyword || this.chatData.keywordInput || '키워드'
-    
-    contentContainer.innerHTML = `
-      <div class="llm-analyzing">
-        <div class="analyzing-spinner">
-        </div>
-        <div class="analyzing-text">
-          <h3>🔍 "${keyword}" 관련 영상을 찾고 있어요</h3>
-          <p>🚀 YouTube에서 최고의 쇼츠 영상들을 큐레이션하는 중...</p>
-          <div style="
-            margin-top: 16px;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            font-size: 14px;
-            line-height: 1.4;
-          ">
-            <div>📺 영상 검색 및 품질 필터링</div>
-            <div>🏷️ AI 분류 및 태깅</div>
-            <div>💾 데이터베이스 저장</div>
-            <div style="margin-top: 8px; color: #ffeb3b;">⏱️ 약 30-60초 소요됩니다</div>
-          </div>
-        </div>
-      </div>
-    `
-  }
-  
-  /**
-   * ✅ 검색 성공 상태 표시
-   */
-  showSearchSuccess(keyword, actualDuration, backendDuration) {
-    const contentContainer = this.el.querySelector('#content-container')
-    
-    contentContainer.innerHTML = `
-      <div class="llm-analyzing">
-        <div style="
-          width: 48px;
-          height: 48px;
-          background: linear-gradient(135deg, #4CAF50, #45a049);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 24px;
-          color: white;
-          margin-bottom: 16px;
-        ">✅</div>
-        <div class="analyzing-text">
-          <h3>🎉 "${keyword}" 영상 큐레이션 완료!</h3>
-          <p>총 처리 시간: ${actualDuration}초 • 백엔드 처리: ${backendDuration}초</p>
-          <div style="
-            margin-top: 12px;
-            font-size: 14px;
-            opacity: 0.9;
-          ">곧 영상 페이지로 이동합니다...</div>
-        </div>
-      </div>
-    `
-  }
-  
-  /**
-   * ❌ 검색 실패 상태 표시
-   */
-  showSearchError(errorMessage) {
-    const contentContainer = this.el.querySelector('#content-container')
-    
-    contentContainer.innerHTML = `
-      <div class="llm-analyzing">
-        <div style="
-          width: 48px;
-          height: 48px;
-          background: linear-gradient(135deg, #f44336, #d32f2f);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 24px;
-          color: white;
-          margin-bottom: 16px;
-        ">❌</div>
-        <div class="analyzing-text">
-          <h3>검색 중 문제가 발생했습니다</h3>
-          <p>${errorMessage}</p>
-        </div>
-        <button onclick="location.reload()" style="
-          margin-top: 20px;
-          padding: 12px 24px;
-          background: var(--accent-color);
-          color: white;
-          border: none;
-          border-radius: 12px;
-          font-size: 14px;
-          cursor: pointer;
-        ">다시 시도</button>
-      </div>
-    `
   }
   
   /**

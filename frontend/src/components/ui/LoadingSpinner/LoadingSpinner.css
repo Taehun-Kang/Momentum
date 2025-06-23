@@ -7,7 +7,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(255, 255, 255, 0.85);
+  background: transparent;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
@@ -20,7 +20,7 @@
 /* 다크모드 지원 */
 @media (prefers-color-scheme: dark) {
   .unique-loading-spinner-overlay {
-    background: rgba(0, 0, 0, 0.85);
+    background: transparent;
   }
 }
 
@@ -29,6 +29,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -44,7 +45,7 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 20px;
   padding: 40px 60px;
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(16px);
@@ -58,7 +59,7 @@
   .unique-loading-spinner-container {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 
+    box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
@@ -70,6 +71,7 @@
     transform: scale(0.8);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
@@ -110,6 +112,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -120,6 +123,7 @@
   from {
     transform: translate(-50%, -50%) rotate(360deg);
   }
+
   to {
     transform: translate(-50%, -50%) rotate(0deg);
   }
@@ -147,9 +151,12 @@
 
 /* 텍스트 펄스 애니메이션 */
 @keyframes unique-spinner-text-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.6;
   }
@@ -162,20 +169,20 @@
     border-radius: 16px;
     min-width: 160px;
   }
-  
+
   .unique-loading-spinner-wheel {
     width: 50px;
     height: 50px;
     border-width: 3px;
     margin-bottom: 16px;
   }
-  
+
   .unique-loading-spinner-wheel::before {
     width: 25px;
     height: 25px;
     border-width: 2px;
   }
-  
+
   .unique-loading-spinner-text {
     font-size: 14px;
   }
@@ -187,18 +194,18 @@
     border-radius: 12px;
     min-width: 140px;
   }
-  
+
   .unique-loading-spinner-wheel {
     width: 40px;
     height: 40px;
     margin-bottom: 12px;
   }
-  
+
   .unique-loading-spinner-wheel::before {
     width: 20px;
     height: 20px;
   }
-  
+
   .unique-loading-spinner-text {
     font-size: 13px;
   }
@@ -206,11 +213,12 @@
 
 /* 접근성 개선 */
 @media (prefers-reduced-motion: reduce) {
+
   .unique-loading-spinner-wheel,
   .unique-loading-spinner-wheel::before {
     animation-duration: 3s;
   }
-  
+
   .unique-spinner-fade-in,
   .unique-spinner-scale-in,
   .unique-spinner-text-pulse {
@@ -223,4 +231,3 @@
   outline: 2px solid #1a73e8;
   outline-offset: 4px;
 }
- 
