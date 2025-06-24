@@ -29,10 +29,15 @@ export default class ChatFlow extends Component {
     this.input = null
     
     // 🎨 LoadingSpinner 인스턴스 생성 (화면 전체 덮기)
-    this.loadingSpinner = new LoadingSpinner({
-      visible: false,
-      onClose: null // 수동으로만 닫기
-    })
+    try {
+      this.loadingSpinner = new LoadingSpinner({
+        visible: false,
+        onClose: null // 수동으로만 닫기
+      })
+    } catch (error) {
+      console.error('LoadingSpinner 생성 실패:', error)
+      this.loadingSpinner = null
+    }
     
     // 🧠 LLM 분석 결과 저장
     this.llmAnalysisResult = null
@@ -116,10 +121,17 @@ export default class ChatFlow extends Component {
       </div>
     `
     
-    // 🎨 LoadingSpinner를 body에 추가 (전체 화면 덮기)
-    document.body.appendChild(this.loadingSpinner.el)
-    this.loadingSpinner.render()
-    this.loadingSpinner.mount()
+    // 🎨 LoadingSpinner 안전하게 초기화
+    try {
+      this.loadingSpinner.render()
+      if (this.loadingSpinner.el) {
+        document.body.appendChild(this.loadingSpinner.el)
+        this.loadingSpinner.mount()
+      }
+    } catch (error) {
+      console.error('LoadingSpinner 초기화 실패:', error)
+      // LoadingSpinner 없이도 동작하도록 무시
+    }
     
     this.renderStep()
     return this
@@ -697,12 +709,15 @@ export default class ChatFlow extends Component {
         this.chatData.userInput = null // 카드 선택 시 입력 초기화
         if (this.input) this.input.clear()
         
-        // 🎨 LoadingSpinner 표시 - LLM 분석 중 (입력을 통한 경우)
-        this.loadingSpinner.show("✨ 당신만을 위한 특별한 키워드를 찾고 있어요")
+        // 🎨 LoadingSpinner 표시 - LLM 분석 중
+        try {
+          this.loadingSpinner?.show("✨ 당신만을 위한 특별한 키워드를 찾고 있어요")
+        } catch (error) {
+          console.warn('LoadingSpinner show 실패:', error)
+        }
         
         // 🧠 2단계에서 3단계로 넘어갈 때 LLM 분석 실행
         await this.performLLMAnalysis()
-        console.log('📝 Step 2: performLLMAnalysis 완료, nextStep 호출')
         this.nextStep()
         break
         
@@ -726,7 +741,11 @@ export default class ChatFlow extends Component {
         
         // 🎨 영상 검색이 필요한 경우에만 LoadingSpinner 표시
         if (cardData.value === 'start') {
-          this.loadingSpinner.show("🎬 마음에 딱 맞는 영상들을 준비하고 있어요")
+          try {
+            this.loadingSpinner?.show("🎬 마음에 딱 맞는 영상들을 준비하고 있어요")
+          } catch (error) {
+            console.warn('LoadingSpinner show 실패:', error)
+          }
         }
         
         this.handleFinalAction()
@@ -782,7 +801,11 @@ export default class ChatFlow extends Component {
       this.isAnalyzing = false
       
       // 🎨 LoadingSpinner 숨기기
-      this.loadingSpinner.hide()
+      try {
+        this.loadingSpinner?.hide()
+      } catch (error) {
+        console.warn('LoadingSpinner hide 실패:', error)
+      }
     }
   }
   
@@ -830,7 +853,11 @@ export default class ChatFlow extends Component {
         console.log('📝 Step 2: chatData:', this.chatData)
         
         // 🎨 LoadingSpinner 표시 - LLM 분석 중 (입력을 통한 경우)
-        this.loadingSpinner.show("✨ 당신만을 위한 특별한 키워드를 찾고 있어요")
+        try {
+          this.loadingSpinner?.show("✨ 당신만을 위한 특별한 키워드를 찾고 있어요")
+        } catch (error) {
+          console.warn('LoadingSpinner show 실패:', error)
+        }
         
         // 🧠 2단계에서 3단계로 넘어갈 때 LLM 분석 실행
         await this.performLLMAnalysis()
@@ -1004,7 +1031,11 @@ export default class ChatFlow extends Component {
       this.isSearching = false
       
       // 🎨 LoadingSpinner 숨기기
-      this.loadingSpinner.hide()
+      try {
+        this.loadingSpinner?.hide()
+      } catch (error) {
+        console.warn('LoadingSpinner hide 실패:', error)
+      }
     }
   }
   
@@ -1174,8 +1205,12 @@ export default class ChatFlow extends Component {
     try {
       // 🎨 LoadingSpinner 정리
       if (this.loadingSpinner) {
-        this.loadingSpinner.hide()
-        this.loadingSpinner.destroy()
+        try {
+          this.loadingSpinner.hide()
+          this.loadingSpinner.destroy()
+        } catch (error) {
+          console.warn('LoadingSpinner 정리 실패:', error)
+        }
         this.loadingSpinner = null
       }
       
