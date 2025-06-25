@@ -199,23 +199,6 @@
   }
 }
 
-/* 다크모드 대응 */
-[data-theme="dark"] .chat-support-button {
-  background: linear-gradient(135deg, 
-    rgba(28, 28, 30, 0.8) 0%, 
-    rgba(0, 0, 0, 0.6) 100%
-  );
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .chat-title {
-  color: var(--text-light, #ffffff);
-}
-
-[data-theme="dark"] .chat-subtitle {
-  color: var(--text-tertiary, #999999);
-}
-
 /* 터치 디바이스 최적화 */
 @media (hover: none) and (pointer: coarse) {
   .chat-support-button:hover {
@@ -318,17 +301,6 @@
   }
 }
 
-/* 다크모드 대응 */
-@media (prefers-color-scheme: dark) {
-  .home-page {
-    background: linear-gradient(135deg, 
-      rgba(154, 120, 219, 0.15) 0%, 
-      rgba(28, 28, 30, 0.8) 50%, 
-      rgba(0, 0, 0, 0.9) 100%
-    );
-  }
-}
-
 /* 접근성 - 애니메이션 비활성화 */
 @media (prefers-reduced-motion: reduce) {
   .home-page {
@@ -354,10 +326,23 @@
   .home-page {
     background: #ffffff;
   }
-  
-  @media (prefers-color-scheme: dark) {
-    .home-page {
-      background: #000000;
-    }
-  }
-} 
+}
+
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+[data-theme="dark"] .chat-support-button {
+  background: linear-gradient(
+    135deg,
+    rgba(154, 120, 219, 0.15) 0%,
+    rgba(28, 28, 30, 0.7) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .chat-title {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .chat-subtitle {
+  color: rgba(255, 255, 255, 0.6);
+}
+*/ 

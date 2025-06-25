@@ -466,107 +466,76 @@
 }
 
 /* ========================================
-   다크모드 대응
+   접근성 대응
 ======================================== */
 
-/* 다크모드 배경 (홈페이지와 동일) */
-@media (prefers-color-scheme: dark) {
-  .chat-flow-page {
-    background: linear-gradient(135deg, 
-      rgba(154, 120, 219, 0.15) 0%, 
-      rgba(28, 28, 30, 0.8) 50%, 
-      rgba(0, 0, 0, 0.9) 100%
-    );
+/* 모션 민감도 대응 */
+@media (prefers-reduced-motion: reduce) {
+  .chat-flow-content,
+  .chat-flow-input,
+  .cards-grid .card {
+    transition: none;
+    animation: none;
   }
   
-  /* LLM 분석 다크모드 */
-  .analyzing-spinner .spinner {
-    border-color: rgba(154, 120, 219, 0.15);
-    border-top-color: rgba(154, 120, 219, 0.6);
+  .cards-grid .card,
+  .cards-grid .card.card-animate-in {
+    opacity: 1;
+    transform: none;
   }
   
+  /* LLM 스피너 애니메이션 제거 */
+  .analyzing-spinner .spinner,
   .analyzing-spinner .spinner::after {
-    border-top-color: rgba(196, 181, 253, 0.4);
-  }
-  
-  .analyzing-text h3 {
-    color: rgba(255, 255, 255, 0.9);
-  }
-  
-  .analyzing-text p {
-    color: rgba(255, 255, 255, 0.6);
-  }
-  
-  /* 추천 카테고리 다크모드 */
-  .recommended-categories {
-    background: rgba(28, 28, 30, 0.6);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .categories-title {
-    color: rgba(255, 255, 255, 0.7);
+    animation: none;
   }
   
   .category-tag {
-    background: linear-gradient(135deg, rgba(154, 120, 219, 0.15), rgba(196, 181, 253, 0.1));
-    border-color: rgba(154, 120, 219, 0.3);
-    color: rgba(196, 181, 253, 0.9);
+    transition: none;
   }
   
   .category-tag:hover {
-    background: linear-gradient(135deg, rgba(154, 120, 219, 0.25), rgba(196, 181, 253, 0.15));
-    border-color: rgba(154, 120, 219, 0.4);
+    transform: none;
   }
 }
 
-[data-theme="dark"] .chat-flow-page {
-  background: linear-gradient(135deg, 
-    rgba(154, 120, 219, 0.15) 0%, 
-    rgba(28, 28, 30, 0.8) 50%, 
-    rgba(0, 0, 0, 0.9) 100%
-  );
+/* 고대비 모드 대응 */
+@media (prefers-contrast: high) {
+  .chat-flow-input {
+    background: transparent; /* 고대비 모드에서도 투명 */
+    /* border 제거 */
+  }
+  
+  /* LLM 요소들 고대비 대응 */
+  .analyzing-spinner .spinner {
+    border-width: 4px;
+    border-top-color: var(--primary-color, #9a78db);
+  }
+  
+  .category-tag {
+    border-width: 2px;
+    font-weight: 600;
+  }
 }
 
-[data-theme="dark"] .chat-flow-input {
-  background: transparent; /* 다크모드에서도 투명 배경 */
-  /* border 제거 */
-}
+/* ========================================
+   터치 디바이스 최적화
+======================================== */
 
-[data-theme="dark"] .analyzing-spinner .spinner {
-  border-color: rgba(154, 120, 219, 0.15);
-  border-top-color: rgba(154, 120, 219, 0.6);
-}
-
-[data-theme="dark"] .analyzing-spinner .spinner::after {
-  border-top-color: rgba(196, 181, 253, 0.4);
-}
-
-[data-theme="dark"] .analyzing-text h3 {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-[data-theme="dark"] .analyzing-text p {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-[data-theme="dark"] .recommended-categories {
-  background: rgba(28, 28, 30, 0.6);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .categories-title {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-[data-theme="dark"] .category-tag {
-  background: linear-gradient(135deg, rgba(154, 120, 219, 0.15), rgba(196, 181, 253, 0.1));
-  border-color: rgba(154, 120, 219, 0.3);
-  color: rgba(196, 181, 253, 0.9);
-}
-
-[data-theme="dark"] .category-tag:hover {
-  background: linear-gradient(135deg, rgba(154, 120, 219, 0.25), rgba(196, 181, 253, 0.15));
-  border-color: rgba(154, 120, 219, 0.4);
+@media (hover: none) and (pointer: coarse) {
+  .chat-flow-content {
+    /* 터치 디바이스에서 여백 최적화 */
+    padding-top: 0;
+  }
+  
+  /* 터치 타겟 크기 최적화 */
+  .category-tag {
+    min-height: 32px;
+    padding: 8px 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 /* ========================================
@@ -630,11 +599,6 @@
 @media (prefers-contrast: high) {
   .chat-flow-input {
     background: transparent; /* 고대비 모드에서도 투명 */
-    /* border 제거 */
-  }
-  
-  [data-theme="dark"] .chat-flow-input {
-    background: transparent; /* 다크 고대비 모드에서도 투명 */
     /* border 제거 */
   }
   

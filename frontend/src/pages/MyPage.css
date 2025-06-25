@@ -311,24 +311,24 @@
   line-height: 1.4;
 }
 
-/* ========== 다크 테마 ========== */
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .mypage {
   background: linear-gradient(135deg, 
     rgba(154, 120, 219, 0.15) 0%, 
     rgba(28, 28, 30, 0.8) 50%, 
     rgba(0, 0, 0, 0.9) 100%
   );
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-light, #ffffff);
 }
 
 [data-theme="dark"] .chart-info {
-  background: rgba(255, 255, 255, 0.02);
-  border-color: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-light, #ffffff);
 }
 
 [data-theme="dark"] .chart-info strong {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--primary-light, #c4b5fd);
 }
 
 [data-theme="dark"] .chart-container {
@@ -337,7 +337,7 @@
 }
 
 [data-theme="dark"] .chart-container .section-title {
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--text-light, #ffffff);
 }
 
 [data-theme="dark"] .video-history-container {
@@ -346,31 +346,29 @@
 }
 
 [data-theme="dark"] .video-history-container .section-title {
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--text-light, #ffffff);
 }
 
 [data-theme="dark"] .view-more-link {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--primary-light, #c4b5fd);
 }
 
 [data-theme="dark"] .view-more-link:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-light, #ffffff);
 }
 
 [data-theme="dark"] .section-title {
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--text-light, #ffffff);
 }
 
 [data-theme="dark"] .summary-text {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary, #cccccc);
 }
-
-
 
 [data-theme="dark"] .logout-info {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary, #aaaaaa);
 }
+*/
 
 /* ========== 반응형 디자인 ========== */
 @media (max-width: 430px) {

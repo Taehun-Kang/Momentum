@@ -352,14 +352,15 @@
    다크 모드 (시스템 대응)
 ======================================== */
 
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   .modal-overlay {
     background: rgba(0, 0, 0, 0.8);
   }
   
   .modal-container {
-    background: var(--modal-dark-bg);
-    box-shadow: var(--modal-dark-shadow);
+    background: rgba(40, 40, 40, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
   }
   
   .modal-container:focus {
@@ -369,29 +370,29 @@
   }
   
   .modal-content {
-    color: var(--modal-dark-text-primary);
+    color: rgba(255, 255, 255, 0.85);
   }
   
   .modal-title {
-    color: var(--modal-dark-text-primary);
+    color: rgba(255, 255, 255, 0.95);
   }
   
   .modal-message {
-    color: var(--modal-dark-text-secondary);
+    color: rgba(255, 255, 255, 0.85);
   }
   
   .modal-content-area {
-    color: var(--modal-dark-text-primary);
+    color: rgba(255, 255, 255, 0.85);
   }
   
   .modal-close-btn {
-    background: var(--modal-dark-close-bg);
-    color: var(--modal-dark-text-secondary);
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.1);
   }
   
   .modal-close-btn:hover {
-    background: var(--modal-dark-close-hover);
-    color: var(--modal-dark-text-primary);
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.15);
   }
   
   .modal-close-btn:focus {
@@ -403,9 +404,10 @@
   }
   
   .modal-handle {
-    background: var(--modal-dark-text-secondary);
+    background: rgba(255, 255, 255, 0.85);
   }
 }
+*/
 
 /* ========================================
    반응형 디자인 (4단계)

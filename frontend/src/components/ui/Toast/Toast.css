@@ -394,45 +394,48 @@
 }
 
 /* ===== 다크 모드 지원 ===== */
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   :root {
-    --toast-glass-bg: rgba(17, 24, 39, 0.95);
-    --toast-glass-border: rgba(255, 255, 255, 0.15);
-    --toast-text-primary: #f9fafb;
-    --toast-text-secondary: #d1d5db;
+    --toast-glass-bg: rgba(28, 28, 30, 0.95);
+    --toast-glass-border: rgba(255, 255, 255, 0.1);
+    --toast-text-primary: rgba(255, 255, 255, 0.9);
+    --toast-text-secondary: rgba(255, 255, 255, 0.9);
     
-    --toast-success-bg: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.2) 100%);
-    --toast-error-bg: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.2) 100%);
-    --toast-warning-bg: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.2) 100%);
-    --toast-info-bg: linear-gradient(135deg, rgba(154, 120, 219, 0.25) 0%, rgba(124, 58, 237, 0.2) 100%);
+    --toast-success-bg: rgba(52, 168, 83, 0.15);
+    --toast-error-bg: rgba(234, 67, 53, 0.15);
+    --toast-warning-bg: rgba(251, 188, 4, 0.15);
+    --toast-info-bg: rgba(26, 115, 232, 0.15);
+  }
+  
+  .toast {
+    background: rgba(28, 28, 30, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
   }
   
   .toast--success {
-    background: linear-gradient(135deg, 
-      rgba(17, 24, 39, 0.95) 0%, 
-      rgba(6, 78, 59, 0.3) 100%
-    );
+    background: rgba(52, 168, 83, 0.15);
+    border-color: rgba(52, 168, 83, 0.4);
+    color: rgba(255, 255, 255, 0.9);
   }
   
   .toast--error {
-    background: linear-gradient(135deg, 
-      rgba(17, 24, 39, 0.95) 0%, 
-      rgba(127, 29, 29, 0.3) 100%
-    );
+    background: rgba(234, 67, 53, 0.15);
+    border-color: rgba(234, 67, 53, 0.4);
+    color: rgba(255, 255, 255, 0.9);
   }
   
   .toast--warning {
-    background: linear-gradient(135deg, 
-      rgba(17, 24, 39, 0.95) 0%, 
-      rgba(120, 53, 15, 0.3) 100%
-    );
+    background: rgba(251, 188, 4, 0.15);
+    border-color: rgba(251, 188, 4, 0.4);
+    color: rgba(255, 255, 255, 0.9);
   }
   
   .toast--info {
-    background: linear-gradient(135deg, 
-      rgba(17, 24, 39, 0.95) 0%, 
-      rgba(88, 28, 135, 0.3) 100%
-    );
+    background: rgba(26, 115, 232, 0.15);
+    border-color: rgba(26, 115, 232, 0.4);
+    color: rgba(255, 255, 255, 0.9);
   }
   
   .toast__title {
@@ -457,6 +460,7 @@
     background: rgba(255, 255, 255, 0.15);
   }
 }
+*/
 
 /* ===== 모바일 최적화 ===== */
 @media (max-width: 480px) {
