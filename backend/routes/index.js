@@ -6,6 +6,10 @@ import searchRoutes from './searchRoutes.js';
 import llmRoutes from './llmRoutes.js';
 import trendRoutes from './trendRoutes.js';
 
+// Import v2 route modules
+import v2EmotionRoutes from './v2/emotionRoutes.js';
+import v2SearchRoutes from './v2/searchRoutes.js';
+
 // Import database route modules
 import userDbRoutes from './database/userRoutes.js';
 import videoDbRoutes from './database/videoRoutes.js';
@@ -143,7 +147,11 @@ router.use('/keywords_db', verifyDbAccess, keywordDbRoutes);
 router.use('/auth', authRoutes);               // ✅ 이미 보안 적용됨
 router.use('/search', searchRoutes);           // 📊 10개 엔드포인트 (무보안)
 router.use('/llm', llmRoutes);                 // 🤖 7개 엔드포인트 (무보안)  
-router.use('/trends', trendRoutes);            // 📈 8개 엔드포인트 (무보안)
+router.use('/trends', trendRoutes);            // �� 8개 엔드포인트 (무보안)
+
+// v2 API Routes (새로운 버전)
+router.use('/v2/emotion', v2EmotionRoutes);    // 🎭 감정 기반 키워드 추천 API
+router.use('/v2/search', v2SearchRoutes);      // 🔍 VQS 기반 영상 검색 API
 
 // Database API Routes (전체 175개 엔드포인트 - 현재 무보안!)
 router.use('/users_db', userDbRoutes);         // 🔴 32개 - Critical (개인정보)

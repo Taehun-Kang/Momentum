@@ -21,6 +21,10 @@ import dotenv from 'dotenv';
 // 🔧 routes/index.js 통합 사용
 import allRoutes from './routes/index.js';
 
+// v2 라우트 직접 import
+import v2EmotionRoutes from './routes/v2/emotionRoutes.js';
+import v2SearchRoutes from './routes/v2/searchRoutes.js';
+
 dotenv.config();
 
 // 서비스 초기화
@@ -299,14 +303,19 @@ app.get('/health', (req, res) => {
 // 🎯 통합 라우트 사용 (권장 방식)
 app.use('/api/v1', allRoutes);
 
+// 🆕 v2 API 라우트 (새로운 버전)
+app.use('/api/v2/emotion', v2EmotionRoutes);
+app.use('/api/v2/search', v2SearchRoutes);
+
 // 테스트 라우트
 app.get('/api/test', (req, res) => {
   res.json({ success: true, message: '테스트 라우트 작동!' });
 });
 
-console.log('📡 API 라우트 등록 완료: 총 182개 엔드포인트');
+console.log('📡 API 라우트 등록 완료: 총 182개 엔드포인트 + v2 라우트');
 console.log('   🔵 비즈니스 API: auth(7), trends(6), llm(6), search(14) = 33개');
 console.log('   🗄️ Database API: users_db(25), videos_db(21), keywords_db(23), system_db(24), search_db(21), trends_db(21), emotions_db(16) = 149개');
+console.log('   🆕 v2 API: emotion(7), search(5) = 12개');
 console.log('   🎉 Database API 테스트: 146/149개 완료 (98.0% 성공률!)');
 console.log('   ✅ "function not implemented" 에러 완전 해결');
 console.log('   🔧 실제 DB 통합 진행 중: dailyKeywordUpdateService.js 첫 번째 완료');
