@@ -126,7 +126,7 @@ class SearchServiceV2 {
 
   /**
    * 🎯 ChatFlow에서 VideoPlayer로 전환하는 통합 메서드
-   * @param {string} keyword - 선택된 키워드
+   * @param {string} keyword - 선택된 키워드 (공백으로 연결된 문자열)
    * @param {Object} options - 검색 옵션
    * @returns {Promise<Object>} VideoPlayer 전환 결과
    */
@@ -134,8 +134,12 @@ class SearchServiceV2 {
     try {
       console.log('🎯 ChatFlow → VideoPlayer 검색 시작:', keyword)
 
-      // 단일 키워드로 검색 실행
-      const searchResult = await this.searchVideos(keyword, {
+      // ✅ 키워드 문자열을 개별 키워드 배열로 분리
+      const keywordArray = keyword.split(' ').filter(k => k.trim().length > 0)
+      console.log('🔧 키워드 분리:', keyword, '→', keywordArray)
+
+      // 개별 키워드 배열로 검색 실행
+      const searchResult = await this.searchVideos(keywordArray, {
         limit: options.limit || 20  // VideoPlayer용 기본 20개
       })
 
@@ -143,8 +147,15 @@ class SearchServiceV2 {
         // VideoPlayer 호환 형식으로 변환
         const videoPlayerData = this.transformToVideoPlayerData(searchResult)
         
+        // ✅ 영상 결과를 랜덤으로 섞기
+        if (videoPlayerData.success && videoPlayerData.data.length > 0) {
+          videoPlayerData.data = this.shuffleArray(videoPlayerData.data)
+          console.log(`🔀 영상 ${videoPlayerData.data.length}개 랜덤 섞기 완료`)
+        }
+        
         console.log('✅ ChatFlow → VideoPlayer 검색 성공:', {
-          keyword,
+          originalKeyword: keyword,
+          splitKeywords: keywordArray,
           videoCount: videoPlayerData.data.length
         })
 
@@ -168,6 +179,22 @@ class SearchServiceV2 {
         keyword
       }
     }
+  }
+
+  /**
+   * 🔀 배열을 랜덤으로 섞는 유틸리티 메서드 (Fisher-Yates 알고리즘)
+   * @param {Array} array - 섞을 배열
+   * @returns {Array} 섞인 배열
+   */
+  shuffleArray(array) {
+    const shuffled = [...array] // 원본 배열 복사
+    
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    
+    return shuffled
   }
 }
 
