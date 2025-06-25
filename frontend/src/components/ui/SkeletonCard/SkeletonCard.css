@@ -1,18 +1,11 @@
 /**
- * SkeletonCard - 완전히 단순한 shimmer 박스
- * SelectableCard와 동일한 크기
+ * SkeletonCard - SelectableCard와 동일한 크기의 shimmer 박스
  */
 
 .skeleton-card {
-  /* SelectableCard와 동일한 기본 크기 */
+  /* SelectableCard와 동일한 기본 스타일 */
   width: 100%;
-  min-height: 160px; /* SelectableCard large와 동일 */
-  background: linear-gradient(90deg, 
-    rgba(255, 255, 255, 0.1) 25%, 
-    rgba(255, 255, 255, 0.2) 50%, 
-    rgba(255, 255, 255, 0.1) 75%
-  );
-  background-size: 200% 100%;
+  background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -23,10 +16,48 @@
   pointer-events: none;
   cursor: not-allowed;
   
+  /* Shimmer를 위한 설정 */
+  position: relative;
+  overflow: hidden;
+  
   /* 등장 애니메이션 */
   opacity: 0;
   transform: translateY(20px);
   animation: skeletonFadeIn 0.6s ease-out forwards;
+}
+
+/* SelectableCard와 동일한 내부 구조 (보이지 않게) */
+.skeleton-inner {
+  display: flex;
+  align-items: center;
+  gap: 16px; /* large 카드 gap */
+  padding: 20px; /* large 카드 padding */
+  opacity: 0; /* 완전히 투명하게 */
+  pointer-events: none;
+}
+
+.skeleton-icon {
+  flex-shrink: 0;
+  font-size: 28px; /* large 카드 아이콘 크기 */
+  line-height: 1;
+}
+
+.skeleton-title {
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+  flex: 1;
+}
+
+.skeleton-description {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  margin: 0;
+  line-height: 1.4;
+  flex: 1;
 }
 
 /* 등장 애니메이션 */
@@ -37,42 +68,78 @@
   }
 }
 
-/* Shimmer 애니메이션 */
-.shimmer {
-  animation: shimmer 2s infinite linear;
+/* 강화된 Shimmer 효과 */
+.skeleton-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.6) 30%,
+    rgba(255, 255, 255, 0.8) 50%, 
+    rgba(255, 255, 255, 0.6) 70%,
+    transparent 100%
+  );
+  animation: shimmerSlide 2s infinite ease-in-out;
+  border-radius: 20px; /* 카드와 동일한 border-radius */
 }
 
-@keyframes shimmer {
+@keyframes shimmerSlide {
   0% {
-    background-position: -200px 0;
+    left: -100%;
   }
   100% {
-    background-position: calc(200px + 100%) 0;
+    left: 100%;
   }
 }
 
 /* 다크 테마 대응 */
 @media (prefers-color-scheme: dark) {
   .skeleton-card {
+    background: rgba(255, 255, 255, 0.03);
+  }
+  
+  .skeleton-card::before {
     background: linear-gradient(90deg, 
-      rgba(255, 255, 255, 0.05) 25%, 
-      rgba(255, 255, 255, 0.15) 50%, 
-      rgba(255, 255, 255, 0.05) 75%
+      transparent 0%, 
+      rgba(255, 255, 255, 0.3) 30%,
+      rgba(255, 255, 255, 0.5) 50%, 
+      rgba(255, 255, 255, 0.3) 70%,
+      transparent 100%
     );
-    background-size: 200% 100%;
   }
 }
 
 /* 모바일 최적화 - SelectableCard와 동일 */
 @media (max-width: 430px) {
-  .skeleton-card {
-    min-height: 140px; /* 모바일에서 SelectableCard와 동일 */
+  .skeleton-inner {
+    padding: 12px; /* 모바일 SelectableCard와 동일 */
+    gap: 8px;
+  }
+  
+  .skeleton-icon {
+    font-size: 20px; /* 모바일 아이콘 크기 */
+  }
+  
+  .skeleton-title {
+    font-size: 17px; /* 모바일 제목 크기 */
+  }
+  
+  .skeleton-description {
+    font-size: 13px; /* 모바일 설명 크기 */
   }
 }
 
 /* iPhone 12/13 mini (375px) 이하 */
 @media (max-width: 375px) {
-  .skeleton-card {
-    min-height: 120px;
+  .skeleton-title {
+    font-size: 16px;
+  }
+  
+  .skeleton-description {
+    font-size: 12px;
   }
 }

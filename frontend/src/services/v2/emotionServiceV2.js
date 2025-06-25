@@ -58,8 +58,8 @@ class EmotionServiceV2 {
         error: error.message,
         userInput: userInput,
         timestamp: new Date().toISOString()
-      }
     }
+  }
   }
 
   /**

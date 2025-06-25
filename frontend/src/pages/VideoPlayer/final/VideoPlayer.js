@@ -61,7 +61,8 @@ export default class VideoPlayer extends Component {
       }
       // 🔄 기존 단일 키워드 형식 (호환성) - v2 검색으로 강제 설정
       else if (keyword) {
-        this.keyword = decodeURIComponent(keyword)
+        // ✅ + 기호를 띄어쓰기로 변환 후 디코딩
+        this.keyword = decodeURIComponent(keyword.replace(/\+/g, ' '))
         this.keywords = [this.keyword]
         this.isV2Search = true  // ✅ 기존 URL도 v2 검색 모드로 강제 설정
         console.log('📋 URL에서 기존 키워드 추출 (v2 모드로 설정):', this.keyword)
@@ -145,7 +146,8 @@ export default class VideoPlayer extends Component {
       if (this.keywords.length > 0) {
         console.log('🚀 v2 API로 영상 검색 실행')
         
-        const searchResult = await searchServiceV2.searchForVideoPlayer(this.keywords.join(' '), {
+        // ✅ 키워드 배열을 그대로 전달 (join 하지 않음!)
+        const searchResult = await searchServiceV2.searchForVideoPlayer(this.keywords, {
           limit: 50
         })
         

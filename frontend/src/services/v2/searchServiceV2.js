@@ -145,19 +145,31 @@ class SearchServiceV2 {
 
   /**
    * 🎯 ChatFlow에서 VideoPlayer로 전환하는 통합 메서드
-   * @param {string} keyword - 선택된 키워드 (공백으로 연결된 문자열)
+   * @param {string|Array} keywords - 선택된 키워드 (문자열 또는 배열)
    * @param {Object} options - 검색 옵션
    * @returns {Promise<Object>} VideoPlayer 전환 결과
    */
-  async searchForVideoPlayer(keyword, options = {}) {
+  async searchForVideoPlayer(keywords, options = {}) {
     try {
-      console.log('🎯 ChatFlow → VideoPlayer 검색 시작:', keyword)
+      console.log('🎯 ChatFlow → VideoPlayer 검색 시작:', keywords)
 
-      // ✅ 키워드 문자열을 개별 키워드 배열로 분리
-      const keywordArray = keyword.split(' ').filter(k => k.trim().length > 0)
-      console.log('🔧 키워드 분리:', keyword, '→', keywordArray)
+      // ✅ 문자열/배열 모두 처리 가능하도록 통합 (분할하지 않음!)
+      let keywordArray
+      if (Array.isArray(keywords)) {
+        // 이미 배열이면 그대로 사용
+        keywordArray = keywords.filter(k => k && k.trim().length > 0)
+        console.log('🔧 배열 키워드 그대로 사용:', keywordArray)
+      } else {
+        // 문자열이면 하나의 키워드로 처리 (분할하지 않음!)
+        keywordArray = [keywords.trim()].filter(k => k.length > 0)
+        console.log('🔧 문자열 키워드를 배열로 변환:', keywords, '→', keywordArray)
+      }
 
-      // 개별 키워드 배열로 검색 실행
+      if (keywordArray.length === 0) {
+        throw new Error('검색할 키워드가 없습니다')
+      }
+
+      // 키워드 배열로 검색 실행
       const searchResult = await this.searchVideos(keywordArray, {
         limit: options.limit || 50  // VideoPlayer용 기본 50개
       })
@@ -173,8 +185,8 @@ class SearchServiceV2 {
         }
         
         console.log('✅ ChatFlow → VideoPlayer 검색 성공:', {
-          originalKeyword: keyword,
-          splitKeywords: keywordArray,
+          originalInput: keywords,
+          processedKeywords: keywordArray,
           videoCount: videoPlayerData.data.length
         })
 
@@ -195,7 +207,7 @@ class SearchServiceV2 {
           is_fallback: true,
           source: 'v2_search_failed'
         },
-        keyword
+        keywords
       }
     }
   }

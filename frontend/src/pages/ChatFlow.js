@@ -404,8 +404,8 @@ export default class ChatFlow extends Component {
   renderInput() {
     const inputContainer = this.el.querySelector('#input-container')
     
-    if (this.currentStep === 1 || this.currentStep === 4) {
-      // Step 1과 Step 4는 입력창 없음
+    if (this.currentStep === 1 || this.currentStep === 3 || this.currentStep === 4) {
+      // Step 1, 3, 4는 입력창 없음
       inputContainer.style.display = 'none'
       return
     }
@@ -1068,27 +1068,27 @@ export default class ChatFlow extends Component {
   }
   
   /**
-   * 🔍 영상 검색 실행 (키워드만 VideoPlayer로 전달)
+   * 🔍 영상 검색 실행 (키워드 배열만 VideoPlayer로 전달)
    */
   async executeVideoSearch() {
     console.log('🔍 executeVideoSearch 시작!')
     
-    // 🎯 description에서 실제 키워드 추출
+    // 🎯 description에서 실제 키워드 배열 추출
     const selectedCardData = this.getSelectedCardData()
-    const actualKeyword = this.extractKeywordFromDescription(selectedCardData)
+    const actualKeywords = this.extractKeywordFromDescription(selectedCardData)
     
     console.log('🔍 executeVideoSearch:', {
       selectedCardData: selectedCardData,
-      actualKeyword: actualKeyword
+      actualKeywords: actualKeywords
     })
     
     try {
       this.isSearching = true
       
-      console.log('🔍 키워드 VideoPlayer로 전달:', actualKeyword)
+      console.log('🔍 키워드 배열 VideoPlayer로 전달:', actualKeywords)
       
-      // ✅ 키워드만 VideoPlayer로 전달 (검색은 VideoPlayer에서 담당)
-      this.navigateToVideoPlayer(actualKeyword)
+      // ✅ 키워드 배열을 직접 VideoPlayer로 전달 (검색은 VideoPlayer에서 담당)
+      this.navigateToVideoPlayer(actualKeywords)
       
     } catch (error) {
       console.error('❌ VideoPlayer 이동 오류:', error)
@@ -1125,24 +1125,23 @@ export default class ChatFlow extends Component {
   }
   
   /**
-   * 🔧 description에서 키워드 추출
+   * 🔧 description에서 키워드 추출 (배열 그대로 반환)
    * @param {Object} cardData - 선택된 카드 데이터
-   * @returns {string} 추출된 전체 키워드 문자열
+   * @returns {Array} 추출된 키워드 배열
    */
   extractKeywordFromDescription(cardData) {
     if (!cardData) {
-      console.warn('⚠️ cardData가 없음, 기본 키워드 반환')
-      return '일반'
+      console.warn('⚠️ cardData가 없음, 기본 키워드 배열 반환')
+      return ['일반']
     }
 
-    // 1순위: keywords 배열이 있으면 전체 키워드를 공백으로 연결
+    // 1순위: keywords 배열이 있으면 그대로 반환 (분리하지 않음!)
     if (cardData.keywords && Array.isArray(cardData.keywords) && cardData.keywords.length > 0) {
-      const allKeywords = cardData.keywords.join(' ')
-      console.log(`🎯 keywords 배열에서 전체 키워드 추출: "${allKeywords}"`)
-      return allKeywords
+      console.log(`🎯 keywords 배열 그대로 반환:`, cardData.keywords)
+      return cardData.keywords
     }
 
-    // 2순위: description에서 "추천 키워드: xxx, yyy" 패턴 파싱
+    // 2순위: description에서 "추천 키워드: xxx, yyy" 패턴 파싱하여 배열로 반환
     if (cardData.description && cardData.description.includes('추천 키워드:')) {
       const keywordPart = cardData.description.split('추천 키워드:')[1]
       if (keywordPart) {
@@ -1153,23 +1152,22 @@ export default class ChatFlow extends Component {
           .filter(k => k.length > 0)
         
         if (keywords.length > 0) {
-          const allKeywords = keywords.join(' ')
-          console.log(`🎯 description에서 전체 키워드 추출: "${cardData.description}" → "${allKeywords}"`)
-          return allKeywords
+          console.log(`🎯 description에서 키워드 배열 추출: "${cardData.description}" →`, keywords)
+          return keywords
         }
       }
     }
 
-    // 3순위: value에서 키워드 추출 (기존 로직)
+    // 3순위: value에서 키워드 추출 후 배열로 반환
     if (cardData.value) {
       const simplified = this.simplifyKeyword(cardData.value)
-      console.log(`🎯 value에서 키워드 추출: "${cardData.value}" → "${simplified}"`)
-      return simplified
+      console.log(`🎯 value에서 키워드 배열 추출: "${cardData.value}" → ["${simplified}"]`)
+      return [simplified]
     }
 
     // 최종 폴백
-    console.warn(`⚠️ 키워드 추출 실패, 기본값 사용:`, cardData)
-    return '일반'
+    console.warn(`⚠️ 키워드 추출 실패, 기본 배열 사용:`, cardData)
+    return ['일반']
   }
   
   /**
@@ -1236,12 +1234,12 @@ export default class ChatFlow extends Component {
   }
   
   /**
-   * 🎬 VideoPlayer로 이동 (키워드 배열로 전달)
+   * 🎬 VideoPlayer로 이동 (키워드 배열로 직접 전달)
    */
-  navigateToVideoPlayer(keywordString) {
-    // 키워드 문자열을 배열로 분리
-    const keywords = keywordString.split(' ').filter(k => k.trim().length > 0)
-    console.log('🔧 키워드 분리:', keywordString, '→', keywords)
+  navigateToVideoPlayer(keywordArray) {
+    // 이미 배열이면 그대로 사용, 문자열이면 배열로 변환
+    const keywords = Array.isArray(keywordArray) ? keywordArray : [keywordArray]
+    console.log('🎬 VideoPlayer로 키워드 배열 전달:', keywords)
     
     // keywords 배열을 JSON 문자열로 인코딩하여 전달
     const params = new URLSearchParams({
@@ -1251,7 +1249,7 @@ export default class ChatFlow extends Component {
     })
     
     const url = `#/video-player?${params.toString()}`
-    console.log('🎬 VideoPlayer로 이동:', url)
+    console.log('🎬 VideoPlayer URL:', url)
     console.log('🎬 전달할 키워드 배열:', keywords)
     
     if (window.app && typeof window.app.navigateTo === 'function') {

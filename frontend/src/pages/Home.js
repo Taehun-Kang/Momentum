@@ -168,9 +168,21 @@ export default class Home extends Component {
   handleKeywordClick(source, data, index) {
     console.log(`🔍 키워드 클릭 [${source}]:`, data, 'index:', index)
     
-    // 키워드 추출
-    const keyword = source === 'trending' ? data.keyword : 
-                   source === 'timebased' ? data.keyword : data
+    // 키워드 추출 (PersonalizedKeywords는 객체 형태로 전달됨)
+    let keyword
+    if (source === 'trending') {
+      keyword = data.keyword
+    } else if (source === 'timebased') {
+      keyword = data.keyword
+    } else if (source === 'personalized') {
+      // PersonalizedKeywords는 객체로 전달되므로 keyword 필드 추출
+      keyword = data.keyword || data.text || data
+      console.log('🔧 PersonalizedKeywords 키워드 추출:', data, '→', keyword)
+    } else {
+      keyword = typeof data === 'string' ? data : data.keyword || data.text || '일반'
+    }
+    
+    console.log('🎯 최종 키워드:', keyword)
     
     // 영상 재생 페이지로 이동
     if (window.app) {
