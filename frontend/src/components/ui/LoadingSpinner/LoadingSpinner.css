@@ -19,11 +19,14 @@
 
 /* 다크모드 지원 */
 /* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   .unique-loading-spinner-overlay {
     background: transparent;
   }
 }
+*/
 */
 
 /* 페이드인 애니메이션 */
@@ -58,6 +61,8 @@
 
 /* 다크모드 컨테이너 */
 /* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   .unique-loading-spinner-container {
     background: rgba(0, 0, 0, 0.3);
@@ -67,6 +72,7 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 }
+*/
 */
 
 /* 스케일인 애니메이션 */
@@ -148,11 +154,14 @@
 
 /* 다크모드 텍스트 */
 /* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   .unique-loading-spinner-text {
     color: #e8eaed;
   }
 }
+*/
 */
 
 /* 텍스트 펄스 애니메이션 */

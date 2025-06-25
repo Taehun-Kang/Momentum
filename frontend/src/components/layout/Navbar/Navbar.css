@@ -227,6 +227,8 @@ body.video-page-active .navbar-container {
 ======================================== */
 
 /* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   .navbar-container {
     background: rgba(28, 28, 30, 0.95);

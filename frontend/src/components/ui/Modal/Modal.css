@@ -353,6 +353,8 @@
 ======================================== */
 
 /* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   .modal-overlay {
     background: rgba(0, 0, 0, 0.8);
@@ -407,6 +409,7 @@
     background: rgba(255, 255, 255, 0.85);
   }
 }
+*/
 */
 
 /* ========================================
@@ -672,6 +675,8 @@
   background: rgba(0, 0, 0, 0.3);
 }
 
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   .modal-content-area {
     scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
@@ -684,4 +689,5 @@
   .modal-content-area::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.4);
   }
-} 
+}
+*/ 

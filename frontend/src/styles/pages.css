@@ -1474,6 +1474,8 @@ body::before {
 /* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 /* 다크 모드 지원 */
 /* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   :root {
     --text-primary: #f7fafc;
@@ -1481,6 +1483,7 @@ body::before {
     --text-muted: rgba(247, 250, 252, 0.7);
   }
 }
+*/
 */
 
 /* 접근성 */
@@ -2657,6 +2660,8 @@ body::before {
 
 /* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 /* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   .page {
     background: linear-gradient(135deg, 
@@ -2667,4 +2672,5 @@ body::before {
     color: rgba(255, 255, 255, 0.9);
   }
 }
+*/
 */

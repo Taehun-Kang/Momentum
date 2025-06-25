@@ -206,11 +206,16 @@
 }
 
 /* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .user-preference-keywords {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.1);
 }
+*/
 
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .preference-keyword-btn {
   background: linear-gradient(135deg, 
     rgba(154, 120, 219, 0.15) 0%, 
@@ -219,19 +224,31 @@
   border-color: rgba(154, 120, 219, 0.3);
   color: rgba(196, 181, 253, 0.9);
 }
+*/
 
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .keyword-text {
   color: rgba(196, 181, 253, 0.9);
 }
+*/
 
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .keyword-category {
   color: rgba(255, 255, 255, 0.6);
 }
+*/
 
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .empty-title {
   color: rgba(255, 255, 255, 0.8);
 }
+*/
 
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .empty-subtitle {
   color: rgba(255, 255, 255, 0.5);
 }

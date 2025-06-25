@@ -329,6 +329,8 @@
 }
 
 /* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .chat-support-button {
   background: linear-gradient(
     135deg,
@@ -337,12 +339,18 @@
   );
   border-color: rgba(255, 255, 255, 0.1);
 }
+*/
 
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .chat-title {
   color: rgba(255, 255, 255, 0.9);
 }
+*/
 
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .chat-subtitle {
   color: rgba(255, 255, 255, 0.6);
 }
-*/ 
+*/

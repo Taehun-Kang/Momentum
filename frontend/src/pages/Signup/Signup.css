@@ -718,6 +718,8 @@
 
 /* 🌙 다크 모드 개선 */
 /* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   .signup-form {
     background: rgba(0, 0, 0, 0.3);
@@ -732,6 +734,7 @@
     background: rgba(0, 0, 0, 0.5);
   }
 }
+*/
 
 /* 🎯 성능 최적화 */
 .floating-orb {

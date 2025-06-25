@@ -245,6 +245,8 @@
 ======================================== */
 
 /* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   .tag {
     background: rgba(255, 255, 255, 0.08);
@@ -266,6 +268,7 @@
     background: rgba(154, 120, 219, 0.15);
   }
 }
+*/
 
 /* ========================================
    모바일 반응형 디자인
