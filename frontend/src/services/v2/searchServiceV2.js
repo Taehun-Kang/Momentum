@@ -63,7 +63,7 @@ class SearchServiceV2 {
   }
 
   /**
-   * 🎨 v2 검색 결과를 VideoPlayer 호환 형식으로 변환 (최소화)
+   * 🎨 v2 검색 결과를 VideoPlayer 호환 형식으로 변환 (모든 키워드 통합)
    * @param {Object} v2SearchResult - v2 검색 결과
    * @returns {Object} VideoPlayer 호환 데이터
    */
@@ -80,10 +80,36 @@ class SearchServiceV2 {
       }
     }
 
-    // 첫 번째 키워드의 결과를 사용 (단일 키워드 검색과 호환)
-    const firstResult = v2SearchResult.results[0]
+    // ✅ 모든 키워드의 결과를 합치기
+    let allVideos = []
+    let totalVideos = 0
     
-    if (!firstResult || !firstResult.videos) {
+    v2SearchResult.results.forEach(result => {
+      if (result && result.videos && result.videos.length > 0) {
+        console.log(`📺 "${result.keyword}" 키워드: ${result.videos.length}개 영상 추가`)
+        
+        // 각 키워드의 영상들을 전체 배열에 추가
+        const keywordVideos = result.videos.map(video => ({
+          // VideoPlayer 필수 필드만 (간소화)
+          videoId: video.video_id,
+          title: video.title || '영상 제목',
+          creator: video.handle_name || '크리에이터',
+          
+          // UI 상태 필드 (초기값)
+          isLiked: false,
+          isDisliked: false,
+          isPlaying: false,
+          
+          // 출처 키워드 정보 추가
+          sourceKeyword: result.keyword
+        }))
+        
+        allVideos.push(...keywordVideos)
+        totalVideos += result.videos.length
+      }
+    })
+
+    if (allVideos.length === 0) {
       return {
         success: false,
         data: [],
@@ -95,31 +121,24 @@ class SearchServiceV2 {
       }
     }
 
-    // v2 영상 데이터를 VideoPlayer가 기대하는 최소 형식으로 변환
-    const transformedVideos = firstResult.videos.map(video => ({
-      // VideoPlayer 필수 필드만
-      videoId: video.video_id,           // YouTube 영상 ID (필수)
-      title: video.title || '영상 제목',  // 영상 제목 (필수)
-      creator: video.handle_name || '크리에이터', // 크리에이터명 (필수) - handle_name 사용
-      
-      // UI 상태 필드 (초기값)
-      isLiked: false,
-      isDisliked: false,
-      isPlaying: false,
-      avatar: '👤'
-    }))
+    // ✅ 모든 영상을 랜덤으로 섞기
+    const shuffledVideos = this.shuffleArray(allVideos)
+    
+    console.log(`🎲 통합 결과: ${allVideos.length}개 영상을 랜덤 섞기 완료`)
+    console.log(`📊 키워드별 영상 수:`, v2SearchResult.results.map(r => `${r.keyword}: ${r.videos?.length || 0}개`))
 
     return {
       success: true,
-      data: transformedVideos,
+      data: shuffledVideos,
       meta: {
-        total_found: firstResult.videos.length,
+        total_found: allVideos.length,
         query_time_ms: v2SearchResult.summary?.totalDuration * 1000 || 0,
         is_fallback: false,
-        source: 'v2_search_vqs',
-        search_keyword: firstResult.keyword
+        source: 'v2_search_vqs_combined',
+        keywords_count: v2SearchResult.results.length,
+        total_keywords_videos: totalVideos
       },
-      keyword: firstResult.keyword,
+      keywords: v2SearchResult.results.map(r => r.keyword),
       timestamp: v2SearchResult.timestamp
     }
   }

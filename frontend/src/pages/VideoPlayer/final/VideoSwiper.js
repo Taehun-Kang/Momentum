@@ -158,49 +158,32 @@ export default class VideoSwiper extends Component {
   }
   
   generateNewVideos(count) {
-    // 🇰🇷 인기 한국 YouTube Shorts 영상 ID들 (임베드 허용 확인됨)
-    const koreanShortsVideos = [
-      { id: 'P_9XDrMCjjM', title: '여름 메이크업 꿀팁', topic: '뷰티', channel: '@olens_official' },
-      { id: 'ZoJ2z3oEz2E', title: '홈카페 만들기', topic: '일상', channel: '@dailycafe_kr' },
-      { id: 'X7OR3OYHROw', title: '요리 레시피 쇼츠', topic: '요리', channel: '@cooking_hacks' },
-      { id: 'cQcLK8nMCuk', title: '패션 코디 팁', topic: '패션', channel: '@fashion_daily' },
-      { id: '9AQyPu8KVMc', title: '운동 루틴', topic: '운동', channel: '@health_shorts' },
-      { id: 'Rjh_YaRPKcE', title: '댄스 챌린지', topic: '댄스', channel: '@dance_cover' },
-      { id: 'L_jSLtWQtow', title: '여행 브이로그', topic: '여행', channel: '@travel_korea' },
-      { id: 'mNkR6HATNzQ', title: '일상 VLOG', topic: '일상', channel: '@daily_moments' },
-      { id: 'jHGEGEE7Xm4', title: '음악 커버', topic: '음악', channel: '@music_cover_kr' }
-    ]
-    
-    const koreanCreators = [
-      { name: '@올렌즈', avatar: '💄', topic: '뷰티', tags: ['#뷰티', '#메이크업', '#렌즈'] },
-      { name: '@데일리카페', avatar: '☕', topic: '카페', tags: ['#카페', '#홈카페', '#커피'] },
-      { name: '@요리팁', avatar: '🍳', topic: '요리', tags: ['#요리', '#레시피', '#꿀팁'] },
-      { name: '@패션데일리', avatar: '👗', topic: '패션', tags: ['#패션', '#코디', '#스타일'] },
-      { name: '@헬스쇼츠', avatar: '💪', topic: '운동', tags: ['#운동', '#홈트', '#헬스'] },
-      { name: '@댄스커버', avatar: '💃', topic: '댄스', tags: ['#댄스', '#커버', '#안무'] },
-      { name: '@여행코리아', avatar: '🗺️', topic: '여행', tags: ['#여행', '#국내여행', '#맛집'] },
-      { name: '@일상모먼트', avatar: '📸', topic: '일상', tags: ['#일상', '#브이로그', '#데일리'] },
-      { name: '@음악커버', avatar: '🎤', topic: '음악', tags: ['#음악', '#커버', '#노래'] }
+    // ✅ v2 API 형식에 맞는 간단한 더미 데이터 (개발/테스트용)
+    const simpleVideos = [
+      { id: 'P_9XDrMCjjM', title: '힐링 영상 1', creator: '힐링채널' },
+      { id: 'ZoJ2z3oEz2E', title: '댄스 영상 1', creator: '댄스크루' },
+      { id: 'X7OR3OYHROw', title: '요리 영상 1', creator: '요리왕' },
+      { id: 'cQcLK8nMCuk', title: '뷰티 영상 1', creator: '뷰티구루' },
+      { id: '9AQyPu8KVMc', title: '운동 영상 1', creator: '헬스트레이너' },
+      { id: 'Rjh_YaRPKcE', title: '음악 영상 1', creator: '음악가' },
+      { id: 'L_jSLtWQtow', title: '여행 영상 1', creator: '여행러' },
+      { id: 'mNkR6HATNzQ', title: '일상 영상 1', creator: '브이로거' },
+      { id: 'jHGEGEE7Xm4', title: '게임 영상 1', creator: '게이머' }
     ]
     
     return Array.from({ length: count }, (_, i) => {
-      const video = koreanShortsVideos[Math.floor(Math.random() * koreanShortsVideos.length)]
-      const creator = koreanCreators[Math.floor(Math.random() * koreanCreators.length)]
+      const video = simpleVideos[i % simpleVideos.length]
       
+      // ✅ v2 API 형식과 동일한 간단한 구조
       return {
-        videoId: video.id, // 🎬 실제 한국 Shorts 영상 ID
-        creator: creator.name,
-        avatar: creator.avatar,
-        title: `${video.title} | ${creator.topic}`,
-        desc: `${creator.topic} 쇼츠 콘텐츠! ${video.title}`,
-        tags: [...creator.tags, '#쇼츠', '#한국'],
-        likes: Math.floor(Math.random() * 100000) + 5000, // 한국 쇼츠 좋아요 수준
-        comments: Math.floor(Math.random() * 8000) + 500,
-        dislikes: Math.floor(Math.random() * 500) + 20,
-        followers: Math.floor(Math.random() * 500000) + 10000, // 한국 유튜버 구독자 수준
-        isLiked: Math.random() > 0.8,
+        videoId: video.id,
+        title: `${video.title} #${i + 1}`,
+        creator: video.creator,
+        
+        // 기본 UI 상태만
+        isLiked: false,
         isDisliked: false,
-        isFollowing: Math.random() > 0.6
+        isPlaying: false
       }
     })
   }
