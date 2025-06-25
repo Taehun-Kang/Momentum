@@ -56,15 +56,15 @@ export default class VideoPlayer extends Component {
           console.error('❌ 키워드 배열 파싱 실패:', error)
           this.keywords = [keywords]
           this.keyword = keywords
-          this.isV2Search = false
+          this.isV2Search = true  // ✅ 파싱 실패해도 v2 검색 사용
         }
       }
-      // 🔄 기존 단일 키워드 형식 (호환성)
+      // 🔄 기존 단일 키워드 형식 (호환성) - v2 검색으로 강제 설정
       else if (keyword) {
         this.keyword = decodeURIComponent(keyword)
         this.keywords = [this.keyword]
-        this.isV2Search = false
-        console.log('📋 URL에서 기존 키워드 추출:', this.keyword)
+        this.isV2Search = true  // ✅ 기존 URL도 v2 검색 모드로 강제 설정
+        console.log('📋 URL에서 기존 키워드 추출 (v2 모드로 설정):', this.keyword)
       }
       
       this.timestamp = timestamp
@@ -133,15 +133,16 @@ export default class VideoPlayer extends Component {
   }
   
   /**
-   * 🎬 v2 API로 영상 검색 (단순화)
+   * 🎬 v2 API로 영상 검색 (모든 키워드 v2 API 사용)
    */
   async loadVideoData() {
     try {
       console.log(`🎬 "${this.keyword}" 영상 검색 시작`)
       console.log(`🔧 키워드 배열:`, this.keywords)
+      console.log(`🔧 v2 검색 모드:`, this.isV2Search)
       
-      // ✅ v2 API로만 검색 (폴백 로직 제거)
-      if (this.isV2Search && this.keywords.length > 0) {
+      // ✅ 모든 경우에 v2 API 사용 (조건 체크 제거)
+      if (this.keywords.length > 0) {
         console.log('🚀 v2 API로 영상 검색 실행')
         
         const searchResult = await searchServiceV2.searchForVideoPlayer(this.keywords.join(' '), {
@@ -154,16 +155,16 @@ export default class VideoPlayer extends Component {
           this.isLoading = false
           return
         } else {
-          throw new Error('v2 API 검색 결과 없음')
+          console.warn('⚠️ v2 API 검색 결과 없음')
+          this.videos = []
         }
       } else {
-        throw new Error('v2 검색 모드가 아니거나 키워드 없음')
+        console.error('❌ 키워드가 없습니다')
+        this.videos = []
       }
       
     } catch (error) {
       console.error('❌ 영상 검색 실패:', error)
-      
-      // 🚫 에러 시 에러 메시지만 표시 (폴백 제거)
       this.videos = []
       
     } finally {

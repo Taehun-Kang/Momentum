@@ -37,7 +37,7 @@ export default class MyPage extends Component {
         { id: "2", text: "홈카페", category: "lifestyle" },
         { id: "3", text: "국내여행", category: "travel" },
         { id: "4", text: "간단요리", category: "food" },
-        { id: "5", text: "ASMR", category: "music" },
+        { id: "5", text: "백색소음", category: "music" },
         { id: "6", text: "강아지", category: "lifestyle" }
       ]
     }

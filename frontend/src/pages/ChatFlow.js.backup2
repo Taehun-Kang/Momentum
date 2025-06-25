@@ -852,11 +852,6 @@ export default class ChatFlow extends Component {
       
       console.log('🧠 LLM 분석 완료! isAnalyzing은 유지')
       
-      // 🎯 분석 완료 후 상태 변경 및 재렌더링
-      console.log('🧠 분석 완료! isAnalyzing = false 설정 및 재렌더링')
-      this.isAnalyzing = false
-      this.renderContent() // 실제 결과 표시
-      
     } catch (error) {
       console.error('❌ LLM 분석 실패:', error)
       this.llmAnalysisResult = null

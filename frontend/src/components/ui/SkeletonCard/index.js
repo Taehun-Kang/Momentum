@@ -12,30 +12,8 @@ export default class SkeletonCard extends Component {
   }
   
   render() {
-    this.el.className = 'skeleton-card'
-    this.el.innerHTML = `
-      <div class="skeleton-content">
-        <!-- Skeleton 아이콘 -->
-        <div class="skeleton-icon shimmer"></div>
-        
-        <!-- Skeleton 제목 -->
-        <div class="skeleton-title shimmer"></div>
-        
-        <!-- Skeleton 설명 (2줄) -->
-        <div class="skeleton-description">
-          <div class="skeleton-line shimmer"></div>
-          <div class="skeleton-line shimmer"></div>
-        </div>
-        
-        <!-- 로딩 메시지 -->
-        <div class="skeleton-loading-message">
-          ${this.loadingMessage}
-        </div>
-      </div>
-    `
-    
-    // 순차 등장 애니메이션은 ChatFlow.css에서 처리하므로 제거
-    // this.el.style.animationDelay = `${this.index * 200}ms`
+    this.el.className = 'skeleton-card shimmer'
+    this.el.innerHTML = '' // 완전히 빈 박스
     
     // 접근성
     this.el.setAttribute('aria-label', '로딩 중')

@@ -106,9 +106,9 @@ export default class TimeBasedKeywords extends Component {
     } else if (hour >= 12 && hour < 18) { // 오후 (실제 DB MEDIUM 키워드)  
       return ['직장인 브이로그', '간단요리', '카페음악', '점심 브이로그', '업사이클링', '생활꿀팁']
     } else if (hour >= 18 && hour < 22) { // 저녁 (실제 DB MEDIUM 키워드)
-      return ['요리', '브이로그', '힐링음악', '스킨케어 루틴', '인테리어', '자취 브이로그']
+      return ['간단요리', '브이로그', '힐링음악', '스킨케어 루틴', '인테리어', '자취 브이로그']
     } else { // 밤 (실제 DB LOW 키워드 - ASMR & 힐링)
-      return ['수면음악', 'ASMR', '명상음악', '백색소음', '파도소리', '빗소리']
+      return ['수면음악', 'ASMR 음악', '명상음악', '백색소음', '파도소리', '빗소리']
     }
   }
 

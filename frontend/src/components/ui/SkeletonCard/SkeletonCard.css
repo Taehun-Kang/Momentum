@@ -1,12 +1,18 @@
 /**
- * SkeletonCard - 로딩 중 카드 컴포넌트
- * SelectableCard와 동일한 크기 및 레이아웃 사용
+ * SkeletonCard - 완전히 단순한 shimmer 박스
+ * SelectableCard와 동일한 크기
  */
 
 .skeleton-card {
   /* SelectableCard와 동일한 기본 크기 */
   width: 100%;
-  background: rgba(255, 255, 255, 0.1);
+  min-height: 160px; /* SelectableCard large와 동일 */
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0.1) 25%, 
+    rgba(255, 255, 255, 0.2) 50%, 
+    rgba(255, 255, 255, 0.1) 75%
+  );
+  background-size: 200% 100%;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -31,58 +37,6 @@
   }
 }
 
-.skeleton-content {
-  /* SelectableCard large와 동일한 패딩과 갭 */
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  height: 100%;
-  min-height: 120px; /* 최소 높이 보장 */
-}
-
-/* Skeleton 아이콘 */
-.skeleton-icon {
-  width: 28px; /* large 카드 아이콘 크기 */
-  height: 28px;
-  border-radius: 50%;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  flex-shrink: 0;
-}
-
-/* Skeleton 제목 */
-.skeleton-title {
-  height: 22px; /* SelectableCard 제목 높이와 비슷 */
-  width: 75%;
-  border-radius: 11px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-}
-
-/* Skeleton 설명 */
-.skeleton-description {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-}
-
-.skeleton-line {
-  height: 16px; /* SelectableCard 설명 텍스트 높이와 비슷 */
-  border-radius: 8px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-}
-
-.skeleton-line:first-child {
-  width: 90%;
-}
-
-.skeleton-line:last-child {
-  width: 65%;
-}
-
 /* Shimmer 애니메이션 */
 .shimmer {
   animation: shimmer 2s infinite linear;
@@ -97,66 +51,28 @@
   }
 }
 
-/* 로딩 메시지 */
-.skeleton-loading-message {
-  margin-top: auto;
-  padding-top: 8px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-  text-align: center;
-  font-weight: 500;
-  opacity: 0;
-  animation: messageAppear 0.8s ease-out 0.3s forwards;
-}
-
-@keyframes messageAppear {
-  to {
-    opacity: 1;
-  }
-}
-
 /* 다크 테마 대응 */
 @media (prefers-color-scheme: dark) {
-  .skeleton-icon,
-  .skeleton-title,
-  .skeleton-line {
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 25%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.1) 75%);
+  .skeleton-card {
+    background: linear-gradient(90deg, 
+      rgba(255, 255, 255, 0.05) 25%, 
+      rgba(255, 255, 255, 0.15) 50%, 
+      rgba(255, 255, 255, 0.05) 75%
+    );
     background-size: 200% 100%;
   }
 }
 
 /* 모바일 최적화 - SelectableCard와 동일 */
 @media (max-width: 430px) {
-  .skeleton-content {
-    padding: 12px; /* 모바일에서 SelectableCard와 동일 */
-    gap: 8px;
-  }
-  
-  .skeleton-icon {
-    width: 20px; /* 모바일 아이콘 크기 */
-    height: 20px;
-  }
-  
-  .skeleton-title {
-    height: 20px;
-  }
-  
-  .skeleton-line {
-    height: 14px;
-  }
-  
-  .skeleton-loading-message {
-    font-size: 11px;
+  .skeleton-card {
+    min-height: 140px; /* 모바일에서 SelectableCard와 동일 */
   }
 }
 
 /* iPhone 12/13 mini (375px) 이하 */
 @media (max-width: 375px) {
-  .skeleton-title {
-    height: 18px;
-  }
-  
-  .skeleton-line {
-    height: 13px;
+  .skeleton-card {
+    min-height: 120px;
   }
 }

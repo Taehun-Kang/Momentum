@@ -173,7 +173,7 @@ export default class PersonalizedKeywords extends Component {
       { text: "국내여행", icon: "🇰🇷", category: "travel" },
       { text: "강아지", icon: "🐕", category: "lifestyle" },
       { text: "인테리어", icon: "🏠", category: "lifestyle" },
-      { text: "요리", icon: "🍳", category: "cooking" },
+      { text: "간단요리", icon: "🍳", category: "cooking" },
       { text: "스킨케어 루틴", icon: "💧", category: "wellness" },
       { text: "식물키우기", icon: "🌱", category: "hobby" },
       { text: "독서", icon: "📚", category: "self-development" },
