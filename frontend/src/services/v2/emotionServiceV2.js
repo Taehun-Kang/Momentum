@@ -1,5 +1,5 @@
 /**
- * 🧠 v2 감정 분석 서비스
+ * 🧠 v2 감정 분석 서비스 (간소화 버전)
  * Railway v2 emotion API 전용 래퍼
  */
 
@@ -14,17 +14,17 @@ class EmotionServiceV2 {
   /**
    * 🌟 감정 기반 키워드 추천 (메인 기능)
    * @param {string} userInput - 사용자 입력 텍스트
-   * @param {Object} options - 추천 옵션
+   * @param {Object} options - 추천 옵션 (선택적)
    * @returns {Promise<Object>} 감정 분석 및 키워드 추천 결과
    */
   async recommendKeywords(userInput, options = {}) {
     try {
       console.log('🌟 v2 감정 기반 키워드 추천 시작:', userInput)
 
+      // 백엔드에서 실제로 사용하는 파라미터만 전송
       const requestData = {
         userInput: userInput.trim(),
-        maxKeywords: options.maxKeywords || 15,
-        format: options.format || 'full'
+        inputType: options.inputType || 'emotion'  // 기본값: emotion
       }
 
       const response = await this.apiClient.post('/emotion/recommend', requestData)
@@ -53,7 +53,6 @@ class EmotionServiceV2 {
     } catch (error) {
       console.error('❌ v2 감정 추천 실패:', error.message)
       
-      // 폴백 없이 실패 반환
       return {
         success: false,
         error: error.message,
@@ -77,7 +76,7 @@ class EmotionServiceV2 {
     return v2Result.sentences.map((sentence, index) => ({
       icon: this.getEmotionIcon(sentence.keywords?.[0] || '일반'),
       title: sentence.text,
-      description: `추천 키워드: ${sentence.keywords?.slice(0, 2).join(', ') || '일반'}`,
+      description: `추천 키워드: ${sentence.keywords?.join(', ') || '일반'}`,
       value: sentence.text,
       curationId: `v2_${Date.now()}_${index}`,
       keywords: sentence.keywords || [],
@@ -98,7 +97,7 @@ class EmotionServiceV2 {
    */
   getEmotionIcon(keyword) {
     const iconMap = {
-      '휴식': '��',
+      '휴식': '🛌',
       '힐링': '🌿',
       'ASMR': '🎧',
       '편안한': '☁️',

@@ -202,10 +202,17 @@ Example:
     
     const systemPrompt = `사용자의 감정에 맞는 키워드를 선택해주세요.
 
+**⚠️ 중요: 반드시 제공된 키워드 목록에서만 선택하세요!**
+
 **선택 기준:**
 1. 사용자의 감정 상태에 가장 적합한 키워드
 2. 감정적 니즈를 충족할 수 있는 키워드
-3. 10-15개 키워드 선택 (더 풍부한 조합을 위해)
+3. 정확히 10-15개 키워드 선택
+
+**제한 사항:**
+- 제공된 키워드 목록에 없는 키워드는 절대 선택하지 마세요
+- 키워드를 변형하거나 새로 만들지 마세요
+- 오직 주어진 목록에서만 선택하세요
 
 응답 형식 (JSON):
 {
@@ -231,8 +238,10 @@ Example:
 감정 분석: ${emotionList} (주요감정: ${primaryEmotion} - ${primaryIntensity})
 감정적 니즈: ${emotionAnalysis.emotional_need || '휴식과 안정'}
 
-사용 가능한 키워드:
-${keywordNames.join(', ')}`
+⚠️ 반드시 이 키워드 목록에서만 선택하세요:
+${keywordNames.join(', ')}
+
+총 ${keywordNames.length}개의 키워드 중에서 10-15개를 선택하세요.`
             }
           ]
         });
@@ -243,16 +252,25 @@ ${keywordNames.join(', ')}`
         if (jsonMatch) {
           const selection = JSON.parse(jsonMatch[0]);
           
+          // ✅ 키워드 유효성 검증 강화
+          const validKeywords = selection.selectedKeywords.filter(keyword => 
+            keywordNames.includes(keyword)
+          );
+          
+          if (validKeywords.length < 8) {
+            throw new Error(`유효한 키워드가 부족합니다: ${validKeywords.length}개 (최소 8개 필요)`);
+          }
+          
           // 선택된 키워드의 상세 정보 추가
-          const selectedKeywordsWithInfo = selection.selectedKeywords
+          const selectedKeywordsWithInfo = validKeywords
             .map(keyword => keywordList.find(k => k.keyword === keyword))
             .filter(Boolean);
           
-          console.log(`   ✅ 키워드 선택 완료: ${selection.selectedKeywords.length}개`);
+          console.log(`   ✅ 키워드 선택 완료: ${validKeywords.length}개 (유효성 검증됨)`);
           
           return {
             keywords: selectedKeywordsWithInfo,
-            keywordNames: selection.selectedKeywords,
+            keywordNames: validKeywords,
             reasoning: selection.reasoning
           };
         }
@@ -281,29 +299,33 @@ ${keywordNames.join(', ')}`
     
     const systemPrompt = `선택된 키워드를 사용하여 감정에 공감하는 감성적이고 간결한 큐레이션 문장 4개를 만들어주세요.
 
-Create empathetic, emotionally resonant, and concise curation sentences using the provided keywords.
+**⚠️ 절대 중요: 오직 제공된 키워드만 사용하세요!**
+
+Create empathetic, emotionally resonant, and concise curation sentences using ONLY the provided keywords.
 
 Each sentence must follow these rules:
-- Naturally incorporate 3-4 keywords per sentence.
-- Match the sentence's tone precisely to the provided emotion type.
+- **반드시 제공된 키워드만 사용** (새로운 키워드 생성 금지)
+- Naturally incorporate 3-4 keywords per sentence from the provided list
+- Match the sentence's tone precisely to the provided emotion type
 - Keep sentences SHORT and CONCISE (15-20자 내외)
-- Express genuine emotional empathy for the user's state.
-- Create refined, complete sentences rather than keyword lists.
-- Use warm, understanding expressions that resonate emotionally.
-- Write answers in Korean.
+- Express genuine emotional empathy for the user's state
+- Create refined, complete sentences rather than keyword lists
+- Use warm, understanding expressions that resonate emotionally
+- Write answers in Korean
 
 ## Input Guidelines
-- The system will provide: emotion analysis, keywords (10-15 items), and user input context.
-- Keywords should be distributed as evenly as possible across 4 sentences.
-- Focus on emotional connection while delivering keywords naturally.
-- Create sentences that feel personally meaningful to users.
+- The system will provide: emotion analysis, keywords (10-15 items), and user input context
+- Keywords should be distributed as evenly as possible across 4 sentences
+- **주어진 키워드 목록에서만 선택하세요**
+- Focus on emotional connection while delivering keywords naturally
+- Create sentences that feel personally meaningful to users
 
 ## Steps
-1. 사용자의 감정 상태와 제공된 키워드 목록을 확인하세요.
-2. 각 문장에 사용할 3-4개의 키워드를 균등하게 배분하여 선택하세요.
-3. 감정에 깊이 공감하는 감성적 문장을 만드세요 (15-20자).
-4. 키워드를 자연스럽게 녹여내며 완성된 문장을 만드세요.
-5. 총 4개의 감성적이고 정제된 문장을 완성하세요.
+1. 사용자의 감정 상태와 제공된 키워드 목록을 확인하세요
+2. **반드시 제공된 키워드 목록에서만** 각 문장에 사용할 3-4개의 키워드를 균등하게 배분하여 선택하세요
+3. 감정에 깊이 공감하는 감성적 문장을 만드세요 (15-20자)
+4. 키워드를 자연스럽게 녹여내며 완성된 문장을 만드세요
+5. 총 4개의 감성적이고 정제된 문장을 완성하세요
 
 ## Output Format
 Responses must follow this exact JSON schema:
@@ -400,11 +422,12 @@ Responses must follow this exact JSON schema:
 }
 
 ## Guidelines
-- 각 문장은 15-20자 내외로 작성하세요.
-- 사용자의 감정 상태에 진심으로 공감하는 표현을 사용하세요.
-- 키워드를 자연스럽게 녹여낸 완성된 문장을 만드세요.
-- 감정적 따뜻함과 이해를 담아 표현하세요.
-- 정제되고 세련된 문장으로 완성하세요.`;
+- 각 문장은 15-20자 내외로 작성하세요
+- 사용자의 감정 상태에 진심으로 공감하는 표현을 사용하세요
+- **반드시 제공된 키워드만 사용하세요**
+- 키워드를 자연스럽게 녹여낸 완성된 문장을 만드세요
+- 감정적 따뜻함과 이해를 담아 표현하세요
+- 정제되고 세련된 문장으로 완성하세요`;
 
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       try {
@@ -422,7 +445,11 @@ Responses must follow this exact JSON schema:
               role: 'user',
               content: `사용자 입력: "${userInput}"
 감정: ${emotionList} (주요감정: ${primaryEmotion} - ${primaryIntensity})
-선택된 키워드: ${keywordNames.join(', ')}`
+
+⚠️ 반드시 이 키워드들만 사용하세요:
+${keywordNames.join(', ')}
+
+총 ${keywordNames.length}개 키워드에서 각 문장마다 3-4개씩 선택하여 4개 문장을 만드세요.`
             }
           ]
         });
@@ -432,8 +459,21 @@ Responses must follow this exact JSON schema:
         
         if (jsonMatch) {
           const result = JSON.parse(jsonMatch[0]);
-          console.log(`   ✅ 감정 문장 생성 완료: ${result.sentences?.length || 0}개`);
-          return result.sentences || [];
+          
+          // ✅ 문장의 키워드 유효성 검증 강화
+          const validatedSentences = result.sentences?.map(sentence => {
+            const validKeywords = sentence.keywords?.filter(keyword => 
+              keywordNames.includes(keyword)
+            ) || [];
+            
+            return {
+              ...sentence,
+              keywords: validKeywords
+            };
+          }).filter(sentence => sentence.keywords.length >= 2) || []; // 최소 2개 키워드 필요
+          
+          console.log(`   ✅ 감정 문장 생성 완료: ${validatedSentences.length}개 (키워드 유효성 검증됨)`);
+          return validatedSentences;
         }
         
         throw new Error('JSON 형식 응답을 받지 못했습니다');

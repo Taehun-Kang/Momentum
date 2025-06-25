@@ -14,6 +14,9 @@ import SelectableCard from '../components/ui/Card/index.js'
 import Input from '../components/ui/Input/index.js'
 import { llmService } from '../services/llmService.js'
 import searchService from '../services/searchService.js'
+// ✅ v2 서비스 import 추가
+import { emotionServiceV2 } from '../services/v2/emotionServiceV2.js'
+import { searchServiceV2 } from '../services/v2/searchServiceV2.js'
 // navigateTo는 App 인스턴스에서 사용: window.app.navigateTo()
 import '../styles/llm.css'
 import './ChatFlow.css'
@@ -529,12 +532,13 @@ export default class ChatFlow extends Component {
   getLLMKeywordRecommendations() {
     // LLM 분석 결과가 있으면 사용
     if (this.llmAnalysisResult && this.llmAnalysisResult.success) {
-      console.log('🧠 LLM 분석 결과 사용:', this.llmAnalysisResult)
-      return llmService.transformToCardData(this.llmAnalysisResult)
+      console.log('🧠 v2 LLM 분석 결과 사용:', this.llmAnalysisResult)
+      // ✅ v2 서비스 사용
+      return emotionServiceV2.transformToCardData(this.llmAnalysisResult)
     }
     
     // 폴백: 기존 하드코딩된 추천
-    console.warn('⚠️ LLM 분석 결과 없음, 폴백 데이터 사용')
+    console.warn('⚠️ v2 LLM 분석 결과 없음, 폴백 데이터 사용')
     return this.getKeywordRecommendations()
   }
   
@@ -566,7 +570,6 @@ export default class ChatFlow extends Component {
       if (selection?.includes('떠나고 싶은')) {
         return [
           { icon: '🏯', title: '일본 소도시 여행 브이로그', description: '추천 키워드', value: '일본 소도시 여행 브이로그' },
-          { icon: '🗺️', title: '짧은 국내 여행 추천', description: '추천 키워드', value: '짧은 국내 여행 추천' },
           { icon: '🚶', title: '하루 여행 브이로그', description: '추천 키워드', value: '하루 여행 브이로그' },
           { icon: '💰', title: '가성비 여행 브이로그', description: '추천 키워드', value: '가성비 여행 브이로그' }
         ]
@@ -714,11 +717,11 @@ export default class ChatFlow extends Component {
   }
   
   /**
-   * 🧠 LLM 감성 분석 수행
+   * 🧠 LLM 분석 수행 (mood/topic 분기 처리)
    */
   async performLLMAnalysis() {
     console.log('🧠 performLLMAnalysis 시작!')
-    console.log('🧠 LLM 감성 분석 시작:', this.chatData)
+    console.log('🧠 chatData.type:', this.chatData.type)
     
     // 분석할 텍스트 준비
     const userText = this.chatData.userInput || this.chatData.selection || ''
@@ -729,29 +732,23 @@ export default class ChatFlow extends Component {
       return
     }
     
-    // 🔧 분석 옵션 설정 (백엔드 호환성: 'mood' → 'emotion' 변환)
-    const backendInputType = this.chatData.type === 'mood' ? 'emotion' : this.chatData.type
-    const analysisOptions = {
-      inputType: backendInputType, // 'emotion' | 'topic'
-      maxKeywords: 8,
-      responseFormat: 'full'
-    }
-    
-    console.log('🧠 분석 옵션:', analysisOptions)
-    
     try {
       // 분석 중 상태 표시
       console.log('🧠 isAnalyzing = true 설정!')
       this.isAnalyzing = true
       
-      console.log('🧠 LLM 분석 API 호출 시작...')
-      // LLM 분석 실행
-      const result = await llmService.analyzeEmotionalCuration(userText, analysisOptions)
-      
-      console.log('🧠 LLM 분석 결과:', result)
-      
-      // 결과 저장
-      this.llmAnalysisResult = result
+      // 🔀 mood/topic에 따른 분기 처리
+      if (this.chatData.type === 'mood') {
+        console.log('🧠 감정 기반 분석 실행')
+        await this.performEmotionAnalysis(userText)
+      } else if (this.chatData.type === 'topic') {
+        console.log('🧠 주제 기반 분석 실행')
+        await this.performTopicAnalysis(userText)
+      } else {
+        console.warn('⚠️ 알 수 없는 타입:', this.chatData.type)
+        // 기본값으로 감정 분석 실행
+        await this.performEmotionAnalysis(userText)
+      }
       
     } catch (error) {
       console.error('❌ LLM 분석 실패:', error)
@@ -759,6 +756,52 @@ export default class ChatFlow extends Component {
     } finally {
       console.log('🧠 finally 블록 - isAnalyzing = false 설정!')
       this.isAnalyzing = false
+    }
+  }
+
+  /**
+   * 🧠 감정 기반 분석 수행 (v2 서비스 사용)
+   */
+  async performEmotionAnalysis(userText) {
+    console.log('🧠 performEmotionAnalysis 시작:', userText)
+    
+    try {
+      // ✅ v2 감정 서비스 사용
+      const result = await emotionServiceV2.recommendKeywords(userText, {
+        inputType: 'emotion'
+      })
+      
+      console.log('✅ v2 감정 분석 결과:', result)
+      
+      // 결과 저장
+      this.llmAnalysisResult = result
+      
+    } catch (error) {
+      console.error('❌ v2 감정 분석 실패:', error)
+      this.llmAnalysisResult = null
+    }
+  }
+
+  /**
+   * 📚 주제 기반 분석 수행 (일단 v2 서비스와 동일한 로직)
+   */
+  async performTopicAnalysis(userText) {
+    console.log('📚 performTopicAnalysis 시작:', userText)
+    
+    try {
+      // 🔄 일단은 감정 서비스와 동일한 로직 (추후 확장 가능)
+      const result = await emotionServiceV2.recommendKeywords(userText, {
+        inputType: 'topic'
+      })
+      
+      console.log('✅ v2 주제 분석 결과:', result)
+      
+      // 결과 저장
+      this.llmAnalysisResult = result
+      
+    } catch (error) {
+      console.error('❌ v2 주제 분석 실패:', error)
+      this.llmAnalysisResult = null
     }
   }
   
@@ -920,7 +963,7 @@ export default class ChatFlow extends Component {
   }
   
   /**
-   * 🔍 영상 검색 실행 - 간단하게 다시 시작
+   * 🔍 영상 검색 실행 (v2 서비스 사용)
    */
   async executeVideoSearch() {
     console.log('🔍 executeVideoSearch 시작!')
@@ -937,41 +980,37 @@ export default class ChatFlow extends Component {
     try {
       this.isSearching = true
       
-      console.log('🔍 영상 검색 시작:', actualKeyword)
-      console.log('🚂 Railway 서버로 realtime API 호출 시작...')
+      console.log('🔍 v2 영상 검색 시작:', actualKeyword)
+      console.log('🚂 Railway v2 search API 호출 시작...')
       
-      // 키워드에서 카테고리 자동 추출
-      const category = searchService.extractCategory(actualKeyword)
-      
-      // 🎯 검색 파라미터
-      const searchOptions = {
-        category: category
-      }
-      
-      // ⏱️ 실시간 검색 실행
-      console.log('🚀 realtime 검색 시작...')
+      // ⏱️ v2 영상 검색 실행
+      console.log('🚀 v2 search 시작...')
       const searchStartTime = Date.now()
       
-      const searchResult = await searchService.searchRealtime(actualKeyword, searchOptions)
+      // ✅ v2 서비스 사용
+      const searchResult = await searchServiceV2.searchForVideoPlayer(actualKeyword, {
+        limit: 20  // VideoPlayer용 기본 20개
+      })
       
       const searchEndTime = Date.now()
       const actualDuration = Math.round((searchEndTime - searchStartTime) / 1000)
       
-      if (searchResult.success) {
-        console.log('✅ realtime 검색 완료:', searchResult)
-        console.log(`⏱️ 실제 검색 시간: ${actualDuration}초`)
+      if (searchResult.success && searchResult.data?.length > 0) {
+        console.log('✅ v2 영상 검색 완료:', searchResult)
+        console.log(`⏱️ v2 검색 시간: ${actualDuration}초`)
+        console.log(`📹 검색된 영상 수: ${searchResult.data.length}개`)
         
         // 바로 VideoPlayer로 이동
         console.log(`🎬 VideoPlayer로 이동: "${actualKeyword}"`)
         this.navigateToVideoPlayer(actualKeyword)
         
       } else {
-        console.error('❌ realtime 검색 실패:', searchResult.error)
-        alert('영상 검색에 실패했습니다. 다시 시도해주세요.')
+        console.error('❌ v2 영상 검색 결과 없음:', searchResult)
+        alert('검색된 영상이 없습니다. 다른 키워드로 시도해주세요.')
       }
       
     } catch (error) {
-      console.error('❌ realtime 검색 오류:', error)
+      console.error('❌ v2 영상 검색 오류:', error)
       alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.')
     } finally {
       this.isSearching = false
@@ -1007,7 +1046,7 @@ export default class ChatFlow extends Component {
   /**
    * 🔧 description에서 키워드 추출
    * @param {Object} cardData - 선택된 카드 데이터
-   * @returns {string} 추출된 첫 번째 키워드
+   * @returns {string} 추출된 전체 키워드 문자열
    */
   extractKeywordFromDescription(cardData) {
     if (!cardData) {
@@ -1015,11 +1054,11 @@ export default class ChatFlow extends Component {
       return '일반'
     }
 
-    // 1순위: keywords 배열이 있으면 첫 번째 사용
+    // 1순위: keywords 배열이 있으면 전체 키워드를 공백으로 연결
     if (cardData.keywords && Array.isArray(cardData.keywords) && cardData.keywords.length > 0) {
-      const firstKeyword = cardData.keywords[0]
-      console.log(`🎯 keywords 배열에서 첫 번째 키워드 추출: "${firstKeyword}"`)
-      return firstKeyword
+      const allKeywords = cardData.keywords.join(' ')
+      console.log(`🎯 keywords 배열에서 전체 키워드 추출: "${allKeywords}"`)
+      return allKeywords
     }
 
     // 2순위: description에서 "추천 키워드: xxx, yyy" 패턴 파싱
@@ -1033,9 +1072,9 @@ export default class ChatFlow extends Component {
           .filter(k => k.length > 0)
         
         if (keywords.length > 0) {
-          const firstKeyword = keywords[0]
-          console.log(`🎯 description에서 키워드 추출: "${cardData.description}" → "${firstKeyword}"`)
-          return firstKeyword
+          const allKeywords = keywords.join(' ')
+          console.log(`🎯 description에서 전체 키워드 추출: "${cardData.description}" → "${allKeywords}"`)
+          return allKeywords
         }
       }
     }
