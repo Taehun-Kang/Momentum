@@ -135,6 +135,7 @@
 }
 
 /* ========== Dark Theme ========== */
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .chart-label {
   color: var(--text-secondary-dark, #999);
 }

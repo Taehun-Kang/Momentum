@@ -213,6 +213,7 @@
    다크 모드 최적화
 ======================================== */
 
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   .input-wrapper {
     background: rgba(255, 255, 255, 0.08);
@@ -234,6 +235,7 @@
     color: rgba(255, 255, 255, 0.5);
   }
 }
+*/
 
 /* ========================================
    모바일 반응형 디자인 (selection-card와 동일한 브레이크포인트)

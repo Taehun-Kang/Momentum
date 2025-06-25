@@ -398,6 +398,7 @@
 }
 
 /* ===== 다크 모드 지원 ===== */
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   :root {
     --loading-glass-bg: rgba(0, 0, 0, 0.4);

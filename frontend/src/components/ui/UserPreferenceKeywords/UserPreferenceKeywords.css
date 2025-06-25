@@ -205,36 +205,37 @@
   opacity: 0.8;
 }
 
-/* ========== 다크 테마 ========== */
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .user-preference-keywords {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 [data-theme="dark"] .preference-keyword-btn {
   background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.06) 0%, 
-    rgba(154, 120, 219, 0.08) 50%,
-    rgba(196, 181, 253, 0.06) 100%);
-  border-color: rgba(255, 255, 255, 0.1);
+    rgba(154, 120, 219, 0.15) 0%, 
+    rgba(196, 181, 253, 0.1) 100%
+  );
+  border-color: rgba(154, 120, 219, 0.3);
+  color: rgba(196, 181, 253, 0.9);
 }
 
 [data-theme="dark"] .keyword-text {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(196, 181, 253, 0.9);
 }
 
 [data-theme="dark"] .keyword-category {
   color: rgba(255, 255, 255, 0.6);
-  background: rgba(154, 120, 219, 0.1);
 }
 
 [data-theme="dark"] .empty-title {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 [data-theme="dark"] .empty-subtitle {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.5);
 }
+*/
 
 /* ========== 반응형 디자인 ========== */
 @media (max-width: 430px) {

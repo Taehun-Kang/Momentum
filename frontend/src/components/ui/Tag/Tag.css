@@ -244,6 +244,7 @@
    다크 모드 최적화
 ======================================== */
 
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   .tag {
     background: rgba(255, 255, 255, 0.08);

@@ -1471,7 +1471,9 @@ body::before {
   }
 }
 
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 /* 다크 모드 지원 */
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   :root {
     --text-primary: #f7fafc;
@@ -1479,6 +1481,7 @@ body::before {
     --text-muted: rgba(247, 250, 252, 0.7);
   }
 }
+*/
 
 /* 접근성 */
 /* 채팅/검색 선택 페이지 스타일 */
@@ -2651,3 +2654,17 @@ body::before {
   color: var(--text-primary);
   margin: 0;
 }
+
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+@media (prefers-color-scheme: dark) {
+  .page {
+    background: linear-gradient(135deg, 
+      rgba(154, 120, 219, 0.15) 0%, 
+      rgba(28, 28, 30, 0.8) 50%, 
+      rgba(0, 0, 0, 0.9) 100%
+    );
+    color: rgba(255, 255, 255, 0.9);
+  }
+}
+*/

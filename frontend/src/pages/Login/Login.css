@@ -538,18 +538,6 @@
   }
 }
 
-/* 🌙 다크 모드 개선 */
-@media (prefers-color-scheme: dark) {
-  .login-form {
-    background: rgba(0, 0, 0, 0.3);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .form-input {
-    background: rgba(0, 0, 0, 0.2);
-  }
-}
-
 /* 🎯 성능 최적화 */
 .floating-orb {
   will-change: transform;
@@ -575,4 +563,16 @@
 /* 🏗️ 레이아웃 안정성 */
 .login-page {
   contain: layout style paint;
-} 
+}
+
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+@media (prefers-color-scheme: dark) {
+  .login-page {
+    background: linear-gradient(135deg, 
+      rgba(154, 120, 219, 0.15) 0%, 
+      rgba(28, 28, 30, 0.8) 50%, 
+      rgba(0, 0, 0, 0.9) 100%
+    );
+  }
+}
+*/ 

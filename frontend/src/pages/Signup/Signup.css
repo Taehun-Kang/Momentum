@@ -717,6 +717,7 @@
 }
 
 /* 🌙 다크 모드 개선 */
+/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 @media (prefers-color-scheme: dark) {
   .signup-form {
     background: rgba(0, 0, 0, 0.3);
