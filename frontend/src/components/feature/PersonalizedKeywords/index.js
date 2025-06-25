@@ -164,20 +164,22 @@ export default class PersonalizedKeywords extends Component {
   }
 
   /**
-   * 개인화 키워드 생성
+   * 개인화 키워드 생성 (실제 DB MEDIUM 키워드 기반)
    */
   generatePersonalizedKeywords() {
     const baseKeywords = [
-      { text: "카페 브이로그", icon: "☕", category: "lifestyle" },
-      { text: "일본 소도시 여행", icon: "🏮", category: "travel" },
-      { text: "힐링 ASMR", icon: "🌙", category: "relaxation" },
-      { text: "홈카페 레시피", icon: "🥤", category: "cooking" },
-      { text: "미니멀 라이프", icon: "🏠", category: "lifestyle" },
-      { text: "독서 루틴", icon: "📚", category: "self-development" },
-      { text: "아침 명상", icon: "🧘‍♀️", category: "wellness" },
-      { text: "감성 드로잉", icon: "🎨", category: "art" },
-      { text: "반려식물 키우기", icon: "🌱", category: "hobby" },
-      { text: "제로웨이스트", icon: "♻️", category: "eco" }
+      { text: "브이로그", icon: "📹", category: "lifestyle" },
+      { text: "홈카페", icon: "☕", category: "cooking" },
+      { text: "국내여행", icon: "🇰🇷", category: "travel" },
+      { text: "강아지", icon: "🐕", category: "lifestyle" },
+      { text: "인테리어", icon: "🏠", category: "lifestyle" },
+      { text: "요리", icon: "🍳", category: "cooking" },
+      { text: "스킨케어 루틴", icon: "💧", category: "wellness" },
+      { text: "식물키우기", icon: "🌱", category: "hobby" },
+      { text: "독서", icon: "📚", category: "self-development" },
+      { text: "DIY", icon: "🛠️", category: "hobby" },
+      { text: "미니멀라이프", icon: "✨", category: "lifestyle" },
+      { text: "맛집투어", icon: "🍽️", category: "travel" }
     ]
 
     // 랜덤 셔플로 매번 다른 조합

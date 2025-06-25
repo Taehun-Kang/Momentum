@@ -169,28 +169,14 @@ export default class ChatFlow extends Component {
     console.log('🔍 renderContent 호출됨:', {
       currentStep: this.currentStep,
       isAnalyzing: this.isAnalyzing,
-      contentContainer: !!contentContainer,
-      llmAnalysisResult: !!this.llmAnalysisResult
+      contentContainer: !!contentContainer
     })
     
-    // 🧠 Step 3에서 LLM 분석 중인 경우 로딩 표시 (단, 결과가 없을 때만!)
-    if (this.currentStep === 3 && this.isAnalyzing && !this.llmAnalysisResult) {
+    // 🧠 Step 3에서 LLM 분석 중인 경우 로딩 표시
+    if (this.currentStep === 3 && this.isAnalyzing) {
       console.log('🎯 renderAnalyzingState 호출 조건 만족!')
       this.renderAnalyzingState(contentContainer)
       return
-    }
-    
-    // 🎯 Step 3에서 아무것도 없는 경우 기본 로딩 메시지 표시
-    if (this.currentStep === 3 && !this.isAnalyzing && !this.llmAnalysisResult) {
-      console.log('🎯 Step 3 기본 상태 - 분석 준비 중 메시지 표시')
-      this.renderPreparingState(contentContainer)
-      return
-    }
-    
-    // 🎯 Step 3에서 LLM 분석이 완료된 경우 isAnalyzing 해제
-    if (this.currentStep === 3 && this.isAnalyzing && this.llmAnalysisResult) {
-      console.log('🎯 Step 3 - LLM 분석 완료, isAnalyzing 해제하고 결과 렌더링')
-      this.isAnalyzing = false
     }
     
     const cardsData = this.getCardsData()
@@ -231,35 +217,10 @@ export default class ChatFlow extends Component {
   }
   
   /**
-   * 🎯 Step 3 기본 상태 렌더링 - 분석 준비 중
-   */
-  renderPreparingState(contentContainer) {
-    console.log('🎯 renderPreparingState 호출됨!')
-    
-    // 기본 준비 중 메시지
-    contentContainer.innerHTML = `
-      <div class="cards-grid cards-grid--step-3 preparing-state">
-        <div class="preparing-message">
-          <div class="preparing-icon">🤔</div>
-          <div class="preparing-text">AI가 추천을 준비하고 있어요...</div>
-          <div class="preparing-subtext">잠시만 기다려주세요</div>
-        </div>
-      </div>
-    `
-    
-    const cardsGrid = contentContainer.querySelector('.cards-grid')
-    cardsGrid.classList.remove('transitioning-out')
-    cardsGrid.classList.add('transitioning-in')
-    
-    console.log('🎯 준비 중 메시지 표시 완료')
-  }
-  
-  /**
    * 🧠 LLM 분석 중 로딩 상태 렌더링 - 기존 cards-grid 구조 사용
    */
   renderAnalyzingState(contentContainer) {
     console.log('🎨 renderAnalyzingState 호출됨!')
-    console.log('🎨 contentContainer:', contentContainer)
     
     // 4개의 skeleton 카드 메시지들
     const skeletonMessages = [
@@ -269,21 +230,15 @@ export default class ChatFlow extends Component {
       '🎯 마무리하고 있어요...'
     ]
     
-    console.log('🎨 skeleton 메시지 준비 완료:', skeletonMessages)
-    
     // 기존 cards-grid 구조 그대로 사용 (SelectableCard와 동일한 레이아웃)
     contentContainer.innerHTML = `
       <div class="cards-grid cards-grid--step-3"></div>
     `
     
-    console.log('🎨 cards-grid HTML 생성 완료')
-    
     const cardsGrid = contentContainer.querySelector('.cards-grid')
-    console.log('🎨 cardsGrid 엘리먼트:', cardsGrid)
     
     // 기존 skeleton 카드들 정리 (재진입 방지)
     if (this.skeletonCards) {
-      console.log('🎨 기존 skeleton 카드 정리:', this.skeletonCards.length)
       this.skeletonCards.forEach(card => {
         if (card && typeof card.destroy === 'function') {
           card.destroy()
@@ -292,46 +247,23 @@ export default class ChatFlow extends Component {
     }
     this.skeletonCards = []
     
-    console.log('🎨 SkeletonCard 생성 시작...')
-    
     // 4개 skeleton 카드 생성 (SelectableCard와 동일한 방식)
     skeletonMessages.forEach((message, index) => {
-      console.log(`🎨 SkeletonCard ${index} 생성 중:`, message)
+      const skeletonCard = new SkeletonCard({
+        loadingMessage: message,
+        index: index
+      })
       
-      try {
-        const skeletonCard = new SkeletonCard({
-          loadingMessage: message,
-          index: index
-        })
-        
-        console.log(`🎨 SkeletonCard ${index} 생성 성공:`, skeletonCard)
-        
-        this.skeletonCards.push(skeletonCard)
-        cardsGrid.appendChild(skeletonCard.el)
-        skeletonCard.render()
-        
-        console.log(`🎨 SkeletonCard ${index} DOM 추가 및 렌더링 완료`)
-        
-      } catch (error) {
-        console.error(`❌ SkeletonCard ${index} 생성 실패:`, error)
-      }
+      this.skeletonCards.push(skeletonCard)
+      cardsGrid.appendChild(skeletonCard.el)
+      skeletonCard.render()
     })
-    
-    console.log('🎨 모든 SkeletonCard 생성 완료, 총 개수:', this.skeletonCards.length)
     
     // 기존 카드와 동일한 그리드 등장 애니메이션
     cardsGrid.classList.remove('transitioning-out')
     cardsGrid.classList.add('transitioning-in')
     
-    console.log('🎨 그리드 애니메이션 클래스 적용 완료')
     console.log('🎨 4개 Skeleton 카드 생성 완료! (기존 cards-grid 사용)')
-    
-    // 🧪 테스트: DOM 구조 확인
-    console.log('🧪 최종 DOM 구조:', {
-      cardsGrid: cardsGrid,
-      children: cardsGrid.children.length,
-      innerHTML: cardsGrid.innerHTML.substring(0, 200) + '...'
-    })
   }
   
   /**
@@ -780,13 +712,11 @@ export default class ChatFlow extends Component {
         this.chatData.userInput = null // 카드 선택 시 입력 초기화
         if (this.input) this.input.clear()
         
-        // 🧠 먼저 3단계로 이동한 후 LLM 분석 실행
-        console.log('📝 Step 2: nextStep 먼저 호출')
-        this.nextStep()
-        
+        // 🧠 2단계에서 3단계로 넘어갈 때 LLM 분석 실행
         console.log('🧠 performLLMAnalysis 호출 직전')
         await this.performLLMAnalysis()
-        console.log('🧠 performLLMAnalysis 완료')
+        console.log('🧠 performLLMAnalysis 완료, nextStep 호출 예정')
+        this.nextStep()
         break
         
       case 3:
@@ -833,10 +763,6 @@ export default class ChatFlow extends Component {
       console.log('🧠 isAnalyzing = true 설정!')
       this.isAnalyzing = true
       
-      // 🎯 즉시 skeleton 카드 표시를 위해 렌더링 트리거
-      console.log('🧠 skeleton 표시를 위한 즉시 렌더링')
-      this.renderContent()
-      
       // 🔀 mood/topic에 따른 분기 처리
       if (this.chatData.type === 'mood') {
         console.log('🧠 감정 기반 분석 실행')
@@ -850,12 +776,12 @@ export default class ChatFlow extends Component {
         await this.performEmotionAnalysis(userText)
       }
       
-      console.log('🧠 LLM 분석 완료! isAnalyzing은 유지')
-      
     } catch (error) {
       console.error('❌ LLM 분석 실패:', error)
       this.llmAnalysisResult = null
-      this.isAnalyzing = false // 에러 시에만 false로 설정
+    } finally {
+      console.log('🧠 finally 블록 - isAnalyzing = false 설정!')
+      this.isAnalyzing = false
     }
   }
 

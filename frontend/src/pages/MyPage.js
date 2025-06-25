@@ -33,12 +33,12 @@ export default class MyPage extends Component {
       },
       weeklyData: [45, 95, 60, 120, 35, 105, 80], // 주간 시청 시간 (분)
       preferences: [
-        { id: "1", text: "일상 브이로그", category: "lifestyle" },
-        { id: "2", text: "카페 투어", category: "lifestyle" },
-        { id: "3", text: "일본 여행", category: "travel" },
-        { id: "4", text: "홈쿡 레시피", category: "food" },
-        { id: "5", text: "힐링 ASMR", category: "music" },
-        { id: "6", text: "드로잉 타임랩스", category: "art" }
+        { id: "1", text: "브이로그", category: "lifestyle" },
+        { id: "2", text: "홈카페", category: "lifestyle" },
+        { id: "3", text: "국내여행", category: "travel" },
+        { id: "4", text: "간단요리", category: "food" },
+        { id: "5", text: "ASMR", category: "music" },
+        { id: "6", text: "강아지", category: "lifestyle" }
       ]
     }
   }

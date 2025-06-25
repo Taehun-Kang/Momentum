@@ -632,4 +632,85 @@
     align-items: center;
     justify-content: center;
   }
-} 
+}
+
+/* ========== Skeleton 카드 그리드 ========== */
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.skeleton-grid .skeleton-card {
+  /* 카드별 순차 등장 애니메이션 */
+  opacity: 0;
+  transform: translateY(30px);
+  animation: skeletonCardAppear 0.6s ease-out forwards;
+}
+
+.skeleton-grid .skeleton-card:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.skeleton-grid .skeleton-card:nth-child(2) {
+  animation-delay: 150ms;
+}
+
+.skeleton-grid .skeleton-card:nth-child(3) {
+  animation-delay: 300ms;
+}
+
+.skeleton-grid .skeleton-card:nth-child(4) {
+  animation-delay: 450ms;
+}
+
+@keyframes skeletonCardAppear {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 모바일에서는 1열로 */
+@media (max-width: 480px) {
+  .skeleton-grid {
+    grid-template-columns: 1fr;
+    max-width: 320px;
+    gap: 12px;
+  }
+}
+
+/* ========== Skeleton 카드 기존 그리드 사용 ========== */
+.cards-grid .skeleton-card {
+  /* 기존 card와 동일한 순차 등장 애니메이션 */
+  opacity: 0;
+  transform: translateY(30px);
+  animation: skeletonCardAppear 0.6s ease-out forwards;
+}
+
+.cards-grid .skeleton-card:nth-child(1) {
+  animation-delay: 200ms;
+}
+
+.cards-grid .skeleton-card:nth-child(2) {
+  animation-delay: 320ms;
+}
+
+.cards-grid .skeleton-card:nth-child(3) {
+  animation-delay: 440ms;
+}
+
+.cards-grid .skeleton-card:nth-child(4) {
+  animation-delay: 560ms;
+}
+
+@keyframes skeletonCardAppear {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

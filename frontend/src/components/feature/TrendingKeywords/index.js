@@ -86,15 +86,15 @@ export default class TrendingKeywords extends Component {
     }
   }
 
-  // 🛡️ 폴백 키워드 데이터
+  // 🛡️ 폴백 키워드 데이터 (실제 DB HIGH 우선순위 키워드)
   getFallbackKeywords() {
     return [
-      { rank: 1, keyword: '먹방', score: 85, category: '엔터테인먼트' },
-      { rank: 2, keyword: '브이로그', score: 78, category: '라이프스타일' },
-      { rank: 3, keyword: '챌린지', score: 72, category: '엔터테인먼트' },
-      { rank: 4, keyword: 'ASMR', score: 69, category: '힐링' },
-      { rank: 5, keyword: '운동', score: 65, category: '건강' },
-      { rank: 6, keyword: '요리', score: 62, category: '라이프스타일' }
+      { rank: 1, keyword: 'K-pop', score: 95, category: '음악 & 엔터테인먼트' },
+      { rank: 2, keyword: '댄스챌린지', score: 89, category: '음악 & 엔터테인먼트' },
+      { rank: 3, keyword: 'OOTD', score: 84, category: '뷰티 & 패션' },
+      { rank: 4, keyword: '갓생', score: 78, category: '라이프스타일 & 건강' },
+      { rank: 5, keyword: '밈', score: 73, category: '코미디 & 챌린지' },
+      { rank: 6, keyword: '편의점 신상', score: 69, category: '먹방 & 요리' }
     ]
   }
 

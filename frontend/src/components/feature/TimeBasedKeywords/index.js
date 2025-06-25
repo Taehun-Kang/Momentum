@@ -101,14 +101,14 @@ export default class TimeBasedKeywords extends Component {
   getTimeBasedKeywords() {
     const hour = this.currentTime.getHours()
     
-    if (hour >= 6 && hour < 12) { // 아침
-      return ['모닝 루틴', '출근 준비', '아침 운동', '간단 아침식사', '출근길 음악', '하루 계획']
-    } else if (hour >= 12 && hour < 18) { // 오후
-      return ['점심 브이로그', '직장인 일상', '오후 휴식', '카페 음악', '간단 요리', '업무 팁']
-    } else if (hour >= 18 && hour < 22) { // 저녁
-      return ['퇴근 루틴', '집밥 레시피', '저녁 운동', '힐링 음악', '취미 시간', '일상 브이로그']
-    } else { // 밤
-      return ['수면 음악', '밤 브이로그', '독서 ASMR', '명상 영상', '조용한 힐링', '잠자리 루틴']
+    if (hour >= 6 && hour < 12) { // 아침 (실제 DB MEDIUM 키워드)
+      return ['모닝루틴', '홈트', '요가', '운동', '스트레칭', '건강정보']
+    } else if (hour >= 12 && hour < 18) { // 오후 (실제 DB MEDIUM 키워드)  
+      return ['직장인 브이로그', '간단요리', '카페음악', '점심 브이로그', '업사이클링', '생활꿀팁']
+    } else if (hour >= 18 && hour < 22) { // 저녁 (실제 DB MEDIUM 키워드)
+      return ['요리', '브이로그', '힐링음악', '스킨케어 루틴', '인테리어', '자취 브이로그']
+    } else { // 밤 (실제 DB LOW 키워드 - ASMR & 힐링)
+      return ['수면음악', 'ASMR', '명상음악', '백색소음', '파도소리', '빗소리']
     }
   }
 
