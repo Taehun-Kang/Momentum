@@ -135,7 +135,7 @@
   color: white;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   letter-spacing: -0.5px;
-  font-family: var(--font-system, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
+  font-family: inherit;
 }
 
 .modal-subtitle {
@@ -262,7 +262,7 @@
 }
 
 .btn-text {
-  font-family: var(--font-system, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
+  font-family: inherit;
 }
 
 /* 계속 시청하기 버튼 */

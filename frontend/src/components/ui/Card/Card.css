@@ -33,7 +33,7 @@
 }
 
 .card__title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 18px;
   font-weight: 600;
   color: #1f1f1f;
@@ -42,7 +42,7 @@
 }
 
 .card__description {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   font-weight: 400;
   color: #666666;

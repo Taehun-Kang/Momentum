@@ -32,7 +32,7 @@
 
 /* 분석 중 메시지 */
 .analyzing-text h3 {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
@@ -41,7 +41,7 @@
 }
 
 .analyzing-text p {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   color: var(--text-secondary);
   margin: 0;
@@ -60,7 +60,7 @@
 
 /* 카테고리 제목 */
 .categories-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
@@ -85,7 +85,7 @@
   background: rgba(154, 120, 219, 0.1);
   border: 1px solid rgba(154, 120, 219, 0.3);
   border-radius: 20px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 13px;
   font-weight: 600;
   color: var(--accent-color);
@@ -116,7 +116,7 @@
 }
 
 .error-message {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
@@ -124,7 +124,7 @@
 }
 
 .error-submessage {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   color: var(--text-secondary);
   margin: 0;

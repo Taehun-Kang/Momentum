@@ -170,7 +170,7 @@ body::before {
 }
 
 .statusbar-time {
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: inherit;
   font-weight: 600;
   font-size: 17px;
   letter-spacing: -0.41px;
@@ -241,7 +241,7 @@ body::before {
   position: absolute;
   left: 24px;
   right: 24px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-weight: 700;
   font-size: 28px;
   line-height: 1.2;
@@ -457,7 +457,7 @@ body::before {
 }
 
 .nav-label {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 9px;
   font-weight: 600;
   color: rgba(45, 55, 72, 0.9);
@@ -866,7 +866,7 @@ body::before {
 }
 
 .home-greeting {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 18px;
   font-weight: 500;
   color: var(--text-secondary);
@@ -874,7 +874,7 @@ body::before {
 }
 
 .home-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 32px;
   font-weight: 800;
   line-height: 1.25;
@@ -884,7 +884,7 @@ body::before {
 }
 
 .home-subtitle {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 15px;
   font-weight: 400;
   line-height: 1.4;
@@ -928,7 +928,7 @@ body::before {
 }
 
 .card-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
@@ -936,7 +936,7 @@ body::before {
 }
 
 .card-subtitle {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 12px;
   font-weight: 500;
   color: var(--text-secondary);
@@ -976,7 +976,7 @@ body::before {
 }
 
 .action-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
@@ -984,7 +984,7 @@ body::before {
 }
 
 .action-subtitle {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
@@ -1009,7 +1009,7 @@ body::before {
 }
 
 .recent-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
@@ -1068,7 +1068,7 @@ body::before {
 }
 
 .trending-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 28px;
   font-weight: 800;
   color: var(--text-primary);
@@ -1077,7 +1077,7 @@ body::before {
 }
 
 .trending-subtitle {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 15px;
   font-weight: 500;
   color: var(--text-secondary);
@@ -1096,7 +1096,7 @@ body::before {
 }
 
 .section-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
@@ -1150,7 +1150,7 @@ body::before {
 }
 
 .keyword-name {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
@@ -1210,7 +1210,7 @@ body::before {
 }
 
 .emotion-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
@@ -1265,7 +1265,7 @@ body::before {
 }
 
 .day-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
@@ -1281,7 +1281,7 @@ body::before {
 }
 
 .day-description {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   font-weight: 400;
   color: var(--text-secondary);
@@ -1502,7 +1502,7 @@ body::before {
 }
 
 .search-main-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 32px;
   font-weight: 800;
   line-height: 1.25;
@@ -1512,7 +1512,7 @@ body::before {
 }
 
 .search-subtitle {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 15px;
   color: var(--text-secondary);
   opacity: 0.8;
@@ -1579,7 +1579,7 @@ body::before {
 }
 
 .card-main-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
@@ -1587,7 +1587,7 @@ body::before {
 }
 
 .card-description {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.5;
@@ -1629,7 +1629,7 @@ body::before {
 }
 
 .section-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
@@ -1637,7 +1637,7 @@ body::before {
 }
 
 .section-subtitle {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 13px;
   color: var(--text-secondary);
 }
@@ -1685,7 +1685,7 @@ body::before {
 }
 
 .btn-text {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
@@ -1715,7 +1715,7 @@ body::before {
 }
 
 .support-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 32px;
   font-weight: 800;
   line-height: 1.25;
@@ -1725,7 +1725,7 @@ body::before {
 }
 
 .support-subtitle {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 15px;
   color: var(--text-secondary);
   opacity: 0.8;
@@ -1760,7 +1760,7 @@ body::before {
 }
 
 .support-card-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
@@ -1768,7 +1768,7 @@ body::before {
 }
 
 .support-card-desc {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.4;
@@ -1779,7 +1779,7 @@ body::before {
 }
 
 .notice-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
@@ -1815,13 +1815,13 @@ body::before {
 
 .notice-text {
   flex: 1;
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   color: var(--text-primary);
 }
 
 .notice-date {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 12px;
   color: var(--text-secondary);
 }
@@ -1881,7 +1881,7 @@ body::before {
 }
 
 .profile-name {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
@@ -1889,7 +1889,7 @@ body::before {
 }
 
 .profile-subtitle {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   color: var(--text-secondary);
 }
@@ -1932,7 +1932,7 @@ body::before {
 }
 
 .stats-title, .interests-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
@@ -1961,14 +1961,14 @@ body::before {
 }
 
 .stats-subtitle {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   color: var(--text-secondary);
   margin-bottom: 16px;
 }
 
 .stats-insight {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   color: var(--text-secondary);
   background: rgba(154, 120, 219, 0.1);
@@ -2008,7 +2008,7 @@ body::before {
 }
 
 .history-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
@@ -2070,7 +2070,7 @@ body::before {
 }
 
 .history-video-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
@@ -2079,7 +2079,7 @@ body::before {
 }
 
 .history-date {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 13px;
   color: var(--text-secondary);
 }
@@ -2373,7 +2373,7 @@ body::before {
 }
 
 .break-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 24px;
   font-weight: 800;
   color: var(--text-primary);
@@ -2382,14 +2382,14 @@ body::before {
 }
 
 .break-subtitle {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 16px;
   color: var(--text-secondary);
   margin-bottom: 16px;
 }
 
 .break-description {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.6;
@@ -2416,7 +2416,7 @@ body::before {
   gap: 12px;
   cursor: pointer;
   transition: all var(--animation-fast);
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
 }
 
 .break-btn:hover {
@@ -2450,7 +2450,7 @@ body::before {
 }
 
 .break-tip {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 13px;
   color: var(--text-accent);
   background: rgba(154, 120, 219, 0.1);
@@ -2484,7 +2484,7 @@ body::before {
 }
 
 .topic-title, .mood-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 32px;
   font-weight: 800;
   line-height: 1.25;
@@ -2494,7 +2494,7 @@ body::before {
 }
 
 .topic-subtitle, .mood-subtitle {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 15px;
   color: var(--text-secondary);
   opacity: 0.8;
@@ -2590,7 +2590,7 @@ body::before {
 }
 
 .topic-card-title, .mood-card-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
@@ -2600,7 +2600,7 @@ body::before {
 }
 
 .topic-card-desc, .mood-card-desc {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.5;
