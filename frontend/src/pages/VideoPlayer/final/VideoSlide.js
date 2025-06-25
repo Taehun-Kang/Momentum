@@ -603,12 +603,9 @@ export default class VideoSlide extends Component {
           </div>
         </div>
         
-        <!-- 하단 정보 영역 -->
+        <!-- 하단 정보 영역 (제목과 크리에이터 이름만) -->
         <div class="video-info">
           <div class="content-section">
-            <div class="creator-avatar-large">
-              <div class="avatar-icon">${this.video.avatar || '👤'}</div>
-            </div>
             <div class="content-details">
               <div class="video-title">${this.video.title || '멋진 영상입니다!'}</div>
               <div class="creator-name">${this.video.creator || '@creator'}</div>

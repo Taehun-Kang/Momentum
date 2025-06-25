@@ -31,7 +31,7 @@ class SearchEngine {
           video_id,
           title,
           description,
-          youtuber,
+          handle_name,
           youtuber_id,
           views,
           likes,
