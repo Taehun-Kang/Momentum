@@ -963,7 +963,7 @@ export default class ChatFlow extends Component {
   }
   
   /**
-   * 🔍 영상 검색 실행 (v2 서비스 사용)
+   * 🔍 영상 검색 실행 (키워드만 VideoPlayer로 전달)
    */
   async executeVideoSearch() {
     console.log('🔍 executeVideoSearch 시작!')
@@ -980,38 +980,14 @@ export default class ChatFlow extends Component {
     try {
       this.isSearching = true
       
-      console.log('🔍 v2 영상 검색 시작:', actualKeyword)
-      console.log('🚂 Railway v2 search API 호출 시작...')
+      console.log('🔍 키워드 VideoPlayer로 전달:', actualKeyword)
       
-      // ⏱️ v2 영상 검색 실행
-      console.log('🚀 v2 search 시작...')
-      const searchStartTime = Date.now()
-      
-      // ✅ v2 서비스 사용
-      const searchResult = await searchServiceV2.searchForVideoPlayer(actualKeyword, {
-        limit: 20  // VideoPlayer용 기본 20개
-      })
-      
-      const searchEndTime = Date.now()
-      const actualDuration = Math.round((searchEndTime - searchStartTime) / 1000)
-      
-      if (searchResult.success && searchResult.data?.length > 0) {
-        console.log('✅ v2 영상 검색 완료:', searchResult)
-        console.log(`⏱️ v2 검색 시간: ${actualDuration}초`)
-        console.log(`📹 검색된 영상 수: ${searchResult.data.length}개`)
-        
-        // 바로 VideoPlayer로 이동
-        console.log(`🎬 VideoPlayer로 이동: "${actualKeyword}"`)
-        this.navigateToVideoPlayer(actualKeyword)
-        
-      } else {
-        console.error('❌ v2 영상 검색 결과 없음:', searchResult)
-        alert('검색된 영상이 없습니다. 다른 키워드로 시도해주세요.')
-      }
+      // ✅ 키워드만 VideoPlayer로 전달 (검색은 VideoPlayer에서 담당)
+      this.navigateToVideoPlayer(actualKeyword)
       
     } catch (error) {
-      console.error('❌ v2 영상 검색 오류:', error)
-      alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.')
+      console.error('❌ VideoPlayer 이동 오류:', error)
+      alert('페이지 이동 중 오류가 발생했습니다. 다시 시도해주세요.')
     } finally {
       this.isSearching = false
     }
@@ -1155,18 +1131,23 @@ export default class ChatFlow extends Component {
   }
   
   /**
-   * 🎬 VideoPlayer로 이동
+   * 🎬 VideoPlayer로 이동 (키워드 배열로 전달)
    */
-  navigateToVideoPlayer(keyword) {
-    // realtime 검색 완료 플래그 추가
+  navigateToVideoPlayer(keywordString) {
+    // 키워드 문자열을 배열로 분리
+    const keywords = keywordString.split(' ').filter(k => k.trim().length > 0)
+    console.log('🔧 키워드 분리:', keywordString, '→', keywords)
+    
+    // keywords 배열을 JSON 문자열로 인코딩하여 전달
     const params = new URLSearchParams({
-      keyword: keyword,
-      realtime_completed: 'true',  // 🔧 realtime 검색 완료 표시
-      timestamp: Date.now()        // 캐시 방지용 타임스탬프
+      keywords: JSON.stringify(keywords),  // 배열을 JSON으로 인코딩
+      v2_search: 'true',                   // v2 검색 모드 표시
+      timestamp: Date.now()                // 캐시 방지용 타임스탬프
     })
     
     const url = `#/video-player?${params.toString()}`
     console.log('🎬 VideoPlayer로 이동:', url)
+    console.log('🎬 전달할 키워드 배열:', keywords)
     
     if (window.app && typeof window.app.navigateTo === 'function') {
       window.app.navigateTo(url)

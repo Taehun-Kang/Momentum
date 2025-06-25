@@ -8,6 +8,7 @@ import { Component } from './Component.js'
 import VideoSwiper from './VideoSwiper.js'
 import Loading from '../../../components/ui/Loading/index.js'
 import searchService from '../../../services/searchService.js'
+import { searchServiceV2 } from '../../../services/v2/searchServiceV2.js'
 import './VideoPlayer.css'
 
 export default class VideoPlayer extends Component {
@@ -16,6 +17,8 @@ export default class VideoPlayer extends Component {
     
     // 비디오 관련 설정
     this.keyword = '추천 영상'
+    this.keywords = []              // ✅ 키워드 배열 추가
+    this.isV2Search = false         // ✅ v2 검색 모드 플래그 추가
     this.videos = []
     this.videoSwiper = null
     this.isLoading = true
@@ -36,23 +39,35 @@ export default class VideoPlayer extends Component {
     
     if (queryString) {
       const params = new URLSearchParams(queryString)
-      const keyword = params.get('keyword')
-      const realtimeCompleted = params.get('realtime_completed')
+      const keywords = params.get('keywords')      // 새로운 키워드 배열 형식
+      const keyword = params.get('keyword')        // 기존 단일 키워드 (호환성)
+      const v2Search = params.get('v2_search')     // v2 검색 모드
       const timestamp = params.get('timestamp')
       
-      if (keyword) {
+      // ✅ 새로운 키워드 배열 형식 처리
+      if (keywords) {
+        try {
+          this.keywords = JSON.parse(decodeURIComponent(keywords))
+          this.keyword = this.keywords.join(' ')  // 표시용 문자열
+          this.isV2Search = v2Search === 'true'
+          console.log('📋 URL에서 키워드 배열 추출:', this.keywords)
+          console.log('🔧 v2 검색 모드:', this.isV2Search)
+        } catch (error) {
+          console.error('❌ 키워드 배열 파싱 실패:', error)
+          this.keywords = [keywords]
+          this.keyword = keywords
+          this.isV2Search = false
+        }
+      }
+      // 🔄 기존 단일 키워드 형식 (호환성)
+      else if (keyword) {
         this.keyword = decodeURIComponent(keyword)
-        console.log('📋 URL에서 키워드 추출:', this.keyword)
+        this.keywords = [this.keyword]
+        this.isV2Search = false
+        console.log('📋 URL에서 기존 키워드 추출:', this.keyword)
       }
       
-      // 🔧 realtime 검색 완료 여부 확인
-      if (realtimeCompleted === 'true') {
-        this.realtimeCompleted = true
-        this.timestamp = timestamp
-        console.log('✅ realtime 검색 완료 상태로 VideoPlayer 진입')
-      } else {
-        console.log('⚠️ realtime 검색 상태 불명 - 직접 DB 조회 모드')
-      }
+      this.timestamp = timestamp
     }
   }
   
@@ -84,9 +99,17 @@ export default class VideoPlayer extends Component {
 
   showLoadingState() {
     // 🔧 기존 Loading 컴포넌트 사용으로 중복 제거
+    const loadingText = this.isV2Search ? 
+      `"${this.keyword}" 영상 검색 중...` : 
+      `"${this.keyword}" 영상 로딩 중...`
+    
+    const loadingSubtext = this.isV2Search ? 
+      'v2 API로 최적화된 영상을 검색하는 중입니다' : 
+      'DB에서 큐레이션된 영상을 가져오는 중입니다'
+    
     const loadingComponent = new Loading({
-      text: `"${this.keyword}" 영상 로딩 중...`,
-      subtext: 'DB에서 큐레이션된 영상을 가져오는 중입니다',
+      text: loadingText,
+      subtext: loadingSubtext,
       theme: 'video-loading'
     })
 
@@ -110,7 +133,7 @@ export default class VideoPlayer extends Component {
   }
   
   /**
-   * 🎬 DB에서 키워드별 영상 데이터 로드
+   * 🎬 키워드별 영상 데이터 로드 (v2 API 우선, 기존 API 폴백)
    */
   async loadVideoData() {
     try {
@@ -122,60 +145,67 @@ export default class VideoPlayer extends Component {
         return
       }
       
-      console.log(`🎬 DB에서 "${this.keyword}" 영상 조회 시작`)
+      console.log(`🎬 "${this.keyword}" 영상 검색 시작`)
+      console.log(`🔧 v2 검색 모드: ${this.isV2Search}`)
+      console.log(`🔧 키워드 배열:`, this.keywords)
       
-      // 🔧 realtime 검색 완료 상태에 따른 딜레이 적용
-      if (this.realtimeCompleted) {
-        console.log('⏳ realtime 검색 완료됨 - DB 저장 완료 대기 중 (2초)')
-        await new Promise(resolve => setTimeout(resolve, 2000))  // 2초 대기
-      } else {
-        console.log('🔍 realtime 검색 상태 불명 - 즉시 DB 조회')
-      }
-
-      // DB에서 키워드별 영상 조회
-      const result = await searchService.getVideosByKeyword(this.keyword, {
-        limit: 20  // 충분한 영상 수
-      })
+      let searchResult = null
       
-      if (result.success && result.data && result.data.length > 0) {
-        // 백엔드 응답 확인
-        const isFallback = result.meta?.is_fallback || false
+      // ✅ v2 검색 모드 (ChatFlow에서 전달된 경우)
+      if (this.isV2Search && this.keywords.length > 0) {
+        console.log('🚀 v2 API로 영상 검색 실행')
         
-        if (!isFallback) {
-          // 🎯 실제 키워드 매칭 영상들
-          console.log(`✅ DB에서 "${this.keyword}" 실제 영상 조회 성공: ${result.data.length}개`)
+        try {
+          // 키워드 배열을 searchServiceV2에 전달
+          searchResult = await searchServiceV2.searchForVideoPlayer(this.keywords.join(' '), {
+            limit: 50  // 충분한 영상 수
+          })
           
-          // realtime 검색 완료 상태 로깅
-          if (this.realtimeCompleted) {
-            console.log('🎉 realtime → DB 조회 워크플로우 완료!')
+          if (searchResult.success && searchResult.data?.length > 0) {
+            console.log(`✅ v2 API 검색 성공: ${searchResult.data.length}개 영상`)
+            this.videos = searchResult.data  // v2 API는 이미 변환된 형식
+            this.isLoading = false
+            return
+          } else {
+            console.warn('⚠️ v2 API 검색 결과 없음, 기존 API로 폴백')
           }
           
-          this.videos = this.transformDbDataToVideoFormat(result.data)
+        } catch (error) {
+          console.error('❌ v2 API 검색 실패:', error)
+          console.log('🔄 기존 API로 폴백 시도')
+        }
+      }
+      
+      // 🔄 기존 API 폴백 (v2 실패 시 또는 기존 방식)
+      console.log('🔄 기존 searchService API로 검색 시도')
+      
+      try {
+        searchResult = await searchService.getVideosByKeyword(this.keyword, {
+          limit: 20
+        })
+        
+        if (searchResult.success && searchResult.data && searchResult.data.length > 0) {
+          const isFallback = searchResult.meta?.is_fallback || false
           
+          if (!isFallback) {
+            console.log(`✅ 기존 API에서 "${this.keyword}" 실제 영상 조회 성공: ${searchResult.data.length}개`)
+            this.videos = this.transformDbDataToVideoFormat(searchResult.data)
+          } else {
+            console.log(`⚠️ 기존 API에서도 폴백 데이터만 받음, Trending으로 교체`)
+            this.videos = await this.generateTrendingFallback()
+          }
         } else {
-          // ⚠️ 백엔드 폴백 데이터 (키워드와 관련 없는 인기 영상들)
-          console.log(`⚠️ DB에서 "${this.keyword}" 영상 없음, 백엔드 폴백 데이터 받음: ${result.data.length}개`)
-          console.log('🔄 프론트엔드에서 더 적절한 폴백 데이터로 교체')
-          
-          // 🔥 Trending 영상으로 폴백 교체
-          this.videos = await this.generateTrendingFallback()
+          throw new Error('기존 API에서도 결과 없음')
         }
         
-      } else {
-        console.warn(`⚠️ 키워드 "${this.keyword}" 영상 조회 실패 - Trending 폴백 사용`)
-        
-        // realtime 검색 완료했는데도 데이터가 없는 경우 경고
-        if (this.realtimeCompleted) {
-          console.warn('🚨 realtime 검색 완료 후에도 DB에 데이터 없음!')
-        }
-        
-        // 🔥 Trending 영상으로 폴백
+      } catch (error) {
+        console.error('❌ 기존 API도 실패:', error)
+        console.log('🔥 최종 폴백: Trending 영상 사용')
         this.videos = await this.generateTrendingFallback()
       }
       
     } catch (error) {
-      console.error('❌ DB 영상 로드 실패:', error)
-      // 🔥 Trending 영상으로 폴백
+      console.error('❌ 전체 영상 로드 실패:', error)
       this.videos = await this.generateTrendingFallback()
       
     } finally {

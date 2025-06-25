@@ -25,7 +25,7 @@ class SearchServiceV2 {
 
       const requestData = {
         keywords: keywordArray,
-        limit: options.limit || 20  // 기본 20개로 조정
+        limit: options.limit || 50  // 기본 50개로 변경
       }
 
       const response = await this.apiClient.post('/search/batch', requestData)
@@ -140,7 +140,7 @@ class SearchServiceV2 {
 
       // 개별 키워드 배열로 검색 실행
       const searchResult = await this.searchVideos(keywordArray, {
-        limit: options.limit || 20  // VideoPlayer용 기본 20개
+        limit: options.limit || 50  // VideoPlayer용 기본 50개
       })
 
       if (searchResult.success && searchResult.summary?.totalVideos > 0) {
