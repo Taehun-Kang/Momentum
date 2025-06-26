@@ -21,7 +21,7 @@ export default class App extends Component {
     })
     
     // 앱 상태
-    this.theme = localStorage.getItem('theme') || 'light'
+    // this.theme = localStorage.getItem('theme') || 'light'  // 다크 모드 비활성화
     this.currentRoute = ''
     this.currentPage = null
     this.navbar = null
@@ -84,7 +84,7 @@ export default class App extends Component {
     this.resetScrollInstantly()
     
     // 테마 적용
-    this.applyTheme()
+    // this.applyTheme()  // 다크 모드 비활성화
     
     // 렌더링
     this.render()
@@ -358,19 +358,19 @@ export default class App extends Component {
     this.navigateTo('#/my-page')
   }
   
-  // 테마 관리
-  applyTheme() {
-    document.documentElement.setAttribute('data-theme', this.theme)
-    console.log('🎨 Theme applied:', this.theme)
-  }
+  // 테마 관리 (다크 모드 비활성화)
+  // applyTheme() {
+  //   document.documentElement.setAttribute('data-theme', this.theme)
+  //   console.log('🎨 Theme applied:', this.theme)
+  // }
   
-  toggleTheme() {
-    this.theme = this.theme === 'light' ? 'dark' : 'light'
-    localStorage.setItem('theme', this.theme)
-    this.applyTheme()
-    
-    console.log('🔄 Theme toggled to:', this.theme)
-  }
+  // toggleTheme() {
+  //   this.theme = this.theme === 'light' ? 'dark' : 'light'
+  //   localStorage.setItem('theme', this.theme)
+  //   this.applyTheme()
+  //   
+  //   console.log('🔄 Theme toggled to:', this.theme)
+  // }
   
   // 스크롤 즉시 리셋 메서드 (페이지 렌더링 전 호출)
   resetScrollInstantly() {

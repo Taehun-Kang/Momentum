@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta
@@ -211,7 +211,8 @@
         }
       }
 
-      /* 다크모드 */
+      /* 다크모드 비활성화 */
+      /*
       @media (prefers-color-scheme: dark) {
         :root {
           --text-primary: #ffffff;
@@ -225,6 +226,7 @@
           );
         }
       }
+      */
 
       /* 접근성 */
       @media (prefers-reduced-motion: reduce) {
@@ -254,11 +256,17 @@
         history.scrollRestoration = "manual";
       }
 
+      // 다크 모드 강제 비활성화 - data-theme을 항상 light로 고정
+      document.documentElement.setAttribute("data-theme", "light");
+
       // DOM 로드 완료 시에도 한번 더
       document.addEventListener("DOMContentLoaded", function () {
         window.scrollTo(0, 0);
         document.documentElement.scrollTop = 0;
         document.body.scrollTop = 0;
+
+        // 다크 모드 강제 비활성화
+        document.documentElement.setAttribute("data-theme", "light");
       });
 
       // 윈도우 로드 완료 시에도 한번 더
@@ -266,6 +274,9 @@
         window.scrollTo(0, 0);
         document.documentElement.scrollTop = 0;
         document.body.scrollTop = 0;
+
+        // 다크 모드 강제 비활성화
+        document.documentElement.setAttribute("data-theme", "light");
       });
     </script>
 

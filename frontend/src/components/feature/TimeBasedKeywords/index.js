@@ -11,7 +11,7 @@ export default class TimeBasedKeywords extends Component {
     onKeywordClick: () => {},
     autoUpdate: true,
     updateInterval: 60000, // 1분마다 시간 체크
-    whiteTheme: false
+    // whiteTheme: false  // 다크 모드 비활성화
   }
 
   constructor(props = {}) {
@@ -35,7 +35,8 @@ export default class TimeBasedKeywords extends Component {
   }
 
   render() {
-    this.el.className = `time-based-keywords${this.props.whiteTheme ? ' white-theme' : ''}`
+    // this.el.className = `time-based-keywords${this.props.whiteTheme ? ' white-theme' : ''}`  // 다크 모드 비활성화
+    this.el.className = 'time-based-keywords'
 
     const timeContent = this.getTimeBasedContent()
     
@@ -212,8 +213,6 @@ export default class TimeBasedKeywords extends Component {
       })
     })
   }
-
-
 
   startAutoUpdate() {
     if (this.updateTimer) {

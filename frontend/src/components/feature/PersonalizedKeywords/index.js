@@ -16,7 +16,7 @@ export default class PersonalizedKeywords extends Component {
     userId: null,
     maxKeywords: 6,
     showRefreshButton: true,
-    whiteTheme: false,
+    // whiteTheme: false,  // 다크 모드 비활성화
     onKeywordClick: null,
     onRefresh: null,
     className: ''
@@ -71,7 +71,7 @@ export default class PersonalizedKeywords extends Component {
   setupContainer() {
     const classes = [
       'personalized-keywords',
-      this.props.whiteTheme ? 'white-theme' : '',
+      // this.props.whiteTheme ? 'white-theme' : '',  // 다크 모드 비활성화
       this.props.className
     ].filter(Boolean)
 
@@ -323,11 +323,11 @@ export default class PersonalizedKeywords extends Component {
   }
 
   /**
-   * 테마 토글
+   * 테마 토글 (다크 모드 비활성화)
    */
-  toggleTheme() {
-    this.updateProps({ whiteTheme: !this.props.whiteTheme })
-  }
+  // toggleTheme() {
+  //   this.updateProps({ whiteTheme: !this.props.whiteTheme })
+  // }
 
   /**
    * 컴포넌트 소멸

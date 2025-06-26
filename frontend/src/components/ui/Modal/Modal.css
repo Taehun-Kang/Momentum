@@ -691,3 +691,20 @@
   }
 }
 */ 
+
+/* 다크모드 자동 감지 비활성화 - 모든 prefers-color-scheme: dark 미디어 쿼리 비활성화 */
+/*
+@media (prefers-color-scheme: dark) {
+  .modal-content-area {
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  }
+  
+  .modal-content-area::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+  }
+  
+  .modal-content-area::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+  }
+}
+*/ 

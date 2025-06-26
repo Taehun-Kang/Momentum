@@ -14,7 +14,7 @@ export default class TrendingKeywords extends Component {
     onViewAllVideos: () => {},
     showRanking: true,
     hotAnimationInterval: 3000,
-    whiteTheme: false,
+    // whiteTheme: false,  // 다크 모드 비활성화
     showActionButtons: true,
     showMoreButton: true,    // 전체보기 버튼 별도 제어
     showVideoButton: true    // 영상 모아보기 버튼 별도 제어
@@ -99,7 +99,8 @@ export default class TrendingKeywords extends Component {
   }
 
   render() {
-    this.el.className = `trending-keywords${this.props.whiteTheme ? ' white-theme' : ''}`
+    // this.el.className = `trending-keywords${this.props.whiteTheme ? ' white-theme' : ''}`  // 다크 모드 비활성화
+    this.el.className = 'trending-keywords'
 
     this.el.innerHTML = /* html */ `
       <div class="trending-header">

@@ -66,10 +66,8 @@
   --radius-2xl: 24px;
 }
 
-/* ========== 다크 테마 ========== */
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* ========== 다크 테마 비활성화 ========== */
+/*
 [data-theme="dark"] {
   --text-primary: #ffffff;
   --text-secondary: #cccccc;

@@ -15,12 +15,12 @@ export const APP_CONFIG = {
     MAX_WIDTH: '430px'
   },
   
-  // 테마
-  THEMES: {
-    LIGHT: 'light',
-    DARK: 'dark',
-    AUTO: 'auto'
-  }
+  // 테마 (다크 모드 비활성화)
+  // THEMES: {
+  //   LIGHT: 'light',
+  //   DARK: 'dark',
+  //   AUTO: 'auto'
+  // }
 }
 
 // 라우트 경로
@@ -158,14 +158,14 @@ export const EVENTS = {
   VIDEO_PAUSE: 'video:pause',
   VIDEO_END: 'video:end',
   
-  // 테마 이벤트
-  THEME_CHANGE: 'theme:change'
+  // 테마 이벤트 (다크 모드 비활성화)
+  // THEME_CHANGE: 'theme:change'
 }
 
 // 로컬 스토리지 키
 export const STORAGE_KEYS = {
   USER: 'momentum_user',
-  THEME: 'momentum_theme',
+  // THEME: 'momentum_theme',  // 다크 모드 비활성화
   SETTINGS: 'momentum_settings',
   VIDEO_HISTORY: 'momentum_video_history',
   MOOD_HISTORY: 'momentum_mood_history'
@@ -240,9 +240,9 @@ export const BREAKPOINTS = {
   XL: 1024
 }
 
-// 기본 설정
+// 기본 설정 (다크 모드 비활성화)
 export const DEFAULT_SETTINGS = {
-  theme: APP_CONFIG.THEMES.AUTO,
+  // theme: APP_CONFIG.THEMES.AUTO,  // 다크 모드 비활성화
   language: 'ko',
   autoplay: true,
   notifications: true,

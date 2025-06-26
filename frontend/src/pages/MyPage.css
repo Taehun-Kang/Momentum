@@ -222,68 +222,46 @@
   line-height: 1.4;
 }
 
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
+/* 다크 테마 비활성화 */
+/*
 [data-theme="dark"] .mypage {
   background: linear-gradient(135deg, 
     rgba(154, 120, 219, 0.15) 0%, 
     rgba(28, 28, 30, 0.8) 50%, 
     rgba(0, 0, 0, 0.9) 100%
   );
-  color: var(--text-light, #ffffff);
+  color: #ffffff;
 }
-*/
 
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .chart-info {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.1);
-  color: var(--text-light, #ffffff);
+  color: #ffffff;
 }
-*/
 
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .chart-info strong {
-  color: var(--primary-light, #c4b5fd);
+  color: #ffffff;
 }
-*/
 
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .chart-container {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.1);
 }
-*/
 
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .chart-container .section-title {
-  color: var(--text-light, #ffffff);
+  color: #ffffff;
 }
-*/
 
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .section-title {
-  color: var(--text-light, #ffffff);
+  color: #ffffff;
 }
-*/
 
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .summary-text {
-  color: var(--text-secondary, #cccccc);
+  color: rgba(255, 255, 255, 0.8);
 }
-*/
 
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
-/* TEMPORARILY DISABLED - 다크모드 임시 비활성화
 [data-theme="dark"] .logout-info {
-  color: var(--text-tertiary, #aaaaaa);
+  color: rgba(255, 255, 255, 0.6);
 }
 */
 
