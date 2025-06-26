@@ -776,9 +776,18 @@ export default class ChatFlow extends Component {
         
       case 2:
         console.log('📝 Step 2 처리 시작 - LLM 분석 실행 예정')
-        this.chatData.selection = cardData.value
-        this.chatData.userInput = null // 카드 선택 시 입력 초기화
-        if (this.input) this.input.clear()
+        
+        // ✅ Input 값과 카드 클릭 구분 처리
+        if (cardData.isInputValue) {
+          console.log('📝 Step 2: Input 값 처리')
+          this.chatData.userInput = cardData.value
+          this.chatData.selection = null // Input 입력 시 카드 선택 초기화
+        } else {
+          console.log('📝 Step 2: 카드 클릭 처리')
+          this.chatData.selection = cardData.value
+          this.chatData.userInput = null // 카드 선택 시 입력 초기화
+          if (this.input) this.input.clear()
+        }
         
         // 🧠 먼저 3단계로 이동한 후 LLM 분석 실행
         console.log('📝 Step 2: nextStep 먼저 호출')
@@ -950,13 +959,14 @@ export default class ChatFlow extends Component {
         this.chatData.selection = null // 입력 시 카드 선택 초기화
         this.clearCardSelections()
         
-        console.log('📝 Step 2: performLLMAnalysis 호출 직전!')
-        console.log('📝 Step 2: chatData:', this.chatData)
+        console.log('📝 Step 2: Input을 버튼과 동일한 플로우로 처리')
         
-        // 🧠 2단계에서 3단계로 넘어갈 때 LLM 분석 실행
-        await this.performLLMAnalysis()
-        console.log('📝 Step 2: performLLMAnalysis 완료, nextStep 호출')
-        this.nextStep()
+        // ✅ 상단 버튼과 동일한 플로우 사용 (mockCardData로 proceedToNextStep 호출)
+        const mockCardData = { 
+          value: value,
+          isInputValue: true // Input에서 온 값임을 표시
+        }
+        await this.proceedToNextStep(mockCardData)
         break
         
       case 3:
