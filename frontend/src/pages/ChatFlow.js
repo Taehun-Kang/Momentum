@@ -593,8 +593,8 @@ export default class ChatFlow extends Component {
         return [
           {
             icon: '🔍',
-            title: '주제를 좀 더 세분화해보고 싶어요',
-            description: '더 구체적인 키워드로 찾아보기',
+            title: '다른 키워드로 검색하고 싶어요',
+            description: '새로운 키워드로 다시 선택하기',
             value: 'refine'
           },
           {
