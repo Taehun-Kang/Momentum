@@ -1,243 +1,171 @@
 # 🤖 YouTube Shorts AI 큐레이션 서비스
 
-> **Model Context Protocol (MCP)** 기반 지능형 YouTube Shorts 추천 시스템
+> **Claude AI 감정 분석** · **VQS 기반 고품질 영상 추천** · **4단계 대화형 워크플로우** · **Railway 배포**
 
 ## 🎯 **프로젝트 개요**
 
-**"피곤해서 힐링되는 영상 보고 싶어"** 같은 자연어 입력을 **실제 YouTube Shorts 추천**으로 변환하는 완전 자동화된 AI 큐레이션 서비스입니다.
+자연어 감정 입력("피곤해서 힐링되는 영상 보고 싶어")을 YouTube Shorts 추천으로 변환하는 AI 큐레이션 서비스입니다.
 
 ### 🚀 **핵심 기능**
 
-- **🧠 AI 자연어 검색**: Claude AI가 자연어를 분석해서 적절한 YouTube Shorts 추천
-- **🎯 4단계 워크플로우**: 키워드 확장 → 쿼리 최적화 → 영상 검색 → 메타데이터 분석
-- **🔍 2단계 필터링**: search.list → videos.list → 재생 가능 여부 확인
-- **📊 실시간 트렌드**: Bright Data MCP 연동으로 실시간 웹 트렌드 수집
-- **👤 개인화 추천**: 사용자 패턴 분석 기반 맞춤형 큐레이션
-
-## 📁 **프로젝트 구조**
-
-```
-Youtube/
-├── mcp-integration/              # 🎯 통합 MCP 시스템 (NEW!)
-│   ├── servers/                  # MCP 서버들
-│   │   ├── youtube-curator-mcp/  # 메인 큐레이션 서버 (1,724라인)
-│   │   └── user-analytics-mcp/   # 사용자 분석 서버 (1,130라인)
-│   ├── clients/                  # MCP 클라이언트
-│   │   └── mcp-client/          # 통합 클라이언트 (706라인)
-│   ├── tests/                   # 검증된 테스트 스크립트들
-│   │   ├── test-new-tools.js    # 최신 도구 테스트
-│   │   └── intelligent-query-workflow.js  # 지능형 워크플로우
-│   ├── docs/                    # 완전한 문서
-│   │   └── frontend-integration-guide.md  # 프론트엔드 통합 가이드
-│   ├── README.md               # 통합 시스템 문서
-│   └── install.sh              # 자동 설치 스크립트
-├── backend/                      # ✅ Express.js 백엔드 서버
-│   ├── routes/videoRoutes.js     # 업데이트된 API (신규 엔드포인트 3개)
-│   ├── services/mcpIntegrationService.js  # MCP 통합 서비스
-│   └── app.js                    # Express 서버
-├── frontend/                     # 프론트엔드 (Vanilla JS SPA)
-├── shared/                       # 공통 코드
-└── docs/                         # 프로젝트 문서
-```
+- **🧠 Claude AI 감정 분석**: Anthropic Claude API 기반 자연어 감정 분석 및 키워드 추천
+- **📊 VQS 품질 보장**: Video Quality Score 기반 고품질 영상 필터링
+- **🎯 4단계 워크플로우**: 방식 선택 → 감정 입력 → 키워드 추천 → 영상 시청
+- **🔍 2단계 필터링**: YouTube API search.list → videos.list → 재생 가능 여부 확인
+- **📚 검증된 키워드 DB**: 236개 키워드와 프론트엔드 100% 매칭
 
 ## 🛠️ **기술 스택**
 
 ### 백엔드
 
-- **Node.js + Express.js** - REST API 서버
-- **MCP (Model Context Protocol)** - AI 도구 통합
-- **Claude API** - 자연어 분석 및 대화형 검색
+- **Node.js + Express.js** - REST API 서버 (182개 엔드포인트)
+- **Claude API** - 자연어 감정 분석
 - **YouTube Data API v3** - 영상 검색 및 메타데이터
-- **Bright Data MCP** - 실시간 웹 트렌드 수집
-- **Supabase** - 데이터베이스 및 인증
+- **Supabase PostgreSQL** - 키워드 DB 및 영상 캐시
+- **Railway** - 클라우드 배포
 
 ### 프론트엔드
 
-- **Vanilla JavaScript** - 컴포넌트 기반 SPA
-- **PWA** - 프로그레시브 웹 앱
-- **반응형 디자인** - 모바일 최적화
+- **Vanilla JavaScript** - 컴포넌트 기반 SPA (프레임워크 없음)
+- **Hash 기반 라우터** - 클라이언트 사이드 라우팅
+- **반응형 디자인** - 모바일 퍼스트
 
-## 🚀 **빠른 시작**
+## 📁 **프로젝트 구조**
 
-### 1. MCP 시스템 설치
-
-```bash
-cd mcp-integration
-./install.sh
+```
+Youtube/
+├── backend/                      # Express.js API 서버
+│   ├── routes/v2/               # v2 API 엔드포인트
+│   │   ├── emotionRoutes.js     # Claude AI 감정 분석
+│   │   └── searchRoutes.js      # VQS 기반 검색
+│   ├── services/
+│   │   ├── v2_emotion/          # 감정 분석 서비스
+│   │   ├── v2_search/           # VQS 검색 엔진
+│   │   └── v2_cache/            # 영상 캐시 시스템
+│   └── server.js
+├── frontend/                     # Vanilla JS SPA
+│   ├── src/
+│   │   ├── pages/ChatFlow.js    # 4단계 대화형 UI
+│   │   ├── pages/VideoPlayer/   # 영상 재생 시스템
+│   │   └── services/v2/         # v2 API 클라이언트
+│   └── index.html
+└── docs/                         # 개발 문서
 ```
 
-### 2. 환경 변수 설정
+## 🚀 **배포**
+
+### Railway 프로덕션
+
+- **URL**: `https://momentum-production-68bb.up.railway.app`
+- **상태**: 배포 완료, 24/7 운영 중
+
+### 로컬 개발
 
 ```bash
-cd servers/youtube-curator-mcp
-cp .env.template .env
-# .env 파일에 실제 API 키 입력
-```
+# 환경 설정
+git clone <repository-url>
+cd Youtube
 
-### 3. 백엔드 서버 실행
-
-```bash
+# 백엔드
 cd backend
 npm install
-npm start
+npm start  # PORT 3002
+
+# 프론트엔드
+cd frontend
+npm install
+npm start  # PORT 3000
 ```
 
-### 4. 프론트엔드 연결
+### 환경 변수
 
-```javascript
-// AI 자연어 검색 사용 예시
-const result = await fetch("/api/v1/videos/intelligent-search", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    query: "피곤해서 힐링되는 영상 보고 싶어",
-    userTier: "premium",
-  }),
-});
+```bash
+# backend/.env
+YOUTUBE_API_KEY=your_youtube_api_key
+ANTHROPIC_API_KEY=your_claude_api_key
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_key
 ```
 
 ## 🎯 **API 엔드포인트**
 
-### 🧠 **AI 자연어 검색** (신규)
+### 감정 분석 API
 
-```
-POST /api/v1/videos/intelligent-search
-```
-
-- **기능**: "피곤해서 힐링되는 영상" → 실제 YouTube Shorts 추천
-- **프리미엄**: 4단계 지능형 워크플로우
-- **무료**: 기본 자연어 분석 + 검색
-
-### 🎯 **4단계 워크플로우** (프리미엄 전용)
-
-```
-POST /api/v1/videos/workflow-search
+```bash
+POST /api/v2/emotion/recommend
+{
+  "userInput": "피곤해서 힐링되는 영상 보고 싶어",
+  "inputType": "emotion"
+}
 ```
 
-- **1단계**: 키워드 확장 (15개씩)
-- **2단계**: 쿼리 최적화 (8-12개 생성)
-- **3단계**: 영상 검색 (2단계 필터링)
-- **4단계**: 메타데이터 분석
+### VQS 검색 API
 
-### 🔧 **MCP 시스템 상태**
+```bash
+POST /api/v2/search/batch
+{
+  "keywords": ["백색소음", "수면음악"],
+  "limit": 50
+}
+```
+
+## 🎨 **사용자 워크플로우**
 
 ```
-GET /api/v1/videos/mcp-status
+1️⃣ 방식 선택     → 감정 기반 vs 주제 기반
+2️⃣ 감정 입력     → 자연어로 현재 상태 표현
+3️⃣ 키워드 추천   → Claude AI가 생성한 4개 감성 문장
+4️⃣ 영상 시청     → VQS 필터링된 고품질 영상 재생
 ```
 
-### 기존 API들
+## 📊 **프로젝트 현황**
 
-- `GET /api/v1/videos/search` - 기본 검색
-- `GET /api/v1/videos/trending` - 인기 영상
-- `POST /api/v1/videos/ai-search` - 기존 AI 검색
+### 완료된 기능
 
-## 🏆 **실제 테스트 결과**
+- ✅ Railway 프로덕션 배포
+- ✅ Claude AI 감정 분석 시스템
+- ✅ VQS 기반 영상 품질 필터링
+- ✅ 4단계 대화형 UI
+- ✅ 236개 검증 키워드 DB
+- ✅ Database API (146/149개 테스트 완료)
+- ✅ 2단계 YouTube API 필터링
 
-### ✅ **성공 사례: "피곤해서 힐링되는 영상"**
+### 기술적 특징
 
-**발견된 실제 YouTube 영상들:**
-
-- **"감성파 여친 VS 힐링파 여친"** - 에버랜드 (6.85M 조회수) 🔥
-- **"BTS도 다녀간 힐링 사찰"** - (5.21M 조회수)
-- **"힐링 게임인 줄 알았는데..."** - (4.86M 조회수)
-
-### ✅ **성공 사례: "LCK 페이커 최신 하이라이트"**
-
-**키워드 분석 100% 성공:**
-
-- 주요: `페이커`, `LCK`, `하이라이트`
-- 보조: `최신`, `프로게이머`, `e스포츠`
-- 컨텍스트: `엔터테인먼트/게임/최신`
-
-### 📊 **성능 지표**
-
-- **API 사용량**: 1,284 units (목표 < 2,000)
-- **필터링 성공률**: 45% (목표 > 40%)
-- **워크플로우 성공률**: 100%
-- **응답 시간**: < 500ms
+- **VQS 점수**: 조회수, 좋아요, 댓글, 구독자 수 종합 평가
+- **키워드 매칭**: 프론트엔드 컴포넌트와 DB 100% 호환
+- **재생 가능**: embeddable, 지역 제한 등 사전 필터링
+- **API 성공률**: 98.0% (Database API 테스트 결과)
 
 ## 🔧 **개발 가이드**
 
-### MCP 시스템 아키텍처
+### 핵심 원칙
 
+1. **v2 API 사용**: 새로운 기능은 v2 엔드포인트 기반
+2. **키워드 배열 유지**: ChatFlow → VideoPlayer 간 배열 형태 전달
+3. **2단계 필터링**: YouTube API 호출 시 재생 가능 여부 필수 확인
+
+### 주요 컴포넌트
+
+```javascript
+// 감정 분석
+import { emotionServiceV2 } from "./services/v2/emotionServiceV2.js";
+const result = await emotionServiceV2.recommendKeywords(userInput);
+
+// 영상 검색
+import { searchServiceV2 } from "./services/v2/searchServiceV2.js";
+const videos = await searchServiceV2.searchForVideoPlayer(keywords);
 ```
-프론트엔드 (Vanilla JS)
-    ↓ REST API
-백엔드 (Express.js)
-    ↓ MCP Protocol
-MCP 서버들 (Claude, Bright Data, Supabase)
-    ↓ External APIs
-외부 서비스 (YouTube, Google, etc.)
-```
-
-### 개발 원칙
-
-1. **점진적 개발**: 작은 단위로 개발 후 통합
-2. **2단계 필터링**: 모든 YouTube 검색에 재생 가능 여부 확인 필수
-3. **API 할당량 관리**: 일일 10,000 units 최적화
-4. **캐싱 전략**: 85% 적중률 목표
 
 ## 📚 **문서**
 
-- **[MCP 통합 가이드](mcp-integration/README.md)** - 전체 시스템 개요
-- **[프론트엔드 통합 가이드](mcp-integration/docs/frontend-integration-guide.md)** - 완전한 구현 예시
-- **[개발 가이드](docs/development/)** - 상세 개발 문서
-- **[기획 문서](docs/basic/)** - 프로젝트 기획 및 전략
+- **[백엔드 가이드](backend/BACKEND_ARCHITECTURE_GUIDE.md)** - API 구조 및 서비스
+- **[프론트엔드 가이드](frontend/README.md)** - SPA 아키텍처
+- **[YouTube API 가이드](docs/development/youtube-api-parameters.md)** - 필터링 전략
 
-## 🛡️ **보안 및 제한사항**
+## 🚧 **향후 계획**
 
-### API 할당량 관리
-
-- **YouTube API**: 일일 10,000 units
-- **Claude API**: 요청당 제한 관리
-- **SerpAPI**: 키워드 확장 최적화
-
-### 필터링 품질
-
-- **재생 가능 영상**: 70-85% 성공률
-- **Shorts 길이**: 60초 이하만 허용
-- **지역 제한**: 한국 기준 필터링
-
-## 🚀 **배포**
-
-### Railway 배포
-
-```bash
-# 환경 변수 설정 후
-railway deploy
-```
-
-### PWA 설정
-
-- Service Worker 구현
-- 오프라인 캐시
-- 앱 매니페스트
-
-## 🎉 **주요 성과**
-
-✅ **완전한 MCP 시스템 구현**  
-✅ **Claude AI 자율적 도구 선택 실현**  
-✅ **4단계 워크플로우 자동화**  
-✅ **실제 바이럴 영상 발견 성공**  
-✅ **프론트엔드-백엔드 완전 통합**  
-✅ **API 할당량 최적화 달성**
-
----
-
-## 🤝 **기여**
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 **라이선스**
-
-MIT License - Wave Team
-
-## 📞 **지원**
-
-- **GitHub Issues**: 버그 리포트 및 기능 요청
-- **문서**: 추가 예제 및 가이드
-- **커뮤니티**: 사용자 경험 공유
+- [ ] 개인화 알고리즘 고도화
+- [ ] 실시간 트렌드 키워드 시스템
+- [ ] 모바일 앱 개발 (PWA → 네이티브)
+- [ ] 소셜 기능 (공유, 플레이리스트)
